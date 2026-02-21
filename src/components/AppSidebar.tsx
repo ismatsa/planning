@@ -1,5 +1,6 @@
-import { Calendar, List, Settings, Clock } from 'lucide-react';
+import { Calendar, List, Settings, Clock, User, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/store/AuthContext';
 import logo from '@/assets/powertech-short.png';
 
 const navItems = [
@@ -11,6 +12,7 @@ const navItems = [
 
 export default function AppSidebar() {
   const location = useLocation();
+  const { logout } = useAuth();
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-40 flex w-16 flex-col items-center bg-sidebar py-4 gap-2 lg:w-56 lg:items-stretch lg:px-3">
@@ -44,8 +46,28 @@ export default function AppSidebar() {
         })}
       </nav>
 
-      <div className="hidden lg:block px-2 text-xs text-sidebar-foreground/50 text-center">
-        AtelierRendezVous
+      {/* Profil */}
+      <div className="flex flex-col gap-1 border-t border-sidebar-border pt-2">
+        <Link
+          to="/profil"
+          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
+            ${location.pathname === '/profil'
+              ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+            }
+            justify-center lg:justify-start
+          `}
+        >
+          <User className="h-5 w-5 shrink-0" />
+          <span className="hidden lg:block">Profil</span>
+        </Link>
+        <button
+          onClick={() => logout()}
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground justify-center lg:justify-start w-full"
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          <span className="hidden lg:block">Déconnexion</span>
+        </button>
       </div>
     </aside>
   );
