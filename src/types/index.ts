@@ -44,7 +44,10 @@ export interface RendezVous {
   fin: string;   // ISO datetime
   clientNom?: string;
   clientTel?: string;
-  vehicule?: string;
+  marque?: string;
+  modele?: string;
+  annee?: string;
+  vin?: string;
   notes?: string;
   statut: StatutRdv;
   createdAt: string;

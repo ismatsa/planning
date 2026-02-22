@@ -26,23 +26,22 @@ export default function RdvBlock({ rdv, onClick, style }: Props) {
 
   return (
     <button
-      onClick={() => onClick(rdv)}
+      onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
       style={style}
-      className={`absolute left-1 right-1 rounded-md px-2 py-1 text-left text-xs overflow-hidden cursor-pointer
+      className={`rounded-md px-2 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer
         transition-shadow hover:shadow-md hover:z-10 border border-transparent
+        flex items-center gap-1.5 whitespace-nowrap
         ${bgClass} animate-fade-in`}
     >
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
-        <span className="font-semibold truncate">
-          {format(new Date(rdv.debut), 'HH:mm')} – {format(new Date(rdv.fin), 'HH:mm')}
-        </span>
-      </div>
+      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
+      <span className="font-semibold">
+        {format(new Date(rdv.debut), 'HH:mm')}–{format(new Date(rdv.fin), 'HH:mm')}
+      </span>
       {rdv.clientNom && (
-        <div className="truncate font-medium opacity-80">{rdv.clientNom}</div>
+        <span className="font-medium opacity-80 truncate">{rdv.clientNom}</span>
       )}
-      {rdv.vehicule && (
-        <div className="truncate opacity-60">{rdv.vehicule}</div>
+      {(rdv.marque || rdv.modele) && (
+        <span className="opacity-60 truncate">{[rdv.marque, rdv.modele].filter(Boolean).join(' ')}</span>
       )}
     </button>
   );

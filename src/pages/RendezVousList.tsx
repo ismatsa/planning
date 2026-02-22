@@ -41,9 +41,10 @@ export default function RendezVousList() {
         if (filterStatut !== 'all' && r.statut !== filterStatut) return false;
         if (search) {
           const s = search.toLowerCase();
+          const vehicleStr = [r.marque, r.modele].filter(Boolean).join(' ').toLowerCase();
           if (
             !r.clientNom?.toLowerCase().includes(s) &&
-            !r.vehicule?.toLowerCase().includes(s) &&
+            !vehicleStr.includes(s) &&
             !poste?.nom.toLowerCase().includes(s)
           ) return false;
         }
@@ -138,7 +139,7 @@ export default function RendezVousList() {
                       </span>
                     </td>
                     <td className="px-4 py-3">{r.clientNom || '—'}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{r.vehicule || '—'}</td>
+                    <td className="px-4 py-3 text-xs">{[r.marque, r.modele].filter(Boolean).join(' ') || '—'}</td>
                     <td className="px-4 py-3">
                       <Badge variant="secondary" className={statusBadgeClass[r.statut]}>
                         {STATUT_LABELS[r.statut]}
