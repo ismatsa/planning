@@ -14,7 +14,171 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          heure_max: string
+          heure_min: string
+          id: number
+          jours_ouvres: Json
+        }
+        Insert: {
+          heure_max?: string
+          heure_min?: string
+          id?: number
+          jours_ouvres?: Json
+        }
+        Update: {
+          heure_max?: string
+          heure_min?: string
+          id?: number
+          jours_ouvres?: Json
+        }
+        Relationships: []
+      }
+      disponibilite_postes: {
+        Row: {
+          duree_defaut: number
+          durees_autorisees: Json
+          id: string
+          jour_semaine: number
+          plages: Json
+          poste_id: string
+          tampon: number
+        }
+        Insert: {
+          duree_defaut?: number
+          durees_autorisees?: Json
+          id?: string
+          jour_semaine: number
+          plages?: Json
+          poste_id: string
+          tampon?: number
+        }
+        Update: {
+          duree_defaut?: number
+          durees_autorisees?: Json
+          id?: string
+          jour_semaine?: number
+          plages?: Json
+          poste_id?: string
+          tampon?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disponibilite_postes_poste_id_fkey"
+            columns: ["poste_id"]
+            isOneToOne: false
+            referencedRelation: "postes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exception_disponibilites: {
+        Row: {
+          date: string
+          ferme: boolean
+          id: string
+          plages_override: Json | null
+          poste_id: string
+        }
+        Insert: {
+          date: string
+          ferme?: boolean
+          id?: string
+          plages_override?: Json | null
+          poste_id: string
+        }
+        Update: {
+          date?: string
+          ferme?: boolean
+          id?: string
+          plages_override?: Json | null
+          poste_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exception_disponibilites_poste_id_fkey"
+            columns: ["poste_id"]
+            isOneToOne: false
+            referencedRelation: "postes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      postes: {
+        Row: {
+          actif: boolean
+          created_at: string
+          id: string
+          metier_id: string
+          nom: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          id: string
+          metier_id: string
+          nom: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          id?: string
+          metier_id?: string
+          nom?: string
+        }
+        Relationships: []
+      }
+      rendez_vous: {
+        Row: {
+          client_nom: string | null
+          client_tel: string | null
+          created_at: string
+          debut: string
+          fin: string
+          id: string
+          notes: string | null
+          poste_id: string
+          statut: string
+          updated_at: string
+          vehicule: string | null
+        }
+        Insert: {
+          client_nom?: string | null
+          client_tel?: string | null
+          created_at?: string
+          debut: string
+          fin: string
+          id?: string
+          notes?: string | null
+          poste_id: string
+          statut?: string
+          updated_at?: string
+          vehicule?: string | null
+        }
+        Update: {
+          client_nom?: string | null
+          client_tel?: string | null
+          created_at?: string
+          debut?: string
+          fin?: string
+          id?: string
+          notes?: string | null
+          poste_id?: string
+          statut?: string
+          updated_at?: string
+          vehicule?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rendez_vous_poste_id_fkey"
+            columns: ["poste_id"]
+            isOneToOne: false
+            referencedRelation: "postes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

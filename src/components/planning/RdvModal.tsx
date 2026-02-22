@@ -19,7 +19,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useStore } from '@/store/StoreContext';
 import { RendezVous, MetierType, METIERS, STATUT_LABELS, StatutRdv } from '@/types';
-import { generateId } from '@/lib/planning';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
@@ -48,10 +47,10 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
   const [notes, setNotes] = useState('');
   const [statut, setStatut] = useState<StatutRdv>('prevu');
   const [conflict, setConflict] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const filteredPostes = useMemo(() => postes.filter(p => p.metierId === metierId && p.actif), [postes, metierId]);
 
-  // Initialize
   useEffect(() => {
     if (!open) return;
     if (rdv) {
@@ -81,9 +80,9 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setStatut('prevu');
     }
     setConflict(null);
+    setSaving(false);
   }, [open, rdv, defaultDate, defaultPosteId, defaultTime]);
 
-  // Auto-select first poste when metier changes
   useEffect(() => {
     if (!isEdit) {
       const first = postes.find(p => p.metierId === metierId && p.actif);
@@ -96,7 +95,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
     return dispo?.dureesAutorisees || [30, 60, 90, 120];
   }, [disponibilites, posteId]);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!posteId || !date || !heureDebut) return;
 
     const debut = new Date(`${date}T${heureDebut}:00`);
@@ -109,35 +108,44 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       return;
     }
 
-    const now = new Date().toISOString();
-    const data: RendezVous = {
-      id: rdv?.id || generateId(),
-      posteId,
-      debut: debut.toISOString(),
-      fin: fin.toISOString(),
-      clientNom: clientNom || undefined,
-      clientTel: clientTel || undefined,
-      vehicule: vehicule || undefined,
-      notes: notes || undefined,
-      statut,
-      createdAt: rdv?.createdAt || now,
-      updatedAt: now,
-    };
+    setSaving(true);
 
     if (isEdit) {
-      updateRdv(data);
+      await updateRdv({
+        ...rdv!,
+        posteId,
+        debut: debut.toISOString(),
+        fin: fin.toISOString(),
+        clientNom: clientNom || undefined,
+        clientTel: clientTel || undefined,
+        vehicule: vehicule || undefined,
+        notes: notes || undefined,
+        statut,
+      });
       toast.success('Rendez-vous modifié.');
     } else {
-      addRdv(data);
-      toast.success('Rendez-vous ajouté. Vous pouvez le déplacer par glisser-déposer.');
+      await addRdv({
+        posteId,
+        debut: debut.toISOString(),
+        fin: fin.toISOString(),
+        clientNom: clientNom || undefined,
+        clientTel: clientTel || undefined,
+        vehicule: vehicule || undefined,
+        notes: notes || undefined,
+        statut,
+      });
+      toast.success('Rendez-vous ajouté.');
     }
+    setSaving(false);
     onClose();
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (rdv) {
-      deleteRdv(rdv.id);
+      setSaving(true);
+      await deleteRdv(rdv.id);
       toast.success('Rendez-vous supprimé.');
+      setSaving(false);
       onClose();
     }
   }
@@ -152,7 +160,6 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          {/* Métier + Poste */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier</Label>
@@ -178,7 +185,6 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
           </div>
 
-          {/* Date + Heure + Durée */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Date</Label>
@@ -201,7 +207,6 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
           </div>
 
-          {/* Conflict */}
           {conflict && (
             <div className="flex items-start gap-2 rounded-lg bg-mecanique/10 p-3 text-sm text-foreground animate-slide-in">
               <AlertCircle className="h-4 w-4 text-mecanique shrink-0 mt-0.5" />
@@ -209,7 +214,6 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
           )}
 
-          {/* Client */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Client (nom)</Label>
@@ -221,19 +225,16 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
           </div>
 
-          {/* Véhicule */}
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1.5">Véhicule (immatriculation)</Label>
             <Input placeholder="AA-123-BB" value={vehicule} onChange={e => setVehicule(e.target.value)} />
           </div>
 
-          {/* Notes */}
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1.5">Notes internes</Label>
             <Textarea placeholder="Ex: prévoir huile, carto stage 1…" value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
           </div>
 
-          {/* Statut */}
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1.5">Statut</Label>
             <Select value={statut} onValueChange={v => setStatut(v as StatutRdv)}>
@@ -249,13 +250,13 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
 
         <DialogFooter className="gap-2 sm:gap-0">
           {isEdit && (
-            <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto">
+            <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
               Supprimer
             </Button>
           )}
           <Button variant="outline" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleSubmit}>
-            {isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
+          <Button onClick={handleSubmit} disabled={saving}>
+            {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
           </Button>
         </DialogFooter>
       </DialogContent>
