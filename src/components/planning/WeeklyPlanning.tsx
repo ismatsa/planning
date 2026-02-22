@@ -151,6 +151,22 @@ export default function WeeklyPlanning() {
                     r.posteId === poste.id && isSameDay(new Date(r.debut), day) && r.statut !== 'annule'
                   );
 
+                  // Detect overlapping RDVs
+                  const conflictIds = new Set<string>();
+                  for (let i = 0; i < dayRdvs.length; i++) {
+                    for (let j = i + 1; j < dayRdvs.length; j++) {
+                      const a = dayRdvs[i], b = dayRdvs[j];
+                      const aStart = new Date(a.debut).getTime();
+                      const aEnd = new Date(a.fin).getTime();
+                      const bStart = new Date(b.debut).getTime();
+                      const bEnd = new Date(b.fin).getTime();
+                      if (aStart < bEnd && bStart < aEnd) {
+                        conflictIds.add(a.id);
+                        conflictIds.add(b.id);
+                      }
+                    }
+                  }
+
                   return (
                     <div key={poste.id} className="flex border-b hover:bg-muted/20 transition-colors">
                       {/* Poste label */}
@@ -189,6 +205,7 @@ export default function WeeklyPlanning() {
                             key={r.id}
                             rdv={r}
                             onClick={openEditRdv}
+                            hasConflict={conflictIds.has(r.id)}
                             style={{ ...getRdvStyle(r), top: '2px', bottom: '2px', position: 'absolute' }}
                           />
                         ))}
