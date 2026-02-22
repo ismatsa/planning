@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '@/store/StoreContext';
-import { METIERS, STATUT_LABELS, MetierType, StatutRdv } from '@/types';
+import { METIERS, STATUT_LABELS, StatutRdv } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -52,13 +52,13 @@ export default function RendezVousList() {
       .sort((a, b) => new Date(b.debut).getTime() - new Date(a.debut).getTime());
   }, [rdvs, postes, filterMetier, filterStatut, search]);
 
-  function quickConfirm(rdv: RendezVous) {
-    updateRdv({ ...rdv, statut: 'confirme', updatedAt: new Date().toISOString() });
+  async function quickConfirm(rdv: RendezVous) {
+    await updateRdv({ ...rdv, statut: 'confirme' });
     toast.success('Rendez-vous confirmé.');
   }
 
-  function quickCancel(rdv: RendezVous) {
-    updateRdv({ ...rdv, statut: 'annule', updatedAt: new Date().toISOString() });
+  async function quickCancel(rdv: RendezVous) {
+    await updateRdv({ ...rdv, statut: 'annule' });
     toast.success('Rendez-vous annulé.');
   }
 

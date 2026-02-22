@@ -12,7 +12,7 @@ const navItems = [
 
 export default function AppSidebar() {
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-40 flex w-16 flex-col items-center bg-sidebar py-4 gap-2 lg:w-56 lg:items-stretch lg:px-3">
@@ -59,7 +59,7 @@ export default function AppSidebar() {
           `}
         >
           <User className="h-5 w-5 shrink-0" />
-          <span className="hidden lg:block">Profil</span>
+          <span className="hidden lg:block truncate">{user?.email || 'Profil'}</span>
         </Link>
         <button
           onClick={() => logout()}

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { StoreProvider } from "./store/StoreContext";
 import { AuthProvider, useAuth } from "./store/AuthContext";
 import AppLayout from "./components/AppLayout";
@@ -17,7 +17,15 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Chargement…</div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -28,31 +36,31 @@ function AppRoutes() {
   }
 
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<Index />} />
-        <Route path="/rendez-vous" element={<RendezVousList />} />
-        <Route path="/creneaux" element={<Creneaux />} />
-        <Route path="/parametres" element={<Parametres />} />
-        <Route path="/profil" element={<Profil />} />
-      </Route>
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <StoreProvider>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Index />} />
+          <Route path="/rendez-vous" element={<RendezVousList />} />
+          <Route path="/creneaux" element={<Creneaux />} />
+          <Route path="/parametres" element={<Parametres />} />
+          <Route path="/profil" element={<Profil />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </StoreProvider>
   );
 }
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <StoreProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </StoreProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

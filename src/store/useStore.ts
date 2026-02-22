@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   RendezVous,
   Poste,
@@ -7,65 +8,127 @@ import {
   AppSettings,
   DEFAULT_POSTES,
   DEFAULT_SETTINGS,
+  PlageHoraire,
 } from '@/types';
 
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
+// DB → App type mappers
+function mapPoste(row: any): Poste {
+  return { id: row.id, metierId: row.metier_id, nom: row.nom, actif: row.actif };
 }
 
-function saveToStorage<T>(key: string, data: T) {
-  localStorage.setItem(key, JSON.stringify(data));
+function mapDispo(row: any): DisponibilitePoste {
+  return {
+    posteId: row.poste_id,
+    jourSemaine: row.jour_semaine,
+    plages: (row.plages as PlageHoraire[]) || [],
+    dureeDefaut: row.duree_defaut,
+    dureesAutorisees: (row.durees_autorisees as number[]) || [30, 60, 90],
+    tampon: row.tampon,
+  };
 }
 
-// Default availabilities for all postes (lun-sam, 08:00-12:00 / 13:00-18:00)
-function defaultDisponibilites(): DisponibilitePoste[] {
-  const result: DisponibilitePoste[] = [];
-  for (const poste of DEFAULT_POSTES) {
-    for (const jour of [1, 2, 3, 4, 5, 6]) {
-      result.push({
-        posteId: poste.id,
-        jourSemaine: jour,
-        plages: [
-          { debut: '08:00', fin: '12:00' },
-          { debut: '13:00', fin: '18:00' },
-        ],
-        dureeDefaut: poste.metierId === 'lavage' ? 30 : poste.metierId === 'reprog' ? 90 : 60,
-        dureesAutorisees: poste.metierId === 'lavage' ? [30, 45, 60] : poste.metierId === 'reprog' ? [60, 90, 120] : [30, 60, 90, 120],
-        tampon: 10,
-      });
-    }
-  }
-  return result;
+function mapException(row: any): ExceptionDisponibilite {
+  return {
+    id: row.id,
+    posteId: row.poste_id,
+    date: row.date,
+    ferme: row.ferme,
+    plagesOverride: row.plages_override || undefined,
+  };
+}
+
+function mapRdv(row: any): RendezVous {
+  return {
+    id: row.id,
+    posteId: row.poste_id,
+    debut: row.debut,
+    fin: row.fin,
+    clientNom: row.client_nom || undefined,
+    clientTel: row.client_tel || undefined,
+    vehicule: row.vehicule || undefined,
+    notes: row.notes || undefined,
+    statut: row.statut,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapSettings(row: any): AppSettings {
+  return {
+    joursOuvres: (row.jours_ouvres as number[]) || [1, 2, 3, 4, 5, 6],
+    heureMin: row.heure_min,
+    heureMax: row.heure_max,
+  };
 }
 
 export function useAppStore() {
-  const [rdvs, setRdvs] = useState<RendezVous[]>(() => loadFromStorage('atelier_rdvs', []));
-  const [postes, setPostes] = useState<Poste[]>(() => loadFromStorage('atelier_postes', DEFAULT_POSTES));
-  const [disponibilites, setDisponibilites] = useState<DisponibilitePoste[]>(() => loadFromStorage('atelier_dispos', defaultDisponibilites()));
-  const [exceptions, setExceptions] = useState<ExceptionDisponibilite[]>(() => loadFromStorage('atelier_exceptions', []));
-  const [settings, setSettings] = useState<AppSettings>(() => loadFromStorage('atelier_settings', DEFAULT_SETTINGS));
+  const [rdvs, setRdvs] = useState<RendezVous[]>([]);
+  const [postes, setPostes] = useState<Poste[]>(DEFAULT_POSTES);
+  const [disponibilites, setDisponibilites] = useState<DisponibilitePoste[]>([]);
+  const [exceptions, setExceptions] = useState<ExceptionDisponibilite[]>([]);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => { saveToStorage('atelier_rdvs', rdvs); }, [rdvs]);
-  useEffect(() => { saveToStorage('atelier_postes', postes); }, [postes]);
-  useEffect(() => { saveToStorage('atelier_dispos', disponibilites); }, [disponibilites]);
-  useEffect(() => { saveToStorage('atelier_exceptions', exceptions); }, [exceptions]);
-  useEffect(() => { saveToStorage('atelier_settings', settings); }, [settings]);
+  // Load all data on mount
+  useEffect(() => {
+    async function loadAll() {
+      const [postesRes, disposRes, exceptionsRes, rdvsRes, settingsRes] = await Promise.all([
+        supabase.from('postes').select('*'),
+        supabase.from('disponibilite_postes').select('*'),
+        supabase.from('exception_disponibilites').select('*'),
+        supabase.from('rendez_vous').select('*'),
+        supabase.from('app_settings').select('*').eq('id', 1).single(),
+      ]);
 
-  const addRdv = useCallback((rdv: RendezVous) => {
-    setRdvs(prev => [...prev, rdv]);
+      if (postesRes.data) setPostes(postesRes.data.map(mapPoste));
+      if (disposRes.data) setDisponibilites(disposRes.data.map(mapDispo));
+      if (exceptionsRes.data) setExceptions(exceptionsRes.data.map(mapException));
+      if (rdvsRes.data) setRdvs(rdvsRes.data.map(mapRdv));
+      if (settingsRes.data) setSettings(mapSettings(settingsRes.data));
+      setLoaded(true);
+    }
+    loadAll();
   }, []);
 
-  const updateRdv = useCallback((rdv: RendezVous) => {
-    setRdvs(prev => prev.map(r => r.id === rdv.id ? { ...rdv, updatedAt: new Date().toISOString() } : r));
+  const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }) => {
+    const { data, error } = await supabase.from('rendez_vous').insert({
+      poste_id: rdv.posteId,
+      debut: rdv.debut,
+      fin: rdv.fin,
+      client_nom: rdv.clientNom || null,
+      client_tel: rdv.clientTel || null,
+      vehicule: rdv.vehicule || null,
+      notes: rdv.notes || null,
+      statut: rdv.statut,
+    }).select().single();
+
+    if (data && !error) {
+      setRdvs(prev => [...prev, mapRdv(data)]);
+    }
   }, []);
 
-  const deleteRdv = useCallback((id: string) => {
-    setRdvs(prev => prev.filter(r => r.id !== id));
+  const updateRdv = useCallback(async (rdv: RendezVous) => {
+    const { data, error } = await supabase.from('rendez_vous').update({
+      poste_id: rdv.posteId,
+      debut: rdv.debut,
+      fin: rdv.fin,
+      client_nom: rdv.clientNom || null,
+      client_tel: rdv.clientTel || null,
+      vehicule: rdv.vehicule || null,
+      notes: rdv.notes || null,
+      statut: rdv.statut,
+    }).eq('id', rdv.id).select().single();
+
+    if (data && !error) {
+      setRdvs(prev => prev.map(r => r.id === rdv.id ? mapRdv(data) : r));
+    }
+  }, []);
+
+  const deleteRdv = useCallback(async (id: string) => {
+    const { error } = await supabase.from('rendez_vous').delete().eq('id', id);
+    if (!error) {
+      setRdvs(prev => prev.filter(r => r.id !== id));
+    }
   }, []);
 
   const checkConflict = useCallback((posteId: string, debut: string, fin: string, excludeId?: string): RendezVous | null => {
@@ -81,9 +144,51 @@ export function useAppStore() {
     }) || null;
   }, [rdvs]);
 
+  const updatePostes = useCallback(async (updater: (prev: Poste[]) => Poste[]) => {
+    const newPostes = updater(postes);
+    // Update changed postes in DB
+    for (const p of newPostes) {
+      const old = postes.find(op => op.id === p.id);
+      if (old && old.actif !== p.actif) {
+        await supabase.from('postes').update({ actif: p.actif }).eq('id', p.id);
+      }
+    }
+    setPostes(newPostes);
+  }, [postes]);
+
+  const updateDisponibilites = useCallback(async (updater: (prev: DisponibilitePoste[]) => DisponibilitePoste[]) => {
+    const newDispos = updater(disponibilites);
+    // Upsert changed dispos
+    for (const d of newDispos) {
+      const old = disponibilites.find(od => od.posteId === d.posteId && od.jourSemaine === d.jourSemaine);
+      if (old && JSON.stringify(old) !== JSON.stringify(d)) {
+        await supabase.from('disponibilite_postes').update({
+          plages: d.plages as any,
+          duree_defaut: d.dureeDefaut,
+          durees_autorisees: d.dureesAutorisees as any,
+          tampon: d.tampon,
+        }).eq('poste_id', d.posteId).eq('jour_semaine', d.jourSemaine);
+      }
+    }
+    setDisponibilites(newDispos);
+  }, [disponibilites]);
+
+  const updateSettings = useCallback(async (updater: (prev: AppSettings) => AppSettings) => {
+    const newSettings = updater(settings);
+    await supabase.from('app_settings').update({
+      jours_ouvres: newSettings.joursOuvres as any,
+      heure_min: newSettings.heureMin,
+      heure_max: newSettings.heureMax,
+    }).eq('id', 1);
+    setSettings(newSettings);
+  }, [settings]);
+
   return {
-    rdvs, postes, disponibilites, exceptions, settings,
+    rdvs, postes, disponibilites, exceptions, settings, loaded,
     addRdv, updateRdv, deleteRdv, checkConflict,
-    setPostes, setDisponibilites, setExceptions, setSettings,
+    setPostes: updatePostes,
+    setDisponibilites: updateDisponibilites,
+    setExceptions,
+    setSettings: updateSettings,
   };
 }

@@ -1,69 +1,73 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-
-interface Credentials {
-  username: string;
-  password: string;
-}
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  username: string | null;
-  credentials: Credentials;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
-  updateCredentials: (newCreds: Credentials) => void;
-}
-
-const DEFAULT_CREDENTIALS: Credentials = { username: 'admin', password: 'admin' };
-
-function loadCredentials(): Credentials {
-  try {
-    const raw = localStorage.getItem('atelier_credentials');
-    return raw ? JSON.parse(raw) : DEFAULT_CREDENTIALS;
-  } catch {
-    return DEFAULT_CREDENTIALS;
-  }
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<string | null>;
+  signup: (email: string, password: string) => Promise<string | null>;
+  logout: () => Promise<void>;
+  updateEmail: (email: string) => Promise<string | null>;
+  updatePassword: (password: string) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    () => localStorage.getItem('atelier_auth') === 'true'
-  );
-  const [username, setUsername] = useState<string | null>(
-    () => localStorage.getItem('atelier_auth_user')
-  );
-  const [credentials, setCredentials] = useState<Credentials>(loadCredentials);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem('atelier_credentials', JSON.stringify(credentials));
-  }, [credentials]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-  const login = useCallback((user: string, pass: string): boolean => {
-    if (user === credentials.username && pass === credentials.password) {
-      setIsAuthenticated(true);
-      setUsername(user);
-      localStorage.setItem('atelier_auth', 'true');
-      localStorage.setItem('atelier_auth_user', user);
-      return true;
-    }
-    return false;
-  }, [credentials]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-  const logout = useCallback(() => {
-    setIsAuthenticated(false);
-    setUsername(null);
-    localStorage.removeItem('atelier_auth');
-    localStorage.removeItem('atelier_auth_user');
+    return () => subscription.unsubscribe();
   }, []);
 
-  const updateCredentials = useCallback((newCreds: Credentials) => {
-    setCredentials(newCreds);
+  const login = useCallback(async (email: string, password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error ? error.message : null;
+  }, []);
+
+  const signup = useCallback(async (email: string, password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    return error ? error.message : null;
+  }, []);
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, []);
+
+  const updateEmail = useCallback(async (email: string): Promise<string | null> => {
+    const { error } = await supabase.auth.updateUser({ email });
+    return error ? error.message : null;
+  }, []);
+
+  const updatePassword = useCallback(async (password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return error ? error.message : null;
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, username, credentials, login, logout, updateCredentials }}>
+    <AuthContext.Provider value={{
+      isAuthenticated: !!user,
+      user,
+      loading,
+      login,
+      signup,
+      logout,
+      updateEmail,
+      updatePassword,
+    }}>
       {children}
     </AuthContext.Provider>
   );
