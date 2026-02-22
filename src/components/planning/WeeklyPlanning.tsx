@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '@/store/StoreContext';
+import { useSidebarState } from '@/components/AppLayout';
 import { METIERS, MetierType } from '@/types';
 import { getWorkingDays, formatDayHeader, getTimeSlots, timeToMinutes } from '@/lib/planning';
 import { format, isSameDay, addDays } from 'date-fns';
@@ -16,6 +17,7 @@ const DAYS_SHOWN = 6;
 
 export default function WeeklyPlanning() {
   const { rdvs, postes, settings } = useStore();
+  const { collapsed } = useSidebarState();
   const [startDate, setStartDate] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
@@ -72,7 +74,7 @@ export default function WeeklyPlanning() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-card flex-wrap gap-3">
+      <div className={`flex items-center justify-between py-4 border-b bg-card flex-wrap gap-3 ${collapsed ? 'pl-20 pr-6' : 'px-6'}`}>
         <div>
           <h1 className="text-xl font-display font-bold">Planning</h1>
           <p className="text-sm text-muted-foreground">Votre planning est à jour.</p>
