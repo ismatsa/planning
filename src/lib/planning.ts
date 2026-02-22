@@ -1,22 +1,34 @@
-import { startOfWeek, addDays, format, isSameDay, startOfDay, isBefore } from 'date-fns';
+import { addDays, format, getDay, startOfDay, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 /**
- * Returns working days for the week.
- * - If viewing the current week: starts from today, only shows today + future working days
- * - If viewing a past or future week: shows all working days in normal order
+ * Returns the next N working days starting from a reference date.
+ * - Finds the current or next working day from `startFrom`
+ * - Then returns `count` consecutive working days (including that first one)
  */
-export function getWeekDays(date: Date, joursOuvres: number[], isCurrentWeek: boolean): Date[] {
-  const monday = startOfWeek(date, { weekStartsOn: 1 });
-  const allDays = joursOuvres.map(j => addDays(monday, j === 0 ? 6 : j - 1));
+export function getWorkingDays(startFrom: Date, joursOuvres: number[], count: number): Date[] {
+  const days: Date[] = [];
+  let current = startOfDay(startFrom);
 
-  if (!isCurrentWeek) {
-    return allDays;
+  // Find the first working day >= startFrom
+  for (let i = 0; i < 14; i++) {
+    const dow = getDay(current); // 0=Sun, 1=Mon...6=Sat
+    if (joursOuvres.includes(dow)) {
+      break;
+    }
+    current = addDays(current, 1);
   }
 
-  // Current week: filter out past days (keep today + future)
-  const today = startOfDay(new Date());
-  return allDays.filter(d => !isBefore(d, today));
+  // Collect `count` working days
+  for (let i = 0; days.length < count && i < 60; i++) {
+    const dow = getDay(current);
+    if (joursOuvres.includes(dow)) {
+      days.push(new Date(current));
+    }
+    current = addDays(current, 1);
+  }
+
+  return days;
 }
 
 export function formatDayHeader(date: Date): string {

@@ -1,29 +1,28 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '@/store/StoreContext';
 import { METIERS, MetierType } from '@/types';
-import { getWeekDays, formatDayHeader, getTimeSlots, timeToMinutes } from '@/lib/planning';
-import { format, isSameDay, isSameWeek } from 'date-fns';
+import { getWorkingDays, formatDayHeader, getTimeSlots, timeToMinutes } from '@/lib/planning';
+import { format, isSameDay, addDays } from 'date-fns';
 import RdvBlock from './RdvBlock';
 import RdvModal from './RdvModal';
-import WeekNavigation from './WeekNavigation';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import type { RendezVous } from '@/types';
 
 const SLOT_WIDTH = 80; // px per time slot
+const DAYS_SHOWN = 6;
 
 export default function WeeklyPlanning() {
   const { rdvs, postes, settings } = useStore();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
   const [newRdvDefaults, setNewRdvDefaults] = useState<{ date?: Date; posteId?: string; time?: string }>({});
   const [visibleMetiers, setVisibleMetiers] = useState<Set<MetierType>>(new Set(METIERS.map(m => m.id)));
 
-  const isCurrentWeek = useMemo(() => isSameWeek(currentDate, new Date(), { weekStartsOn: 1 }), [currentDate]);
-  const weekDays = useMemo(() => getWeekDays(currentDate, settings.joursOuvres, isCurrentWeek), [currentDate, settings.joursOuvres, isCurrentWeek]);
+  const displayDays = useMemo(() => getWorkingDays(startDate, settings.joursOuvres, DAYS_SHOWN), [startDate, settings.joursOuvres]);
   const timeSlots = useMemo(() => getTimeSlots(settings.heureMin, settings.heureMax, 30), [settings]);
   const activePostes = useMemo(() => postes.filter(p => p.actif && visibleMetiers.has(p.metierId as MetierType)), [postes, visibleMetiers]);
 
@@ -78,8 +77,21 @@ export default function WeeklyPlanning() {
           <h1 className="text-xl font-display font-bold">Planning</h1>
           <p className="text-sm text-muted-foreground">Votre planning est à jour.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <WeekNavigation currentDate={currentDate} onDateChange={setCurrentDate} />
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setStartDate(d => addDays(d, -DAYS_SHOWN))}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setStartDate(new Date())} className="text-xs font-medium text-muted-foreground">
+            Aujourd'hui
+          </Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setStartDate(d => addDays(d, DAYS_SHOWN))}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          {displayDays.length >= 2 && (
+            <span className="text-sm font-semibold font-display capitalize">
+              {formatDayHeader(displayDays[0])} — {formatDayHeader(displayDays[displayDays.length - 1])}
+            </span>
+          )}
           <Button onClick={() => openNewRdv()} className="gap-2">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Nouveau RDV</span>
@@ -133,7 +145,7 @@ export default function WeeklyPlanning() {
           </div>
 
           {/* Day groups */}
-          {weekDays.map(day => {
+          {displayDays.map(day => {
             const dayPostes = activePostes;
             if (dayPostes.length === 0) return null;
 
