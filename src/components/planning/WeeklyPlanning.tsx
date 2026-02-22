@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useStore } from '@/store/StoreContext';
 import { METIERS, MetierType } from '@/types';
 import { getWeekDays, formatDayHeader, getTimeSlots, timeToMinutes } from '@/lib/planning';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, isSameWeek } from 'date-fns';
 import RdvBlock from './RdvBlock';
 import RdvModal from './RdvModal';
 import WeekNavigation from './WeekNavigation';
@@ -22,7 +22,8 @@ export default function WeeklyPlanning() {
   const [newRdvDefaults, setNewRdvDefaults] = useState<{ date?: Date; posteId?: string; time?: string }>({});
   const [visibleMetiers, setVisibleMetiers] = useState<Set<MetierType>>(new Set(METIERS.map(m => m.id)));
 
-  const weekDays = useMemo(() => getWeekDays(currentDate, settings.joursOuvres), [currentDate, settings.joursOuvres]);
+  const isCurrentWeek = useMemo(() => isSameWeek(currentDate, new Date(), { weekStartsOn: 1 }), [currentDate]);
+  const weekDays = useMemo(() => getWeekDays(currentDate, settings.joursOuvres, isCurrentWeek), [currentDate, settings.joursOuvres, isCurrentWeek]);
   const timeSlots = useMemo(() => getTimeSlots(settings.heureMin, settings.heureMax, 30), [settings]);
   const activePostes = useMemo(() => postes.filter(p => p.actif && visibleMetiers.has(p.metierId as MetierType)), [postes, visibleMetiers]);
 
