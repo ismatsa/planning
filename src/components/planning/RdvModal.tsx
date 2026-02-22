@@ -43,7 +43,10 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
   const [duree, setDuree] = useState(60);
   const [clientNom, setClientNom] = useState('');
   const [clientTel, setClientTel] = useState('');
-  const [vehicule, setVehicule] = useState('');
+  const [marque, setMarque] = useState('');
+  const [modele, setModele] = useState('');
+  const [annee, setAnnee] = useState('');
+  const [vin, setVin] = useState('');
   const [notes, setNotes] = useState('');
   const [statut, setStatut] = useState<StatutRdv>('prevu');
   const [conflict, setConflict] = useState<string | null>(null);
@@ -63,7 +66,10 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setDuree(dur);
       setClientNom(rdv.clientNom || '');
       setClientTel(rdv.clientTel || '');
-      setVehicule(rdv.vehicule || '');
+      setMarque(rdv.marque || '');
+      setModele(rdv.modele || '');
+      setAnnee(rdv.annee || '');
+      setVin(rdv.vin || '');
       setNotes(rdv.notes || '');
       setStatut(rdv.statut);
     } else {
@@ -75,7 +81,10 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setDuree(60);
       setClientNom('');
       setClientTel('');
-      setVehicule('');
+      setMarque('');
+      setModele('');
+      setAnnee('');
+      setVin('');
       setNotes('');
       setStatut('prevu');
     }
@@ -118,7 +127,10 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
         fin: fin.toISOString(),
         clientNom: clientNom || undefined,
         clientTel: clientTel || undefined,
-        vehicule: vehicule || undefined,
+        marque: marque || undefined,
+        modele: modele || undefined,
+        annee: annee || undefined,
+        vin: vin || undefined,
         notes: notes || undefined,
         statut,
       });
@@ -130,7 +142,10 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
         fin: fin.toISOString(),
         clientNom: clientNom || undefined,
         clientTel: clientTel || undefined,
-        vehicule: vehicule || undefined,
+        marque: marque || undefined,
+        modele: modele || undefined,
+        annee: annee || undefined,
+        vin: vin || undefined,
         notes: notes || undefined,
         statut,
       });
@@ -225,9 +240,26 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
           </div>
 
-          <div>
-            <Label className="text-xs font-medium text-muted-foreground mb-1.5">Véhicule (immatriculation)</Label>
-            <Input placeholder="AA-123-BB" value={vehicule} onChange={e => setVehicule(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Marque</Label>
+              <Input placeholder="Ex: BMW" value={marque} onChange={e => setMarque(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Modèle</Label>
+              <Input placeholder="Ex: Série 3" value={modele} onChange={e => setModele(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Année</Label>
+              <Input placeholder="Ex: 2020" value={annee} onChange={e => setAnnee(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">VIN</Label>
+              <Input placeholder="N° de châssis" value={vin} onChange={e => setVin(e.target.value)} />
+            </div>
           </div>
 
           <div>

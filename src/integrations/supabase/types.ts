@@ -131,43 +131,52 @@ export type Database = {
       }
       rendez_vous: {
         Row: {
+          annee: string | null
           client_nom: string | null
           client_tel: string | null
           created_at: string
           debut: string
           fin: string
           id: string
+          marque: string | null
+          modele: string | null
           notes: string | null
           poste_id: string
           statut: string
           updated_at: string
-          vehicule: string | null
+          vin: string | null
         }
         Insert: {
+          annee?: string | null
           client_nom?: string | null
           client_tel?: string | null
           created_at?: string
           debut: string
           fin: string
           id?: string
+          marque?: string | null
+          modele?: string | null
           notes?: string | null
           poste_id: string
           statut?: string
           updated_at?: string
-          vehicule?: string | null
+          vin?: string | null
         }
         Update: {
+          annee?: string | null
           client_nom?: string | null
           client_tel?: string | null
           created_at?: string
           debut?: string
           fin?: string
           id?: string
+          marque?: string | null
+          modele?: string | null
           notes?: string | null
           poste_id?: string
           statut?: string
           updated_at?: string
-          vehicule?: string | null
+          vin?: string | null
         }
         Relationships: [
           {
