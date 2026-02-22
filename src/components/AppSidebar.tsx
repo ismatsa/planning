@@ -91,7 +91,7 @@ export default function AppSidebar() {
 
       {/* Show button when collapsed */}
       {collapsed && (
-        <div className="fixed top-16 left-0 z-50 h-14 w-14 flex items-center justify-center bg-sidebar rounded-r-xl shadow-lg">
+        <div className="fixed top-3 left-0 z-50 h-12 w-12 flex items-center justify-center bg-sidebar rounded-r-xl shadow-lg">
           <Button
             variant="ghost"
             size="icon"
