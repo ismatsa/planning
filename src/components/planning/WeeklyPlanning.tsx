@@ -178,7 +178,7 @@ export default function WeeklyPlanning() {
                         {timeSlots.map((slot, i) => (
                           <div
                             key={slot}
-                            className="absolute top-0 bottom-0 border-r border-dashed border-border/40"
+                            className="absolute top-0 bottom-0 border-r border-border"
                             style={{ left: i * SLOT_WIDTH }}
                           />
                         ))}
