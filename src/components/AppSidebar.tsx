@@ -20,7 +20,7 @@ export default function AppSidebar() {
   return (
     <>
       <aside
-        className={`fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-sidebar py-4 gap-2 transition-all duration-200
+        className={`fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-sidebar py-4 gap-2 transition-all duration-200 overflow-hidden
           ${collapsed ? 'w-0 -translate-x-full' : 'w-16 lg:w-56 items-center lg:items-stretch lg:px-3'}`}
       >
         {/* Logo */}
