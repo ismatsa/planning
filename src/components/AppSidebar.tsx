@@ -91,15 +91,17 @@ export default function AppSidebar() {
 
       {/* Show button when collapsed */}
       {collapsed && (
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={toggle}
-          className="fixed top-3 left-3 z-50"
-          title="Afficher la barre latérale"
-        >
-          <PanelLeft className="h-5 w-5" />
-        </Button>
+        <div className="fixed top-0 left-0 z-50 h-14 w-14 flex items-center justify-center bg-sidebar rounded-br-xl shadow-lg">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggle}
+            className="text-sidebar-foreground hover:bg-sidebar-accent h-10 w-10"
+            title="Afficher la barre latérale"
+          >
+            <PanelLeft className="h-6 w-6" />
+          </Button>
+        </div>
       )}
     </>
   );

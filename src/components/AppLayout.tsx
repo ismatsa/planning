@@ -12,7 +12,7 @@ export default function AppLayout() {
     <SidebarContext.Provider value={{ collapsed, toggle: () => setCollapsed(c => !c) }}>
       <div className="min-h-screen bg-background">
         <AppSidebar />
-        <main className={`min-h-screen transition-all duration-200 ${collapsed ? 'ml-0' : 'ml-16 lg:ml-56'}`}>
+        <main className={`min-h-screen transition-all duration-200 ${collapsed ? 'ml-0 pt-14' : 'ml-16 lg:ml-56'}`}>
           <Outlet />
         </main>
       </div>
