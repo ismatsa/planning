@@ -295,7 +295,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Durée (min)</Label>
-              <Input type="number" min="0" max="59" step="5" value={dureeMinutes} onChange={e => handleDureeMinutesChange(e.target.value)} />
+              <Input type="number" min="0" step="15" value={dureeMinutes} onChange={e => handleDureeMinutesChange(e.target.value)} />
             </div>
           </div>
 
