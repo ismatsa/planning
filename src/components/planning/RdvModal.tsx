@@ -33,7 +33,7 @@ interface Props {
 }
 
 export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPosteId, defaultTime }: Props) {
-  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites } = useStore();
+  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings } = useStore();
   const isEdit = !!rdv;
 
   const [metierId, setMetierId] = useState<MetierType>('lavage');
@@ -149,16 +149,20 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
     setDureeMinutes((diff % 60).toString());
   }
 
-  // Generate quarter-hour options for heure fin
-  const heureFinOptions = useMemo(() => {
+  // Generate quarter-hour options based on business hours
+  const timeSlotOptions = useMemo(() => {
     const options: string[] = [];
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 15) {
-        options.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-      }
+    const [minH, minM] = settings.heureMin.split(':').map(Number);
+    const [maxH, maxM] = settings.heureMax.split(':').map(Number);
+    const startMin = minH * 60 + minM;
+    const endMin = maxH * 60 + maxM;
+    for (let t = startMin; t <= endMin; t += 15) {
+      const h = Math.floor(t / 60);
+      const m = t % 60;
+      options.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
     }
     return options;
-  }, []);
+  }, [settings.heureMin, settings.heureMax]);
   async function handleSubmit() {
     if (!posteId || !date || !heureDebut) return;
 
@@ -262,7 +266,14 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Heure début</Label>
-              <Input type="time" value={heureDebut} onChange={e => setHeureDebut(e.target.value)} />
+              <Select value={heureDebut} onValueChange={setHeureDebut}>
+                <SelectTrigger><SelectValue placeholder="--:--" /></SelectTrigger>
+                <SelectContent className="max-h-48 bg-popover z-50">
+                  {timeSlotOptions.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -271,8 +282,8 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Heure fin</Label>
               <Select value={heureFin} onValueChange={handleHeureFinChange}>
                 <SelectTrigger><SelectValue placeholder="--:--" /></SelectTrigger>
-                <SelectContent className="max-h-48">
-                  {heureFinOptions.map(t => (
+                <SelectContent className="max-h-48 bg-popover z-50">
+                  {timeSlotOptions.map(t => (
                     <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
                 </SelectContent>
