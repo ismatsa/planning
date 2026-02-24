@@ -67,13 +67,17 @@ export default function RdvBlock({ rdv, onClick, style, hasConflict }: Props) {
   const finDate = new Date(rdv.fin);
   const isMultiDay = format(debutDate, 'yyyy-MM-dd') !== format(finDate, 'yyyy-MM-dd');
 
+  // Separate positioning styles (for wrapper) from visual styles (for button)
+  const { position: pos, top, bottom, left, right, width, height, ...visualStyle } = style || {} as any;
+  const wrapperStyle: React.CSSProperties = { position: pos, top, bottom, left, right, width, height };
+
   return (
-    <div className="relative" style={{ height: style?.height }} onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
+    <div className="relative" style={wrapperStyle} onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
       <button
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
-        style={{ ...style, height: '100%', backgroundColor: bgColor, color: textColor }}
-        className="rounded-md px-2 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer
+        style={{ ...visualStyle, backgroundColor: bgColor, color: textColor }}
+        className="rounded-md px-2 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer h-full
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
           flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in w-full"
       >
