@@ -43,6 +43,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
   const [heureDebut, setHeureDebut] = useState('');
   const [duree, setDuree] = useState(60);
   const [heureFin, setHeureFin] = useState('');
+  const [dureeJours, setDureeJours] = useState('0');
   const [dureeHeures, setDureeHeures] = useState('1');
   const [dureeMinutes, setDureeMinutes] = useState('0');
   const [clientNom, setClientNom] = useState('');
@@ -69,8 +70,11 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setHeureDebut(format(new Date(rdv.debut), 'HH:mm'));
       const dur = (new Date(rdv.fin).getTime() - new Date(rdv.debut).getTime()) / 60000;
       setDuree(dur);
-      setDureeHeures(Math.floor(dur / 60).toString());
-      setDureeMinutes((dur % 60).toString());
+      const j = Math.floor(dur / (24 * 60));
+      const rem = dur - j * 24 * 60;
+      setDureeJours(j.toString());
+      setDureeHeures(Math.floor(rem / 60).toString());
+      setDureeMinutes((rem % 60).toString());
       setHeureFin(format(new Date(rdv.fin), 'HH:mm'));
       setClientNom(rdv.clientNom || '');
       setClientTel(rdv.clientTel || '');
@@ -108,48 +112,81 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
     }
   }, [metierId, postes, isEdit]);
 
-  // Sync heureFin when heureDebut or duree changes
-  const syncFinFromDuree = useCallback((start: string, minutes: number) => {
-    if (!start) return;
-    const fin = addMinutes(new Date(`2000-01-01T${start}:00`), minutes);
+  // Compute full duration in minutes from date+time start to date+time end
+  function computeTotalMinutes(startDate: string, startTime: string, endDate: string, endTime: string): number {
+    if (!startDate || !startTime || !endDate || !endTime) return 0;
+    const s = new Date(`${startDate}T${startTime}:00`);
+    const e = new Date(`${endDate}T${endTime}:00`);
+    const diff = (e.getTime() - s.getTime()) / 60000;
+    return diff > 0 ? diff : 0;
+  }
+
+  function setDureeFields(totalMinutes: number) {
+    const j = Math.floor(totalMinutes / (24 * 60));
+    const remaining = totalMinutes - j * 24 * 60;
+    const h = Math.floor(remaining / 60);
+    const m = remaining % 60;
+    setDureeJours(j.toString());
+    setDureeHeures(h.toString());
+    setDureeMinutes(m.toString());
+    setDuree(totalMinutes);
+  }
+
+  // Sync fin date+time from duree when start changes
+  const syncFinFromDuree = useCallback((startDate: string, startTime: string, totalMinutes: number) => {
+    if (!startDate || !startTime) return;
+    const fin = addMinutes(new Date(`${startDate}T${startTime}:00`), totalMinutes);
+    setDateFin(format(fin, 'yyyy-MM-dd'));
     setHeureFin(format(fin, 'HH:mm'));
   }, []);
 
-  // When user changes heure début, recalculate heure fin from current durée
+  // When user changes heure début or date début, recalculate fin from current durée
   useEffect(() => {
-    if (heureDebut && duree > 0) {
-      syncFinFromDuree(heureDebut, duree);
+    if (heureDebut && date && duree > 0) {
+      syncFinFromDuree(date, heureDebut, duree);
     }
-  }, [heureDebut]);
+  }, [heureDebut, date]);
+
+  function handleDureeJoursChange(val: string) {
+    const j = parseInt(val) || 0;
+    const h = parseInt(dureeHeures) || 0;
+    const m = parseInt(dureeMinutes) || 0;
+    const total = j * 24 * 60 + h * 60 + m;
+    setDureeJours(val);
+    setDuree(total);
+    syncFinFromDuree(date, heureDebut, total);
+  }
 
   function handleDureeHeuresChange(val: string) {
+    const j = parseInt(dureeJours) || 0;
     const h = parseInt(val) || 0;
     const m = parseInt(dureeMinutes) || 0;
-    const total = h * 60 + m;
+    const total = j * 24 * 60 + h * 60 + m;
     setDureeHeures(val);
     setDuree(total);
-    syncFinFromDuree(heureDebut, total);
+    syncFinFromDuree(date, heureDebut, total);
   }
 
   function handleDureeMinutesChange(val: string) {
+    const j = parseInt(dureeJours) || 0;
     const h = parseInt(dureeHeures) || 0;
     const m = parseInt(val) || 0;
-    const total = h * 60 + m;
+    const total = j * 24 * 60 + h * 60 + m;
     setDureeMinutes(val);
     setDuree(total);
-    syncFinFromDuree(heureDebut, total);
+    syncFinFromDuree(date, heureDebut, total);
   }
 
   function handleHeureFinChange(val: string) {
     setHeureFin(val);
-    if (!heureDebut || !val) return;
-    const start = new Date(`2000-01-01T${heureDebut}:00`);
-    const end = new Date(`2000-01-01T${val}:00`);
-    let diff = (end.getTime() - start.getTime()) / 60000;
-    if (diff <= 0) diff = 0;
-    setDuree(diff);
-    setDureeHeures(Math.floor(diff / 60).toString());
-    setDureeMinutes((diff % 60).toString());
+    const total = computeTotalMinutes(date, heureDebut, dateFin, val);
+    setDureeFields(total);
+  }
+
+  function handleDateFinChange(val: string) {
+    setDateFin(val);
+    const total = computeTotalMinutes(date, heureDebut, val, heureFin);
+    setDureeFields(total);
   }
 
   // Generate quarter-hour options based on business hours
@@ -269,11 +306,25 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Date fin</Label>
-              <Input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)} />
+              <Input type="date" value={dateFin} onChange={e => handleDateFinChange(e.target.value)} />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Heure début</Label>
               <Select value={heureDebut} onValueChange={setHeureDebut}>
+                <SelectTrigger><SelectValue placeholder="--:--" /></SelectTrigger>
+                <SelectContent className="max-h-48 bg-popover z-50">
+                  {timeSlotOptions.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Heure fin</Label>
+              <Select value={heureFin} onValueChange={handleHeureFinChange}>
                 <SelectTrigger><SelectValue placeholder="--:--" /></SelectTrigger>
                 <SelectContent className="max-h-48 bg-popover z-50">
                   {timeSlotOptions.map(t => (
@@ -286,15 +337,8 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Heure fin</Label>
-              <Select value={heureFin} onValueChange={handleHeureFinChange}>
-                <SelectTrigger><SelectValue placeholder="--:--" /></SelectTrigger>
-                <SelectContent className="max-h-48 bg-popover z-50">
-                  {timeSlotOptions.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Durée (j)</Label>
+              <Input type="number" min="0" value={dureeJours} onChange={e => handleDureeJoursChange(e.target.value)} />
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Durée (h)</Label>
