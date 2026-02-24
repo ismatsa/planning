@@ -6,8 +6,10 @@ import { useStore } from '@/store/StoreContext';
 interface Props {
   rdv: RendezVous;
   onClick: (rdv: RendezVous) => void;
+  onResizeStart?: (rdv: RendezVous, edge: 'left' | 'right', e: React.MouseEvent) => void;
   style?: React.CSSProperties;
   hasConflict?: boolean;
+  isResizing?: boolean;
 }
 
 const statusDot: Record<StatutRdv, string> = {
@@ -17,7 +19,7 @@ const statusDot: Record<StatutRdv, string> = {
   noshow: 'bg-background/60',
 };
 
-export default function RdvBlock({ rdv, onClick, style, hasConflict }: Props) {
+export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConflict, isResizing }: Props) {
   const { postes } = useStore();
   const poste = postes.find(p => p.id === rdv.posteId);
   const metier = METIERS.find(m => m.id === poste?.metierId);
@@ -35,9 +37,9 @@ export default function RdvBlock({ rdv, onClick, style, hasConflict }: Props) {
       : 'hsl(var(--muted-foreground))';
 
   const [showTooltip, setShowTooltip] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState<'above' | 'below'>('above');
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const computePosition = useCallback(() => {
     if (!buttonRef.current) return;
@@ -51,7 +53,6 @@ export default function RdvBlock({ rdv, onClick, style, hasConflict }: Props) {
     if (showTooltip) computePosition();
   }, [showTooltip, computePosition]);
 
-  // Duration calculation
   const durationMs = new Date(rdv.fin).getTime() - new Date(rdv.debut).getTime();
   const durationMin = Math.round(durationMs / 60000);
   const dJ = Math.floor(durationMin / (24 * 60));
@@ -67,17 +68,24 @@ export default function RdvBlock({ rdv, onClick, style, hasConflict }: Props) {
   const finDate = new Date(rdv.fin);
   const isMultiDay = format(debutDate, 'yyyy-MM-dd') !== format(finDate, 'yyyy-MM-dd');
 
-  // Separate positioning styles (for wrapper) from visual styles (for button)
   const { position: pos, top, bottom, left, right, width, height, ...visualStyle } = style || {} as any;
   const wrapperStyle: React.CSSProperties = { position: pos, top, bottom, left, right, width, height };
 
+  const handleMouseEnter = () => { setHovered(true); if (!isResizing) setShowTooltip(true); };
+  const handleMouseLeave = () => { setHovered(false); setShowTooltip(false); };
+
   return (
-    <div className="relative" style={wrapperStyle} onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
+    <div
+      className="relative group"
+      style={wrapperStyle}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <button
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
         style={{ ...visualStyle, backgroundColor: bgColor, color: textColor }}
-        className="rounded-md px-2 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer h-full
+        className="rounded-md px-3 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer h-full
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
           flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in w-full"
       >
@@ -93,9 +101,34 @@ export default function RdvBlock({ rdv, onClick, style, hasConflict }: Props) {
         )}
       </button>
 
-      {showTooltip && (
+      {/* Resize handles - visible on hover */}
+      {onResizeStart && hovered && !isResizing && (
+        <>
+          <div
+            className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize z-20 flex items-center justify-center"
+            onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); onResizeStart(rdv, 'left', e); }}
+          >
+            <div className="h-4 w-1 rounded-full bg-foreground/40" />
+          </div>
+          <div
+            className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-20 flex items-center justify-center"
+            onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); onResizeStart(rdv, 'right', e); }}
+          >
+            <div className="h-4 w-1 rounded-full bg-foreground/40" />
+          </div>
+        </>
+      )}
+
+      {/* Resize cursors on edges while resizing */}
+      {isResizing && (
+        <>
+          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize z-20" />
+          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-20" />
+        </>
+      )}
+
+      {showTooltip && !isResizing && (
         <div
-          ref={tooltipRef}
           className={`absolute left-1/2 -translate-x-1/2 z-50 w-64 rounded-lg border bg-popover text-popover-foreground shadow-xl p-3 text-xs space-y-1.5 animate-fade-in ${
             position === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'
           }`}
