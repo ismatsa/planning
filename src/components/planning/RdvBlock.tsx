@@ -1,4 +1,5 @@
-import { RendezVous, METIERS, StatutRdv } from '@/types';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { RendezVous, METIERS, StatutRdv, STATUT_LABELS } from '@/types';
 import { format } from 'date-fns';
 import { useStore } from '@/store/StoreContext';
 
@@ -33,24 +34,111 @@ export default function RdvBlock({ rdv, onClick, style, hasConflict }: Props) {
       ? `hsl(var(--${metier.couleur}-foreground))`
       : 'hsl(var(--muted-foreground))';
 
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [position, setPosition] = useState<'above' | 'below'>('above');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const computePosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    setPosition(spaceBelow < 200 && spaceAbove > spaceBelow ? 'above' : 'below');
+  }, []);
+
+  useEffect(() => {
+    if (showTooltip) computePosition();
+  }, [showTooltip, computePosition]);
+
+  // Duration calculation
+  const durationMs = new Date(rdv.fin).getTime() - new Date(rdv.debut).getTime();
+  const durationMin = Math.round(durationMs / 60000);
+  const dJ = Math.floor(durationMin / (24 * 60));
+  const dH = Math.floor((durationMin % (24 * 60)) / 60);
+  const dM = durationMin % 60;
+  const durationStr = [
+    dJ > 0 ? `${dJ}j` : '',
+    dH > 0 ? `${dH}h` : '',
+    dM > 0 ? `${dM}min` : '',
+  ].filter(Boolean).join(' ') || '0min';
+
+  const debutDate = new Date(rdv.debut);
+  const finDate = new Date(rdv.fin);
+  const isMultiDay = format(debutDate, 'yyyy-MM-dd') !== format(finDate, 'yyyy-MM-dd');
+
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
-      style={{ ...style, backgroundColor: bgColor, color: textColor }}
-      className="rounded-md px-2 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer
-        transition-shadow hover:shadow-lg hover:z-10 border border-transparent
-        flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in"
-    >
-      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
-      <span className="font-bold">
-        {format(new Date(rdv.debut), 'HH:mm')}–{format(new Date(rdv.fin), 'HH:mm')}
-      </span>
-      {rdv.clientNom && (
-        <span className="font-semibold truncate opacity-90">{rdv.clientNom}</span>
+    <div className="relative" onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
+      <button
+        ref={buttonRef}
+        onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
+        style={{ ...style, backgroundColor: bgColor, color: textColor }}
+        className="rounded-md px-2 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer
+          transition-shadow hover:shadow-lg hover:z-10 border border-transparent
+          flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in w-full"
+      >
+        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
+        <span className="font-bold">
+          {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
+        </span>
+        {rdv.clientNom && (
+          <span className="font-semibold truncate opacity-90">{rdv.clientNom}</span>
+        )}
+        {(rdv.marque || rdv.modele) && (
+          <span className="opacity-75 truncate">{[rdv.marque, rdv.modele].filter(Boolean).join(' ')}</span>
+        )}
+      </button>
+
+      {showTooltip && (
+        <div
+          ref={tooltipRef}
+          className={`absolute left-1/2 -translate-x-1/2 z-50 w-64 rounded-lg border bg-popover text-popover-foreground shadow-xl p-3 text-xs space-y-1.5 animate-fade-in ${
+            position === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-sm">
+              {format(debutDate, 'HH:mm')} – {format(finDate, 'HH:mm')}
+            </span>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: bgColor, color: textColor }}>
+              {STATUT_LABELS[rdv.statut]}
+            </span>
+          </div>
+
+          {isMultiDay && (
+            <div className="text-muted-foreground">
+              {format(debutDate, 'dd/MM/yyyy')} → {format(finDate, 'dd/MM/yyyy')}
+            </div>
+          )}
+
+          <div className="text-muted-foreground">Durée : {durationStr}</div>
+
+          {poste && metier && (
+            <div className="text-muted-foreground">{metier.nom} · {poste.nom}</div>
+          )}
+
+          {rdv.clientNom && (
+            <div className="pt-1 border-t border-border">
+              <span className="font-semibold">{rdv.clientNom}</span>
+              {rdv.clientTel && <span className="ml-2 text-muted-foreground">{rdv.clientTel}</span>}
+            </div>
+          )}
+
+          {(rdv.marque || rdv.modele || rdv.annee) && (
+            <div className="text-muted-foreground">
+              {[rdv.marque, rdv.modele, rdv.annee].filter(Boolean).join(' · ')}
+            </div>
+          )}
+
+          {rdv.vin && (
+            <div className="text-muted-foreground font-mono text-[10px]">VIN : {rdv.vin}</div>
+          )}
+
+          {rdv.notes && (
+            <div className="pt-1 border-t border-border text-muted-foreground italic">{rdv.notes}</div>
+          )}
+        </div>
       )}
-      {(rdv.marque || rdv.modele) && (
-        <span className="opacity-75 truncate">{[rdv.marque, rdv.modele].filter(Boolean).join(' ')}</span>
-      )}
-    </button>
+    </div>
   );
 }
