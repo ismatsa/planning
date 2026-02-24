@@ -39,6 +39,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
   const [metierId, setMetierId] = useState<MetierType>('lavage');
   const [posteId, setPosteId] = useState('');
   const [date, setDate] = useState('');
+  const [dateFin, setDateFin] = useState('');
   const [heureDebut, setHeureDebut] = useState('');
   const [duree, setDuree] = useState(60);
   const [heureFin, setHeureFin] = useState('');
@@ -64,6 +65,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setMetierId(poste?.metierId || 'lavage');
       setPosteId(rdv.posteId);
       setDate(format(new Date(rdv.debut), 'yyyy-MM-dd'));
+      setDateFin(format(new Date(rdv.fin), 'yyyy-MM-dd'));
       setHeureDebut(format(new Date(rdv.debut), 'HH:mm'));
       const dur = (new Date(rdv.fin).getTime() - new Date(rdv.debut).getTime()) / 60000;
       setDuree(dur);
@@ -83,6 +85,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setMetierId(poste?.metierId || 'lavage');
       setPosteId(defaultPosteId || filteredPostes[0]?.id || '');
       setDate(defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
+      setDateFin(defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
       setHeureDebut(defaultTime || '09:00');
       setDuree(60);
       setClientNom('');
@@ -167,7 +170,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
     if (!posteId || !date || !heureDebut) return;
 
     const debut = new Date(`${date}T${heureDebut}:00`);
-    const fin = addMinutes(debut, duree);
+    const fin = new Date(`${dateFin}T${heureFin}:00`);
 
     const conflicting = checkConflict(posteId, debut.toISOString(), fin.toISOString(), rdv?.id);
     if (conflicting) {
@@ -261,8 +264,12 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Date</Label>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Date début</Label>
               <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Date fin</Label>
+              <Input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)} />
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Heure début</Label>
