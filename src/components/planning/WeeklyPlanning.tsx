@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useStore } from '@/store/StoreContext';
 import { useSidebarState } from '@/components/AppLayout';
 import { METIERS, MetierType } from '@/types';
 import { getWorkingDays, formatDayHeader, getTimeSlots, timeToMinutes } from '@/lib/planning';
-import { format, isSameDay, addDays } from 'date-fns';
+import { format, isSameDay, addDays, addMinutes } from 'date-fns';
 import RdvBlock from './RdvBlock';
 import RdvModal from './RdvModal';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -11,12 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import type { RendezVous } from '@/types';
+import { toast } from 'sonner';
 
 const SLOT_WIDTH = 80; // px per time slot
 const DAYS_SHOWN = 6;
 
 export default function WeeklyPlanning() {
-  const { rdvs, postes, settings } = useStore();
+  const { rdvs, postes, settings, updateRdv, checkConflict } = useStore();
   const { collapsed } = useSidebarState();
   const [startDate, setStartDate] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
@@ -24,12 +25,32 @@ export default function WeeklyPlanning() {
   const [newRdvDefaults, setNewRdvDefaults] = useState<{ date?: Date; posteId?: string; time?: string }>({});
   const [visibleMetiers, setVisibleMetiers] = useState<Set<MetierType>>(new Set(METIERS.map(m => m.id)));
 
+  // Resize state
+  const [resizingRdvId, setResizingRdvId] = useState<string | null>(null);
+  const [resizePreview, setResizePreview] = useState<{ left: number; width: number } | null>(null);
+  const resizeRef = useRef<{
+    rdv: RendezVous;
+    edge: 'left' | 'right';
+    startX: number;
+    origLeftPx: number;
+    origWidthPx: number;
+    dayDate: Date;
+  } | null>(null);
+
   const displayDays = useMemo(() => getWorkingDays(startDate, settings.joursOuvres, DAYS_SHOWN), [startDate, settings.joursOuvres]);
   const timeSlots = useMemo(() => getTimeSlots(settings.heureMin, settings.heureMax, 30), [settings]);
   const activePostes = useMemo(() => postes.filter(p => p.actif && visibleMetiers.has(p.metierId as MetierType)), [postes, visibleMetiers]);
 
   const minMinutes = timeToMinutes(settings.heureMin);
-  const totalMinutes = timeToMinutes(settings.heureMax) - minMinutes;
+  const maxMinutes = timeToMinutes(settings.heureMax);
+  const totalMinutes = maxMinutes - minMinutes;
+
+  const SNAP_MINUTES = 15;
+  const PX_PER_MINUTE = SLOT_WIDTH / 30;
+
+  function snapToGrid(minutes: number): number {
+    return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
+  }
 
   function toggleMetier(id: MetierType) {
     setVisibleMetiers(prev => {
@@ -55,6 +76,7 @@ export default function WeeklyPlanning() {
   }
 
   function openEditRdv(rdv: RendezVous) {
+    if (resizingRdvId) return; // don't open modal while resizing
     setEditRdv(rdv);
     setModalOpen(true);
   }
@@ -64,10 +86,108 @@ export default function WeeklyPlanning() {
     const end = new Date(rdv.fin);
     const startMin = start.getHours() * 60 + start.getMinutes() - minMinutes;
     const duration = (end.getTime() - start.getTime()) / 60000;
-    const left = (startMin / 30) * SLOT_WIDTH;
-    const width = (duration / 30) * SLOT_WIDTH - 2;
-    return { left: `${left}px`, width: `${width}px` };
+    const leftPx = startMin * PX_PER_MINUTE;
+    const widthPx = duration * PX_PER_MINUTE - 2;
+    return { left: `${leftPx}px`, width: `${widthPx}px` };
   }
+
+  // --- Resize handlers ---
+  const handleResizeStart = useCallback((rdv: RendezVous, edge: 'left' | 'right', e: React.MouseEvent) => {
+    const start = new Date(rdv.debut);
+    const end = new Date(rdv.fin);
+    const startMin = start.getHours() * 60 + start.getMinutes() - minMinutes;
+    const duration = (end.getTime() - start.getTime()) / 60000;
+    const leftPx = startMin * PX_PER_MINUTE;
+    const widthPx = duration * PX_PER_MINUTE - 2;
+
+    const dayDate = new Date(start);
+    dayDate.setHours(0, 0, 0, 0);
+
+    resizeRef.current = { rdv, edge, startX: e.clientX, origLeftPx: leftPx, origWidthPx: widthPx, dayDate };
+    setResizingRdvId(rdv.id);
+    setResizePreview({ left: leftPx, width: widthPx });
+  }, [minMinutes, PX_PER_MINUTE]);
+
+  useEffect(() => {
+    if (!resizingRdvId) return;
+
+    function onMouseMove(e: MouseEvent) {
+      const ref = resizeRef.current;
+      if (!ref) return;
+
+      const dx = e.clientX - ref.startX;
+
+      let newLeft = ref.origLeftPx;
+      let newWidth = ref.origWidthPx;
+
+      if (ref.edge === 'right') {
+        newWidth = Math.max(SNAP_MINUTES * PX_PER_MINUTE - 2, ref.origWidthPx + dx);
+      } else {
+        newLeft = ref.origLeftPx + dx;
+        newWidth = ref.origWidthPx - dx;
+        if (newWidth < SNAP_MINUTES * PX_PER_MINUTE - 2) {
+          newLeft = ref.origLeftPx + ref.origWidthPx - (SNAP_MINUTES * PX_PER_MINUTE - 2);
+          newWidth = SNAP_MINUTES * PX_PER_MINUTE - 2;
+        }
+      }
+
+      // Snap to grid
+      const newStartMin = snapToGrid(newLeft / PX_PER_MINUTE);
+      const newEndMin = snapToGrid((newLeft + newWidth + 2) / PX_PER_MINUTE);
+
+      // Clamp to business hours
+      const clampedStart = Math.max(0, Math.min(newStartMin, totalMinutes - SNAP_MINUTES));
+      const clampedEnd = Math.max(clampedStart + SNAP_MINUTES, Math.min(newEndMin, totalMinutes));
+
+      setResizePreview({
+        left: clampedStart * PX_PER_MINUTE,
+        width: (clampedEnd - clampedStart) * PX_PER_MINUTE - 2,
+      });
+    }
+
+    async function onMouseUp() {
+      const ref = resizeRef.current;
+      if (!ref) { setResizingRdvId(null); setResizePreview(null); return; }
+
+      const preview = resizePreview;
+      if (!preview) { setResizingRdvId(null); return; }
+
+      const newStartMin = Math.round(preview.left / PX_PER_MINUTE) + minMinutes;
+      const newEndMin = Math.round((preview.left + preview.width + 2) / PX_PER_MINUTE) + minMinutes;
+
+      const newDebut = new Date(ref.dayDate);
+      newDebut.setHours(Math.floor(newStartMin / 60), newStartMin % 60, 0, 0);
+      const newFin = new Date(ref.dayDate);
+      newFin.setHours(Math.floor(newEndMin / 60), newEndMin % 60, 0, 0);
+
+      // Check conflicts
+      const conflict = checkConflict(ref.rdv.posteId, newDebut.toISOString(), newFin.toISOString(), ref.rdv.id);
+      if (conflict) {
+        toast.error('Impossible : chevauchement avec un autre rendez-vous.');
+        setResizingRdvId(null);
+        setResizePreview(null);
+        resizeRef.current = null;
+        return;
+      }
+
+      await updateRdv({
+        ...ref.rdv,
+        debut: newDebut.toISOString(),
+        fin: newFin.toISOString(),
+      });
+
+      setResizingRdvId(null);
+      setResizePreview(null);
+      resizeRef.current = null;
+    }
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [resizingRdvId, resizePreview, minMinutes, totalMinutes, PX_PER_MINUTE, checkConflict, updateRdv]);
 
   const isToday = (d: Date) => isSameDay(d, new Date());
 
@@ -220,8 +340,14 @@ export default function WeeklyPlanning() {
                             key={r.id}
                             rdv={r}
                             onClick={openEditRdv}
+                            onResizeStart={handleResizeStart}
                             hasConflict={conflictIds.has(r.id)}
-                            style={{ ...getRdvStyle(r), top: '2px', bottom: '2px', position: 'absolute' }}
+                            isResizing={resizingRdvId === r.id}
+                            style={
+                              resizingRdvId === r.id && resizePreview
+                                ? { left: `${resizePreview.left}px`, width: `${resizePreview.width}px`, top: '2px', bottom: '2px', position: 'absolute' as const }
+                                : { ...getRdvStyle(r), top: '2px', bottom: '2px', position: 'absolute' as const }
+                            }
                           />
                         ))}
                       </div>
