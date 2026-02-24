@@ -68,11 +68,11 @@ export default function RdvBlock({ rdv, onClick, style, hasConflict }: Props) {
   const isMultiDay = format(debutDate, 'yyyy-MM-dd') !== format(finDate, 'yyyy-MM-dd');
 
   return (
-    <div className="relative" onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
+    <div className="relative" style={{ height: style?.height }} onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
       <button
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
-        style={{ ...style, backgroundColor: bgColor, color: textColor }}
+        style={{ ...style, height: '100%', backgroundColor: bgColor, color: textColor }}
         className="rounded-md px-2 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
           flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in w-full"
