@@ -81,13 +81,23 @@ export default function WeeklyPlanning() {
     setModalOpen(true);
   }
 
-  function getRdvStyle(rdv: RendezVous) {
-    const start = new Date(rdv.debut);
-    const end = new Date(rdv.fin);
-    const startMin = start.getHours() * 60 + start.getMinutes() - minMinutes;
-    const duration = (end.getTime() - start.getTime()) / 60000;
+  function getRdvStyleForDay(rdv: RendezVous, day: Date) {
+    const rdvStart = new Date(rdv.debut);
+    const rdvEnd = new Date(rdv.fin);
+
+    // Clip to the day's business hours
+    const dayStart = new Date(day);
+    dayStart.setHours(Math.floor(minMinutes / 60), minMinutes % 60, 0, 0);
+    const dayEnd = new Date(day);
+    dayEnd.setHours(Math.floor(maxMinutes / 60), maxMinutes % 60, 0, 0);
+
+    const visibleStart = rdvStart < dayStart ? dayStart : rdvStart;
+    const visibleEnd = rdvEnd > dayEnd ? dayEnd : rdvEnd;
+
+    const startMin = visibleStart.getHours() * 60 + visibleStart.getMinutes() - minMinutes;
+    const duration = (visibleEnd.getTime() - visibleStart.getTime()) / 60000;
     const leftPx = startMin * PX_PER_MINUTE;
-    const widthPx = duration * PX_PER_MINUTE - 2;
+    const widthPx = Math.max(0, duration * PX_PER_MINUTE - 2);
     return { left: `${leftPx}px`, width: `${widthPx}px` };
   }
 
@@ -282,9 +292,17 @@ export default function WeeklyPlanning() {
                 {/* Poste rows */}
                 {dayPostes.map(poste => {
                   const metier = METIERS.find(m => m.id === poste.metierId);
-                  const dayRdvs = rdvs.filter(r =>
-                    r.posteId === poste.id && isSameDay(new Date(r.debut), day) && r.statut !== 'annule'
-                  );
+                  const dayRdvs = rdvs.filter(r => {
+                    if (r.posteId !== poste.id || r.statut === 'annule') return false;
+                    const rdvStart = new Date(r.debut);
+                    const rdvEnd = new Date(r.fin);
+                    // Check if the RDV overlaps with this day's business hours
+                    const dayStart = new Date(day);
+                    dayStart.setHours(Math.floor(minMinutes / 60), minMinutes % 60, 0, 0);
+                    const dayEnd = new Date(day);
+                    dayEnd.setHours(Math.floor(maxMinutes / 60), maxMinutes % 60, 0, 0);
+                    return rdvStart < dayEnd && rdvEnd > dayStart;
+                  });
 
                   // Detect overlapping RDVs
                   const conflictIds = new Set<string>();
@@ -346,7 +364,7 @@ export default function WeeklyPlanning() {
                             style={
                               resizingRdvId === r.id && resizePreview
                                 ? { left: `${resizePreview.left}px`, width: `${resizePreview.width}px`, top: '2px', bottom: '2px', position: 'absolute' as const }
-                                : { ...getRdvStyle(r), top: '2px', bottom: '2px', position: 'absolute' as const }
+                                : { ...getRdvStyleForDay(r, day), top: '2px', bottom: '2px', position: 'absolute' as const }
                             }
                           />
                         ))}
