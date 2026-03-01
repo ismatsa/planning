@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useStore } from '@/store/StoreContext';
-import { METIERS } from '@/types';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +29,7 @@ interface UserRow {
 }
 
 export default function UserManagement() {
-  const { postes } = useStore();
+  const { postes, metiers } = useStore();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -155,7 +155,7 @@ export default function UserManagement() {
 
   const PosteSelector = ({ selected, onChange }: { selected: string[]; onChange: (id: string, checked: boolean) => void }) => (
     <div className="grid gap-2 max-h-48 overflow-auto border rounded-lg p-3">
-      {METIERS.map(m => {
+      {metiers.map(m => {
         const mPostes = postes.filter(p => p.metierId === m.id);
         if (mPostes.length === 0) return null;
         return (

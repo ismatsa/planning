@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useStore } from '@/store/StoreContext';
-import { RendezVous, MetierType, METIERS, STATUT_LABELS, StatutRdv } from '@/types';
+import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
@@ -34,7 +34,7 @@ interface Props {
 }
 
 export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPosteId, defaultTime }: Props) {
-  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings } = useStore();
+  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers } = useStore();
   const isEdit = !!rdv;
 
   const [metierId, setMetierId] = useState<MetierType>('lavage');
@@ -301,7 +301,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
               <Select value={metierId} onValueChange={v => setMetierId(v as MetierType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {METIERS.map(m => (
+                  {metiers.map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>
                   ))}
                 </SelectContent>

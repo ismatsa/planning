@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '@/store/StoreContext';
-import { METIERS, STATUT_LABELS, StatutRdv } from '@/types';
+import { STATUT_LABELS, StatutRdv } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,7 @@ const statusBadgeClass: Record<StatutRdv, string> = {
 };
 
 export default function RendezVousList() {
-  const { rdvs, postes, updateRdv } = useStore();
+  const { rdvs, postes, updateRdv, metiers } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const [filterMetier, setFilterMetier] = useState<string>('all');
   const [filterStatut, setFilterStatut] = useState<string>('all');
@@ -114,7 +114,7 @@ export default function RendezVousList() {
           <SelectTrigger className="w-40"><SelectValue placeholder="Métier" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les métiers</SelectItem>
-            {METIERS.map(m => <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>)}
+            {metiers.map(m => <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterStatut} onValueChange={setFilterStatut}>
@@ -153,7 +153,7 @@ export default function RendezVousList() {
             <tbody>
               {filtered.map(r => {
                 const poste = postes.find(p => p.id === r.posteId);
-                const metier = METIERS.find(m => m.id === poste?.metierId);
+                const metier = metiers.find(m => m.id === poste?.metierId);
                 const unresolved = isUnresolved(r.debut, r.fin, r.statut);
                 return (
                   <tr

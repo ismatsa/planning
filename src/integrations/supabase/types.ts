@@ -105,6 +105,27 @@ export type Database = {
           },
         ]
       }
+      metiers: {
+        Row: {
+          couleur: string
+          created_at: string
+          id: string
+          nom: string
+        }
+        Insert: {
+          couleur?: string
+          created_at?: string
+          id: string
+          nom: string
+        }
+        Update: {
+          couleur?: string
+          created_at?: string
+          id?: string
+          nom?: string
+        }
+        Relationships: []
+      }
       postes: {
         Row: {
           actif: boolean
@@ -127,7 +148,15 @@ export type Database = {
           metier_id?: string
           nom?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "postes_metier_id_fkey"
+            columns: ["metier_id"]
+            isOneToOne: false
+            referencedRelation: "metiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

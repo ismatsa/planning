@@ -1,4 +1,4 @@
-export type MetierType = 'lavage' | 'reprog' | 'mecanique';
+export type MetierType = string;
 
 export interface Metier {
   id: MetierType;
@@ -61,7 +61,9 @@ export interface AppSettings {
   heureMax: string; // "19:00"
 }
 
-export const METIERS: Metier[] = [
+// METIERS are now loaded from DB via the store
+// Kept as fallback for initial render before DB loads
+export const DEFAULT_METIERS: Metier[] = [
   { id: 'lavage', nom: 'Lavage', couleur: 'lavage' },
   { id: 'reprog', nom: 'Reprogrammation', couleur: 'reprog' },
   { id: 'mecanique', nom: 'Mécanique', couleur: 'mecanique' },

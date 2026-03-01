@@ -1,10 +1,17 @@
+import { useState } from 'react';
 import { useStore } from '@/store/StoreContext';
-import { METIERS } from '@/types';
+import { useAuth } from '@/store/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 
 const JOURS_LABELS = [
   { value: 1, label: 'Lun' },
@@ -17,7 +24,25 @@ const JOURS_LABELS = [
 ];
 
 export default function Parametres() {
-  const { postes, settings, setSettings, setPostes } = useStore();
+  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste } = useStore();
+  const { isAdmin } = useAuth();
+
+  // Add category modal
+  const [addCatOpen, setAddCatOpen] = useState(false);
+  const [newCatNom, setNewCatNom] = useState('');
+
+  // Rename category inline
+  const [renamingCatId, setRenamingCatId] = useState<string | null>(null);
+  const [renamingCatValue, setRenamingCatValue] = useState('');
+
+  // Add poste modal
+  const [addPosteOpen, setAddPosteOpen] = useState(false);
+  const [addPosteMetierId, setAddPosteMetierId] = useState('');
+  const [newPosteNom, setNewPosteNom] = useState('');
+
+  // Rename poste inline
+  const [renamingPosteId, setRenamingPosteId] = useState<string | null>(null);
+  const [renamingPosteValue, setRenamingPosteValue] = useState('');
 
   function toggleJour(jour: number) {
     setSettings(prev => ({
@@ -30,6 +55,107 @@ export default function Parametres() {
 
   function togglePosteActif(posteId: string) {
     setPostes(prev => prev.map(p => p.id === posteId ? { ...p, actif: !p.actif } : p));
+  }
+
+  // --- Category CRUD ---
+  async function handleAddCategory() {
+    const nom = newCatNom.trim();
+    if (!nom) return;
+    if (metiers.some(m => m.nom.toLowerCase() === nom.toLowerCase())) {
+      toast.error('Une catégorie avec ce nom existe déjà.');
+      return;
+    }
+    const id = nom.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    if (metiers.some(m => m.id === id)) {
+      toast.error('Un identifiant identique existe déjà.');
+      return;
+    }
+    const ok = await addMetier({ id, nom, couleur: 'default' });
+    if (ok) {
+      toast.success(`Catégorie « ${nom} » ajoutée.`);
+      setAddCatOpen(false);
+      setNewCatNom('');
+    } else {
+      toast.error('Erreur lors de l\'ajout.');
+    }
+  }
+
+  async function handleRenameCategory(id: string) {
+    const nom = renamingCatValue.trim();
+    if (!nom) return;
+    if (metiers.some(m => m.id !== id && m.nom.toLowerCase() === nom.toLowerCase())) {
+      toast.error('Ce nom est déjà utilisé.');
+      return;
+    }
+    const ok = await renameMetier(id, nom);
+    if (ok) {
+      toast.success('Catégorie renommée.');
+      setRenamingCatId(null);
+    } else {
+      toast.error('Erreur lors du renommage.');
+    }
+  }
+
+  async function handleDeleteCategory(id: string) {
+    const hasPostes = postes.some(p => p.metierId === id);
+    if (hasPostes) {
+      toast.error('Impossible : cette catégorie contient des postes.');
+      return;
+    }
+    const ok = await deleteMetier(id);
+    if (ok) {
+      toast.success('Catégorie supprimée.');
+    } else {
+      toast.error('Erreur lors de la suppression.');
+    }
+  }
+
+  // --- Poste CRUD ---
+  function openAddPoste(metierId: string) {
+    setAddPosteMetierId(metierId);
+    setNewPosteNom('');
+    setAddPosteOpen(true);
+  }
+
+  async function handleAddPoste() {
+    const nom = newPosteNom.trim();
+    if (!nom) return;
+    const existing = postes.filter(p => p.metierId === addPosteMetierId);
+    if (existing.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
+      toast.error('Un poste avec ce nom existe déjà dans cette catégorie.');
+      return;
+    }
+    const id = `${addPosteMetierId}-${nom.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-')}`;
+    if (postes.some(p => p.id === id)) {
+      toast.error('Un identifiant identique existe déjà.');
+      return;
+    }
+    const ok = await addPoste({ id, metierId: addPosteMetierId, nom, actif: true });
+    if (ok) {
+      toast.success(`Poste « ${nom} » ajouté.`);
+      setAddPosteOpen(false);
+      setNewPosteNom('');
+    } else {
+      toast.error('Erreur lors de l\'ajout.');
+    }
+  }
+
+  async function handleRenamePoste(id: string) {
+    const nom = renamingPosteValue.trim();
+    if (!nom) return;
+    const poste = postes.find(p => p.id === id);
+    const siblings = postes.filter(p => p.metierId === poste?.metierId && p.id !== id);
+    if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
+      toast.error('Ce nom est déjà utilisé dans cette catégorie.');
+      return;
+    }
+    const ok = await renamePoste(id, nom);
+    if (ok) {
+      toast.success('Poste renommé.');
+      setRenamingPosteId(null);
+    } else {
+      toast.error('Erreur lors du renommage.');
+    }
   }
 
   return (
@@ -51,6 +177,7 @@ export default function Parametres() {
                 <Checkbox
                   checked={settings.joursOuvres.includes(j.value)}
                   onCheckedChange={() => toggleJour(j.value)}
+                  disabled={!isAdmin}
                 />
                 <span className="text-sm">{j.label}</span>
               </label>
@@ -71,6 +198,7 @@ export default function Parametres() {
                 value={settings.heureMin}
                 onChange={e => setSettings(prev => ({ ...prev, heureMin: e.target.value }))}
                 className="w-32"
+                disabled={!isAdmin}
               />
             </div>
             <span className="text-muted-foreground mt-4">→</span>
@@ -81,6 +209,7 @@ export default function Parametres() {
                 value={settings.heureMax}
                 onChange={e => setSettings(prev => ({ ...prev, heureMax: e.target.value }))}
                 className="w-32"
+                disabled={!isAdmin}
               />
             </div>
           </CardContent>
@@ -88,23 +217,119 @@ export default function Parametres() {
 
         {/* Ressources */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold">Ressources / Postes</CardTitle>
+            {isAdmin && (
+              <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={() => { setNewCatNom(''); setAddCatOpen(true); }}>
+                <Plus className="h-3.5 w-3.5" />
+                Catégorie
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3">
-              {METIERS.map(m => {
+            <div className="grid gap-4">
+              {metiers.map(m => {
                 const mPostes = postes.filter(p => p.metierId === m.id);
                 return (
-                  <div key={m.id} className="flex items-start gap-3">
-                    <Badge className={`metier-${m.couleur} shrink-0 mt-0.5`}>{m.nom}</Badge>
+                  <div key={m.id} className="border rounded-lg p-3">
+                    {/* Category header */}
+                    <div className="flex items-center gap-2 mb-2">
+                      {renamingCatId === m.id ? (
+                        <div className="flex items-center gap-1.5 flex-1">
+                          <Input
+                            value={renamingCatValue}
+                            onChange={e => setRenamingCatValue(e.target.value)}
+                            className="h-7 text-sm w-40"
+                            autoFocus
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleRenameCategory(m.id);
+                              if (e.key === 'Escape') setRenamingCatId(null);
+                            }}
+                          />
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleRenameCategory(m.id)}>
+                            <Check className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setRenamingCatId(null)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Badge className={`metier-${m.couleur} shrink-0`}>{m.nom}</Badge>
+                          {isAdmin && (
+                            <div className="flex items-center gap-0.5 ml-auto">
+                              <Button
+                                size="icon" variant="ghost" className="h-6 w-6"
+                                onClick={() => { setRenamingCatId(m.id); setRenamingCatValue(m.nom); }}
+                                title="Renommer"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              {mPostes.length === 0 && (
+                                <Button
+                                  size="icon" variant="ghost" className="h-6 w-6 text-destructive"
+                                  onClick={() => handleDeleteCategory(m.id)}
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Postes list */}
                     <div className="flex flex-wrap gap-2">
                       {mPostes.map(p => (
-                        <label key={p.id} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                          <Checkbox checked={p.actif} onCheckedChange={() => togglePosteActif(p.id)} />
-                          {p.nom}
-                        </label>
+                        <div key={p.id} className="flex items-center gap-1.5">
+                          {renamingPosteId === p.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={renamingPosteValue}
+                                onChange={e => setRenamingPosteValue(e.target.value)}
+                                className="h-7 text-xs w-28"
+                                autoFocus
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleRenamePoste(p.id);
+                                  if (e.key === 'Escape') setRenamingPosteId(null);
+                                }}
+                              />
+                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => handleRenamePoste(p.id)}>
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setRenamingPosteId(null)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={p.actif}
+                                onCheckedChange={() => togglePosteActif(p.id)}
+                                disabled={!isAdmin}
+                              />
+                              {p.nom}
+                              {isAdmin && (
+                                <Button
+                                  size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
+                                  onClick={(e) => { e.preventDefault(); setRenamingPosteId(p.id); setRenamingPosteValue(p.nom); }}
+                                  title="Renommer"
+                                >
+                                  <Pencil className="h-2.5 w-2.5" />
+                                </Button>
+                              )}
+                            </label>
+                          )}
+                        </div>
                       ))}
+                      {isAdmin && (
+                        <Button size="sm" variant="ghost" className="gap-1 h-7 text-xs text-muted-foreground" onClick={() => openAddPoste(m.id)}>
+                          <Plus className="h-3 w-3" />
+                          Poste
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
@@ -113,6 +338,60 @@ export default function Parametres() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Category Dialog */}
+      <Dialog open={addCatOpen} onOpenChange={v => !v && setAddCatOpen(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Ajouter une catégorie</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid gap-1.5">
+              <Label>Nom de la catégorie</Label>
+              <Input
+                value={newCatNom}
+                onChange={e => setNewCatNom(e.target.value)}
+                placeholder="Ex: Carrosserie"
+                autoFocus
+                onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddCatOpen(false)}>Annuler</Button>
+            <Button onClick={handleAddCategory} disabled={!newCatNom.trim()}>Ajouter</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Poste Dialog */}
+      <Dialog open={addPosteOpen} onOpenChange={v => !v && setAddPosteOpen(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Ajouter un poste</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid gap-1.5">
+              <Label>Catégorie</Label>
+              <Input value={metiers.find(m => m.id === addPosteMetierId)?.nom || ''} disabled />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Nom du poste</Label>
+              <Input
+                value={newPosteNom}
+                onChange={e => setNewPosteNom(e.target.value)}
+                placeholder="Ex: Pont 4"
+                autoFocus
+                onKeyDown={e => e.key === 'Enter' && handleAddPoste()}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddPosteOpen(false)}>Annuler</Button>
+            <Button onClick={handleAddPoste} disabled={!newPosteNom.trim()}>Ajouter</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
