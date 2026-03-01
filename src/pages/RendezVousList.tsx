@@ -3,7 +3,6 @@ import { useStore } from '@/store/StoreContext';
 import { METIERS, STATUT_LABELS, StatutRdv } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -13,10 +12,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Search } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Search, MoreHorizontal } from 'lucide-react';
 import RdvModal from '@/components/planning/RdvModal';
 import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
+import { getEventState, roundToNearest15Minutes } from '@/lib/planning';
 
 const statusBadgeClass: Record<StatutRdv, string> = {
   prevu: 'bg-muted text-muted-foreground',
@@ -54,14 +61,24 @@ export default function RendezVousList() {
       .sort((a, b) => new Date(b.debut).getTime() - new Date(a.debut).getTime());
   }, [rdvs, postes, filterMetier, filterStatut, search]);
 
-  async function quickConfirm(rdv: RendezVous) {
-    await updateRdv({ ...rdv, statut: 'confirme' });
-    toast.success('Rendez-vous confirmé.');
+  async function changeStatut(rdv: RendezVous, newStatut: StatutRdv) {
+    let fin = rdv.fin;
+    let debut = rdv.debut;
+    // If switching to 'termine' or 'noshow' while event is en_cours, snap fin to nearest 15min
+    const state = getEventState(rdv.debut, rdv.fin);
+    if ((newStatut === 'termine' || newStatut === 'noshow') && state === 'en_cours') {
+      fin = roundToNearest15Minutes(new Date()).toISOString();
+    }
+    await updateRdv({ ...rdv, statut: newStatut, debut, fin });
+    toast.success(`Statut changé en « ${STATUT_LABELS[newStatut]} ».`);
   }
 
-  async function quickCancel(rdv: RendezVous) {
-    await updateRdv({ ...rdv, statut: 'annule' });
-    toast.success('Rendez-vous annulé.');
+  function getAvailableStatuts(rdv: RendezVous): StatutRdv[] {
+    const state = getEventState(rdv.debut, rdv.fin);
+    return (Object.keys(STATUT_LABELS) as StatutRdv[]).filter(k => {
+      if (k === 'termine' && state === 'futur') return false;
+      return true;
+    });
   }
 
   return (
@@ -147,16 +164,28 @@ export default function RendezVousList() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                      {r.statut === 'prevu' && (
-                        <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => quickConfirm(r)} title="Confirmer">
-                            <Check className="h-3.5 w-3.5 text-green-600" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-7 w-7">
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => quickCancel(r)} title="Annuler">
-                            <X className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
-                        </div>
-                      )}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {getAvailableStatuts(r).map(s => (
+                            <DropdownMenuItem
+                              key={s}
+                              disabled={s === r.statut}
+                              onClick={() => changeStatut(r, s)}
+                              className={s === r.statut ? 'font-semibold' : ''}
+                            >
+                              <Badge variant="secondary" className={`${statusBadgeClass[s]} mr-2 pointer-events-none`}>
+                                {STATUT_LABELS[s]}
+                              </Badge>
+                              {s === r.statut && '(actuel)'}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 );
