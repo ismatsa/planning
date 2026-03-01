@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { useStore } from '@/store/StoreContext';
 import { CheckSquare } from 'lucide-react';
 import { isUnresolved } from '@/lib/planning';
+import { useAuth } from '@/store/AuthContext';
 
 interface Props {
   rdv: RendezVous;
@@ -24,8 +25,10 @@ const statusDot: Record<StatutRdv, string> = {
 
 export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConflict, isResizing }: Props) {
   const { postes } = useStore();
+  const { user } = useAuth();
   const poste = postes.find(p => p.id === rdv.posteId);
   const metier = METIERS.find(m => m.id === poste?.metierId);
+  const isOwner = rdv.createdBy === user?.id;
 
   const isNoShow = rdv.statut === 'noshow';
   const isTermine = rdv.statut === 'termine';
@@ -109,7 +112,7 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
         <span className="font-bold">
           {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
         </span>
-        {rdv.clientNom && (
+        {isOwner && rdv.clientNom && (
           <span className="font-semibold truncate opacity-90">{rdv.clientNom}</span>
         )}
         {(rdv.marque || rdv.modele) && (
@@ -170,7 +173,7 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
             <div className="text-muted-foreground">{metier.nom} · {poste.nom}</div>
           )}
 
-          {rdv.clientNom && (
+          {isOwner && rdv.clientNom && (
             <div className="pt-1 border-t border-border">
               <span className="font-semibold">{rdv.clientNom}</span>
               {rdv.clientTel && <span className="ml-2 text-muted-foreground">{rdv.clientTel}</span>}
@@ -187,7 +190,7 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
             <div className="text-muted-foreground font-mono text-[10px]">VIN : {rdv.vin}</div>
           )}
 
-          {rdv.notes && (
+          {isOwner && rdv.notes && (
             <div className="pt-1 border-t border-border text-muted-foreground italic">{rdv.notes}</div>
           )}
         </div>

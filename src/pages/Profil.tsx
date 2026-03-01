@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from '@/hooks/use-toast';
 
 export default function Profil() {
-  const { user, updateEmail, updatePassword } = useAuth();
+  const { user, updateEmail, updatePassword, isAdmin } = useAuth();
   const [email, setEmail] = useState(user?.email || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -69,7 +69,7 @@ export default function Profil() {
           <form onSubmit={handleSave} className="grid gap-4">
             <div className="grid gap-1.5">
               <Label htmlFor="prof-email">Email</Label>
-              <Input id="prof-email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+              <Input id="prof-email" type="email" value={email} onChange={e => setEmail(e.target.value)} disabled={!isAdmin} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="prof-pass">Nouveau mot de passe</Label>

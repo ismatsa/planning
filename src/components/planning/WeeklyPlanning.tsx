@@ -12,12 +12,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
+import { useAuth } from '@/store/AuthContext';
 
 const SLOT_WIDTH = 80; // px per time slot
 const DAYS_SHOWN = 6;
 
 export default function WeeklyPlanning() {
   const { rdvs, postes, settings, updateRdv, checkConflict } = useStore();
+  const { user, isAdmin, permissions } = useAuth();
   const { collapsed } = useSidebarState();
   const [startDate, setStartDate] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
@@ -39,7 +41,7 @@ export default function WeeklyPlanning() {
 
   const displayDays = useMemo(() => getWorkingDays(startDate, settings.joursOuvres, DAYS_SHOWN), [startDate, settings.joursOuvres]);
   const timeSlots = useMemo(() => getTimeSlots(settings.heureMin, settings.heureMax, 30), [settings]);
-  const activePostes = useMemo(() => postes.filter(p => p.actif && visibleMetiers.has(p.metierId as MetierType)), [postes, visibleMetiers]);
+  const activePostes = useMemo(() => postes.filter(p => p.actif && visibleMetiers.has(p.metierId as MetierType) && (isAdmin || permissions.includes(p.id))), [postes, visibleMetiers, isAdmin, permissions]);
 
   const minMinutes = timeToMinutes(settings.heureMin);
   const maxMinutes = timeToMinutes(settings.heureMax);
@@ -76,7 +78,11 @@ export default function WeeklyPlanning() {
   }
 
   function openEditRdv(rdv: RendezVous) {
-    if (resizingRdvId) return; // don't open modal while resizing
+    if (resizingRdvId) return;
+    if (rdv.createdBy !== user?.id) {
+      toast.error("Vous ne pouvez modifier que vos propres rendez-vous.");
+      return;
+    }
     setEditRdv(rdv);
     setModalOpen(true);
   }
@@ -103,6 +109,10 @@ export default function WeeklyPlanning() {
 
   // --- Resize handlers ---
   const handleResizeStart = useCallback((rdv: RendezVous, edge: 'left' | 'right', e: React.MouseEvent) => {
+    if (rdv.createdBy !== user?.id) {
+      toast.error("Vous ne pouvez modifier que vos propres rendez-vous.");
+      return;
+    }
     const start = new Date(rdv.debut);
     const end = new Date(rdv.fin);
     const startMin = start.getHours() * 60 + start.getMinutes() - minMinutes;
@@ -116,7 +126,7 @@ export default function WeeklyPlanning() {
     resizeRef.current = { rdv, edge, startX: e.clientX, origLeftPx: leftPx, origWidthPx: widthPx, dayDate };
     setResizingRdvId(rdv.id);
     setResizePreview({ left: leftPx, width: widthPx });
-  }, [minMinutes, PX_PER_MINUTE]);
+  }, [minMinutes, PX_PER_MINUTE, user?.id]);
 
   useEffect(() => {
     if (!resizingRdvId) return;

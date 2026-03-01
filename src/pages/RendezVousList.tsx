@@ -25,6 +25,7 @@ import RdvModal from '@/components/planning/RdvModal';
 import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
 import { getEventState, roundToNearest15Minutes, isUnresolved } from '@/lib/planning';
+import { useAuth } from '@/store/AuthContext';
 
 const statusBadgeClass: Record<StatutRdv, string> = {
   prevu: 'bg-muted text-muted-foreground',
@@ -36,6 +37,7 @@ const statusBadgeClass: Record<StatutRdv, string> = {
 
 export default function RendezVousList() {
   const { rdvs, postes, updateRdv } = useStore();
+  const { user, isAdmin, permissions } = useAuth();
   const [filterMetier, setFilterMetier] = useState<string>('all');
   const [filterStatut, setFilterStatut] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -47,6 +49,7 @@ export default function RendezVousList() {
     const now = Date.now();
     return rdvs
       .filter(r => {
+        if (!isAdmin && !permissions.includes(r.posteId)) return false;
         const poste = postes.find(p => p.id === r.posteId);
         if (filterMetier !== 'all' && poste?.metierId !== filterMetier) return false;
         if (filterStatut !== 'all' && r.statut !== filterStatut) return false;
@@ -67,7 +70,7 @@ export default function RendezVousList() {
         return true;
       })
       .sort((a, b) => new Date(b.debut).getTime() - new Date(a.debut).getTime());
-  }, [rdvs, postes, filterMetier, filterStatut, search, hidePastEvents]);
+  }, [rdvs, postes, filterMetier, filterStatut, search, hidePastEvents, isAdmin, permissions]);
 
   async function changeStatut(rdv: RendezVous, newStatut: StatutRdv) {
     let fin = rdv.fin;
@@ -156,7 +159,13 @@ export default function RendezVousList() {
                   <tr
                     key={r.id}
                     className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${unresolved ? 'text-destructive' : ''}`}
-                    onClick={() => { setEditRdv(r); setModalOpen(true); }}
+                    onClick={() => {
+                      if (r.createdBy !== user?.id) {
+                        toast.error("Vous ne pouvez modifier que vos propres rendez-vous.");
+                        return;
+                      }
+                      setEditRdv(r); setModalOpen(true);
+                    }}
                   >
                     <td className="px-4 py-3 font-medium">
                       {format(new Date(r.debut), 'EEE d MMM', { locale: fr })}
@@ -169,7 +178,7 @@ export default function RendezVousList() {
                         {poste?.nom}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{r.clientNom || '—'}</td>
+                    <td className="px-4 py-3">{r.createdBy === user?.id ? (r.clientNom || '—') : '—'}</td>
                     <td className="px-4 py-3 text-xs">{[r.marque, r.modele].filter(Boolean).join(' ') || '—'}</td>
                     <td className="px-4 py-3">
                       <Badge variant="secondary" className={statusBadgeClass[r.statut]}>
@@ -177,28 +186,30 @@ export default function RendezVousList() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-7 w-7">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {getAvailableStatuts(r).map(s => (
-                            <DropdownMenuItem
-                              key={s}
-                              disabled={s === r.statut}
-                              onClick={() => changeStatut(r, s)}
-                              className={s === r.statut ? 'font-semibold' : ''}
-                            >
-                              <Badge variant="secondary" className={`${statusBadgeClass[s]} mr-2 pointer-events-none`}>
-                                {STATUT_LABELS[s]}
-                              </Badge>
-                              {s === r.statut && '(actuel)'}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {r.createdBy === user?.id ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-7 w-7">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {getAvailableStatuts(r).map(s => (
+                              <DropdownMenuItem
+                                key={s}
+                                disabled={s === r.statut}
+                                onClick={() => changeStatut(r, s)}
+                                className={s === r.statut ? 'font-semibold' : ''}
+                              >
+                                <Badge variant="secondary" className={`${statusBadgeClass[s]} mr-2 pointer-events-none`}>
+                                  {STATUT_LABELS[s]}
+                                </Badge>
+                                {s === r.statut && '(actuel)'}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
                     </td>
                   </tr>
                 );
