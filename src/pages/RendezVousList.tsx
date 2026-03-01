@@ -4,6 +4,7 @@ import { METIERS, STATUT_LABELS, StatutRdv } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -40,8 +41,10 @@ export default function RendezVousList() {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
+  const [hidePastEvents, setHidePastEvents] = useState(false);
 
   const filtered = useMemo(() => {
+    const now = Date.now();
     return rdvs
       .filter(r => {
         const poste = postes.find(p => p.id === r.posteId);
@@ -56,10 +59,15 @@ export default function RendezVousList() {
             !poste?.nom.toLowerCase().includes(s)
           ) return false;
         }
+        if (hidePastEvents) {
+          const endTime = r.fin ? new Date(r.fin).getTime() : new Date(r.debut).getTime();
+          const isPast = endTime < now;
+          if (isPast && ['noshow', 'annule', 'termine'].includes(r.statut)) return false;
+        }
         return true;
       })
       .sort((a, b) => new Date(b.debut).getTime() - new Date(a.debut).getTime());
-  }, [rdvs, postes, filterMetier, filterStatut, search]);
+  }, [rdvs, postes, filterMetier, filterStatut, search, hidePastEvents]);
 
   async function changeStatut(rdv: RendezVous, newStatut: StatutRdv) {
     let fin = rdv.fin;
@@ -113,6 +121,10 @@ export default function RendezVousList() {
             {Object.entries(STATUT_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
           </SelectContent>
         </Select>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none ml-1">
+          <Checkbox checked={hidePastEvents} onCheckedChange={(v) => setHidePastEvents(!!v)} />
+          Masquer les événements passés
+        </label>
       </div>
 
       {/* Table */}
