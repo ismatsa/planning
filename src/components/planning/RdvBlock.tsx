@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { RendezVous, METIERS, StatutRdv, STATUT_LABELS } from '@/types';
 import { format } from 'date-fns';
 import { useStore } from '@/store/StoreContext';
+import { CheckSquare } from 'lucide-react';
 
 interface Props {
   rdv: RendezVous;
@@ -26,18 +27,21 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const metier = METIERS.find(m => m.id === poste?.metierId);
 
   const isNoShow = rdv.statut === 'noshow';
+  const isTermine = rdv.statut === 'termine';
 
   const bgColor = hasConflict
     ? 'hsl(var(--destructive))'
     : isNoShow
       ? '#000000'
-      : metier
-        ? `hsl(var(--${metier.couleur}))`
-        : 'hsl(var(--muted))';
+      : isTermine
+        ? 'hsl(142 71% 35%)'
+        : metier
+          ? `hsl(var(--${metier.couleur}))`
+          : 'hsl(var(--muted))';
 
   const textColor = hasConflict
     ? 'hsl(var(--destructive-foreground))'
-    : isNoShow
+    : (isNoShow || isTermine)
       ? '#ffffff'
       : metier
         ? `hsl(var(--${metier.couleur}-foreground))`
@@ -96,6 +100,7 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
           flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in w-full"
       >
+        {isTermine && <CheckSquare className="h-3 w-3 shrink-0" />}
         <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
         <span className="font-bold">
           {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
