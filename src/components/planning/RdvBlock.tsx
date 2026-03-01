@@ -3,6 +3,7 @@ import { RendezVous, METIERS, StatutRdv, STATUT_LABELS } from '@/types';
 import { format } from 'date-fns';
 import { useStore } from '@/store/StoreContext';
 import { CheckSquare } from 'lucide-react';
+import { isUnresolved } from '@/lib/planning';
 
 interface Props {
   rdv: RendezVous;
@@ -28,20 +29,23 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
 
   const isNoShow = rdv.statut === 'noshow';
   const isTermine = rdv.statut === 'termine';
+  const unresolved = isUnresolved(rdv.debut, rdv.fin, rdv.statut);
 
   const bgColor = hasConflict
     ? 'hsl(var(--destructive))'
     : isNoShow
       ? '#000000'
-      : isTermine
-        ? 'hsl(142 71% 35%)'
-        : metier
-          ? `hsl(var(--${metier.couleur}))`
-          : 'hsl(var(--muted))';
+      : unresolved
+        ? 'hsl(var(--destructive))'
+        : isTermine
+          ? 'hsl(142 71% 35%)'
+          : metier
+            ? `hsl(var(--${metier.couleur}))`
+            : 'hsl(var(--muted))';
 
   const textColor = hasConflict
     ? 'hsl(var(--destructive-foreground))'
-    : (isNoShow || isTermine)
+    : (isNoShow || isTermine || unresolved)
       ? '#ffffff'
       : metier
         ? `hsl(var(--${metier.couleur}-foreground))`

@@ -85,3 +85,11 @@ export function getEventState(debut: string, fin: string): 'futur' | 'en_cours' 
   if (now >= end) return 'passe';
   return 'en_cours';
 }
+
+/** Check if an event is past and not regularized (statut not in noshow/annule/termine). */
+export function isUnresolved(debut: string, fin: string, statut: string): boolean {
+  const now = Date.now();
+  const endTime = fin ? new Date(fin).getTime() : new Date(debut).getTime();
+  if (endTime >= now) return false;
+  return !['noshow', 'annule', 'termine'].includes(statut);
+}
