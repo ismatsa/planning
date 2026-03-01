@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "./store/AuthContext";
 import AppLayout from "./components/AppLayout";
 import Index from "./pages/Index";
 import RendezVousList from "./pages/RendezVousList";
+import UserManagement from "./pages/UserManagement";
 import Creneaux from "./pages/Creneaux";
 import Parametres from "./pages/Parametres";
 import Profil from "./pages/Profil";
@@ -43,6 +44,7 @@ function AppRoutes() {
           <Route path="/rendez-vous" element={<RendezVousList />} />
           <Route path="/creneaux" element={<Creneaux />} />
           <Route path="/parametres" element={<Parametres />} />
+          <Route path="/utilisateurs" element={<UserManagement />} />
           <Route path="/profil" element={<Profil />} />
         </Route>
         <Route path="*" element={<NotFound />} />

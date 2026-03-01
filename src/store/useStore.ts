@@ -53,6 +53,7 @@ function mapRdv(row: any): RendezVous {
     statut: row.statut,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    createdBy: row.created_by || undefined,
   };
 }
 
@@ -94,6 +95,7 @@ export function useAppStore() {
   }, []);
 
   const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }) => {
+    const { data: { session } } = await supabase.auth.getSession();
     const { data, error } = await supabase.from('rendez_vous').insert({
       poste_id: rdv.posteId,
       debut: rdv.debut,
@@ -106,7 +108,8 @@ export function useAppStore() {
       vin: rdv.vin || null,
       notes: rdv.notes || null,
       statut: rdv.statut,
-    }).select().single();
+      created_by: session?.user?.id || null,
+    } as any).select().single();
 
     if (data && !error) {
       setRdvs(prev => [...prev, mapRdv(data)]);

@@ -1,4 +1,4 @@
-import { Calendar, List, Settings, Clock, User, LogOut, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Calendar, List, Settings, Clock, User, Users, LogOut, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/store/AuthContext';
 import { useSidebarState } from './AppLayout';
@@ -10,12 +10,14 @@ const navItems = [
   { to: '/rendez-vous', icon: List, label: 'Rendez-vous' },
   { to: '/creneaux', icon: Clock, label: 'Créneaux' },
   { to: '/parametres', icon: Settings, label: 'Paramètres' },
+  { to: '/utilisateurs', icon: Users, label: 'Utilisateurs', adminOnly: true },
 ];
 
 export default function AppSidebar() {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, isAdmin } = useAuth();
   const { collapsed, toggle } = useSidebarState();
+  const visibleItems = navItems.filter(item => !('adminOnly' in item) || isAdmin);
 
   return (
     <>
@@ -32,7 +34,7 @@ export default function AppSidebar() {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          {navItems.map(({ to, icon: Icon, label }) => {
+          {visibleItems.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to;
             return (
               <Link

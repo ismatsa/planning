@@ -51,7 +51,8 @@ export interface RendezVous {
   notes?: string;
   statut: StatutRdv;
   createdAt: string;
-  updatedAt: string;
+    updatedAt: string;
+    createdBy?: string;
 }
 
 export interface AppSettings {
