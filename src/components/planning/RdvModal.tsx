@@ -22,6 +22,7 @@ import { RendezVous, MetierType, METIERS, STATUT_LABELS, StatutRdv } from '@/typ
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
+import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
 
 interface Props {
   open: boolean;
@@ -203,11 +204,28 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
     }
     return options;
   }, [settings.heureMin, settings.heureMax]);
+  // Determine if the current RDV (in edit mode) is future/en_cours/past
+  const eventState = useMemo(() => {
+    if (!rdv) return 'futur' as const;
+    return getEventState(rdv.debut, rdv.fin);
+  }, [rdv]);
+
   async function handleSubmit() {
     if (!posteId || !date || !heureDebut) return;
 
-    const debut = new Date(`${date}T${heureDebut}:00`);
-    const fin = new Date(`${dateFin}T${heureFin}:00`);
+    let debut = new Date(`${date}T${heureDebut}:00`);
+    let fin = new Date(`${dateFin}T${heureFin}:00`);
+
+    // If switching to 'termine' or 'noshow' while event is en_cours, snap fin to nearest 15min
+    if (
+      (statut === 'termine' || statut === 'noshow') &&
+      rdv &&
+      getEventState(rdv.debut, rdv.fin) === 'en_cours'
+    ) {
+      fin = roundToNearest15Minutes(new Date());
+      // Keep debut unchanged from original
+      debut = new Date(rdv.debut);
+    }
 
     const conflicting = checkConflict(posteId, debut.toISOString(), fin.toISOString(), rdv?.id);
     if (conflicting) {
@@ -400,9 +418,11 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             <Select value={statut} onValueChange={v => setStatut(v as StatutRdv)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(STATUT_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
+                {Object.entries(STATUT_LABELS).map(([k, v]) => {
+                  // 'termine' only available for past or en_cours events
+                  if (k === 'termine' && eventState === 'futur') return null;
+                  return <SelectItem key={k} value={k}>{v}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
           </div>

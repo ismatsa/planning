@@ -65,3 +65,21 @@ export function dateWithTime(date: Date, time: string): Date {
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
+
+/** Round a date to the nearest 15-minute mark. */
+export function roundToNearest15Minutes(d: Date): Date {
+  const ms = d.getTime();
+  const fifteenMin = 15 * 60 * 1000;
+  const rounded = new Date(Math.round(ms / fifteenMin) * fifteenMin);
+  return rounded;
+}
+
+/** Determine event temporal state relative to now. */
+export function getEventState(debut: string, fin: string): 'futur' | 'en_cours' | 'passe' {
+  const now = Date.now();
+  const start = new Date(debut).getTime();
+  const end = new Date(fin).getTime();
+  if (now < start) return 'futur';
+  if (now >= end) return 'passe';
+  return 'en_cours';
+}

@@ -265,15 +265,18 @@ export default function WeeklyPlanning() {
           {/* Time header row */}
           <div className="sticky top-0 z-20 flex border-b bg-card">
             <div className="w-48 shrink-0 border-r bg-card" />
-            {timeSlots.map(slot => (
-              <div
-                key={slot}
-                className="text-center text-[10px] font-medium text-muted-foreground py-2 border-r"
-                style={{ width: SLOT_WIDTH, minWidth: SLOT_WIDTH }}
-              >
-                {slot}
-              </div>
-            ))}
+            {timeSlots.map(slot => {
+              const isFullHour = slot.endsWith(':00');
+              return (
+                <div
+                  key={slot}
+                  className={`text-center text-[10px] py-2 border-r ${isFullHour ? 'font-semibold text-foreground/70' : 'font-medium text-muted-foreground/50'}`}
+                  style={{ width: SLOT_WIDTH, minWidth: SLOT_WIDTH }}
+                >
+                  {slot}
+                </div>
+              );
+            })}
           </div>
 
           {/* Day groups */}
@@ -343,14 +346,17 @@ export default function WeeklyPlanning() {
                           openNewRdv(day, poste.id, time);
                         }}
                       >
-                        {/* Vertical slot lines */}
-                        {timeSlots.map((slot, i) => (
-                          <div
-                            key={slot}
-                            className="absolute top-0 bottom-0 border-r border-border"
-                            style={{ left: i * SLOT_WIDTH }}
-                          />
-                        ))}
+                        {/* Vertical slot lines — full hours bolder */}
+                        {timeSlots.map((slot, i) => {
+                          const isFullHour = slot.endsWith(':00');
+                          return (
+                            <div
+                              key={slot}
+                              className={`absolute top-0 bottom-0 border-r ${isFullHour ? 'border-foreground/20' : 'border-border/50'}`}
+                              style={{ left: i * SLOT_WIDTH }}
+                            />
+                          );
+                        })}
 
                         {/* RDV blocks */}
                         {dayRdvs.map(r => (
