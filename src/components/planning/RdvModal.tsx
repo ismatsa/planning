@@ -205,10 +205,13 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
     return options;
   }, [settings.heureMin, settings.heureMax]);
   // Determine if the current RDV (in edit mode) is future/en_cours/past
+  // Use form values so it stays reactive to user edits
   const eventState = useMemo(() => {
     if (!rdv) return 'futur' as const;
-    return getEventState(rdv.debut, rdv.fin);
-  }, [rdv]);
+    const debutStr = `${date}T${heureDebut}:00`;
+    const finStr = `${dateFin}T${heureFin}:00`;
+    return getEventState(debutStr, finStr);
+  }, [rdv, date, heureDebut, dateFin, heureFin]);
 
   async function handleSubmit() {
     if (!posteId || !date || !heureDebut) return;
