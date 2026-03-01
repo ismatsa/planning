@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 const navItems = [
   { to: '/', icon: Calendar, label: 'Planning' },
   { to: '/rendez-vous', icon: List, label: 'Rendez-vous' },
-  { to: '/creneaux', icon: Clock, label: 'Créneaux' },
-  { to: '/parametres', icon: Settings, label: 'Paramètres' },
+  { to: '/creneaux', icon: Clock, label: 'Créneaux', adminOnly: true },
+  { to: '/parametres', icon: Settings, label: 'Paramètres', adminOnly: true },
   { to: '/utilisateurs', icon: Users, label: 'Utilisateurs', adminOnly: true },
 ];
 
