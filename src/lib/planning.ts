@@ -79,6 +79,8 @@ export function getEventState(debut: string, fin: string): 'futur' | 'en_cours' 
   const now = Date.now();
   const start = new Date(debut).getTime();
   const end = new Date(fin).getTime();
+  // If end <= start (bad data from rounding), treat as past
+  if (end <= start) return 'passe';
   if (now < start) return 'futur';
   if (now >= end) return 'passe';
   return 'en_cours';
