@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
+  Metier,
   RendezVous,
   Poste,
   DisponibilitePoste,
@@ -8,10 +9,15 @@ import {
   AppSettings,
   DEFAULT_POSTES,
   DEFAULT_SETTINGS,
+  DEFAULT_METIERS,
   PlageHoraire,
 } from '@/types';
 
 // DB → App type mappers
+function mapMetier(row: any): Metier {
+  return { id: row.id, nom: row.nom, couleur: row.couleur };
+}
+
 function mapPoste(row: any): Poste {
   return { id: row.id, metierId: row.metier_id, nom: row.nom, actif: row.actif };
 }
@@ -66,6 +72,7 @@ function mapSettings(row: any): AppSettings {
 }
 
 export function useAppStore() {
+  const [metiers, setMetiers] = useState<Metier[]>(DEFAULT_METIERS);
   const [rdvs, setRdvs] = useState<RendezVous[]>([]);
   const [postes, setPostes] = useState<Poste[]>(DEFAULT_POSTES);
   const [disponibilites, setDisponibilites] = useState<DisponibilitePoste[]>([]);
@@ -76,7 +83,8 @@ export function useAppStore() {
   // Load all data on mount
   useEffect(() => {
     async function loadAll() {
-      const [postesRes, disposRes, exceptionsRes, rdvsRes, settingsRes] = await Promise.all([
+      const [metiersRes, postesRes, disposRes, exceptionsRes, rdvsRes, settingsRes] = await Promise.all([
+        supabase.from('metiers').select('*'),
         supabase.from('postes').select('*'),
         supabase.from('disponibilite_postes').select('*'),
         supabase.from('exception_disponibilites').select('*'),
@@ -84,6 +92,7 @@ export function useAppStore() {
         supabase.from('app_settings').select('*').eq('id', 1).single(),
       ]);
 
+      if (metiersRes.data) setMetiers(metiersRes.data.map(mapMetier));
       if (postesRes.data) setPostes(postesRes.data.map(mapPoste));
       if (disposRes.data) setDisponibilites(disposRes.data.map(mapDispo));
       if (exceptionsRes.data) setExceptions(exceptionsRes.data.map(mapException));
@@ -195,9 +204,43 @@ export function useAppStore() {
     setSettings(newSettings);
   }, [settings]);
 
+  // Metier CRUD
+  const addMetier = useCallback(async (metier: Metier) => {
+    const { error } = await supabase.from('metiers').insert({ id: metier.id, nom: metier.nom, couleur: metier.couleur } as any);
+    if (!error) setMetiers(prev => [...prev, metier]);
+    return !error;
+  }, []);
+
+  const renameMetier = useCallback(async (id: string, nom: string) => {
+    const { error } = await supabase.from('metiers').update({ nom }).eq('id', id);
+    if (!error) setMetiers(prev => prev.map(m => m.id === id ? { ...m, nom } : m));
+    return !error;
+  }, []);
+
+  const deleteMetier = useCallback(async (id: string) => {
+    const { error } = await supabase.from('metiers').delete().eq('id', id);
+    if (!error) setMetiers(prev => prev.filter(m => m.id !== id));
+    return !error;
+  }, []);
+
+  // Poste CRUD
+  const addPoste = useCallback(async (poste: Poste) => {
+    const { error } = await supabase.from('postes').insert({ id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif } as any);
+    if (!error) setPostes(prev => [...prev, poste]);
+    return !error;
+  }, []);
+
+  const renamePoste = useCallback(async (id: string, nom: string) => {
+    const { error } = await supabase.from('postes').update({ nom }).eq('id', id);
+    if (!error) setPostes(prev => prev.map(p => p.id === id ? { ...p, nom } : p));
+    return !error;
+  }, []);
+
   return {
-    rdvs, postes, disponibilites, exceptions, settings, loaded,
+    metiers, rdvs, postes, disponibilites, exceptions, settings, loaded,
     addRdv, updateRdv, deleteRdv, checkConflict,
+    addMetier, renameMetier, deleteMetier,
+    addPoste, renamePoste,
     setPostes: updatePostes,
     setDisponibilites: updateDisponibilites,
     setExceptions,

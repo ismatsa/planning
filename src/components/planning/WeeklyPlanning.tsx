@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useStore } from '@/store/StoreContext';
 import { useSidebarState } from '@/components/AppLayout';
-import { METIERS, MetierType } from '@/types';
+import { MetierType } from '@/types';
 import { getWorkingDays, formatDayHeader, getTimeSlots, timeToMinutes } from '@/lib/planning';
 import { format, isSameDay, addDays, addMinutes } from 'date-fns';
 import RdvBlock from './RdvBlock';
@@ -18,14 +18,14 @@ const SLOT_WIDTH = 80; // px per time slot
 const DAYS_SHOWN = 6;
 
 export default function WeeklyPlanning() {
-  const { rdvs, postes, settings, updateRdv, checkConflict } = useStore();
+  const { rdvs, postes, settings, updateRdv, checkConflict, metiers } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const { collapsed } = useSidebarState();
   const [startDate, setStartDate] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
   const [newRdvDefaults, setNewRdvDefaults] = useState<{ date?: Date; posteId?: string; time?: string }>({});
-  const [visibleMetiers, setVisibleMetiers] = useState<Set<MetierType>>(new Set(METIERS.map(m => m.id)));
+  const [visibleMetiers, setVisibleMetiers] = useState<Set<string>>(new Set(metiers.map(m => m.id)));
 
   // Resize state
   const [resizingRdvId, setResizingRdvId] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export default function WeeklyPlanning() {
 
   const displayDays = useMemo(() => getWorkingDays(startDate, settings.joursOuvres, DAYS_SHOWN), [startDate, settings.joursOuvres]);
   const timeSlots = useMemo(() => getTimeSlots(settings.heureMin, settings.heureMax, 30), [settings]);
-  const activePostes = useMemo(() => postes.filter(p => p.actif && visibleMetiers.has(p.metierId as MetierType) && (isAdmin || permissions.includes(p.id))), [postes, visibleMetiers, isAdmin, permissions]);
+  const activePostes = useMemo(() => postes.filter(p => p.actif && visibleMetiers.has(p.metierId) && (isAdmin || permissions.includes(p.id))), [postes, visibleMetiers, isAdmin, permissions]);
 
   const minMinutes = timeToMinutes(settings.heureMin);
   const maxMinutes = timeToMinutes(settings.heureMax);
@@ -54,7 +54,7 @@ export default function WeeklyPlanning() {
     return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
   }
 
-  function toggleMetier(id: MetierType) {
+  function toggleMetier(id: string) {
     setVisibleMetiers(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -64,10 +64,10 @@ export default function WeeklyPlanning() {
   }
 
   function toggleAll() {
-    if (visibleMetiers.size === METIERS.length) {
+    if (visibleMetiers.size === metiers.length) {
       setVisibleMetiers(new Set());
     } else {
-      setVisibleMetiers(new Set(METIERS.map(m => m.id)));
+      setVisibleMetiers(new Set(metiers.map(m => m.id)));
     }
   }
 
@@ -246,12 +246,12 @@ export default function WeeklyPlanning() {
         <div className="flex items-center gap-2">
           <Checkbox
             id="filter-all"
-            checked={visibleMetiers.size === METIERS.length}
+            checked={visibleMetiers.size === metiers.length}
             onCheckedChange={toggleAll}
           />
           <Label htmlFor="filter-all" className="text-sm font-medium cursor-pointer">Tout</Label>
         </div>
-        {METIERS.map(m => (
+        {metiers.map(m => (
           <div key={m.id} className="flex items-center gap-2">
             <Checkbox
               id={`filter-${m.id}`}
@@ -304,7 +304,7 @@ export default function WeeklyPlanning() {
 
                 {/* Poste rows */}
                 {dayPostes.map(poste => {
-                  const metier = METIERS.find(m => m.id === poste.metierId);
+                  const metier = metiers.find(m => m.id === poste.metierId);
                   const dayRdvs = rdvs.filter(r => {
                     if (r.posteId !== poste.id || r.statut === 'annule') return false;
                     const rdvStart = new Date(r.debut);

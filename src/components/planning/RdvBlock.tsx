@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { RendezVous, METIERS, StatutRdv, STATUT_LABELS } from '@/types';
+import { RendezVous, StatutRdv, STATUT_LABELS } from '@/types';
 import { format } from 'date-fns';
 import { useStore } from '@/store/StoreContext';
 import { CheckSquare } from 'lucide-react';
@@ -24,10 +24,10 @@ const statusDot: Record<StatutRdv, string> = {
 };
 
 export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConflict, isResizing }: Props) {
-  const { postes } = useStore();
+  const { postes, metiers } = useStore();
   const { user } = useAuth();
   const poste = postes.find(p => p.id === rdv.posteId);
-  const metier = METIERS.find(m => m.id === poste?.metierId);
+  const metier = metiers.find(m => m.id === poste?.metierId);
   const isOwner = rdv.createdBy === user?.id;
 
   const isNoShow = rdv.statut === 'noshow';
