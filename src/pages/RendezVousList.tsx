@@ -24,7 +24,7 @@ import { Search, MoreHorizontal } from 'lucide-react';
 import RdvModal from '@/components/planning/RdvModal';
 import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
-import { getEventState, roundToNearest15Minutes } from '@/lib/planning';
+import { getEventState, roundToNearest15Minutes, isUnresolved } from '@/lib/planning';
 
 const statusBadgeClass: Record<StatutRdv, string> = {
   prevu: 'bg-muted text-muted-foreground',
@@ -151,10 +151,11 @@ export default function RendezVousList() {
               {filtered.map(r => {
                 const poste = postes.find(p => p.id === r.posteId);
                 const metier = METIERS.find(m => m.id === poste?.metierId);
+                const unresolved = isUnresolved(r.debut, r.fin, r.statut);
                 return (
                   <tr
                     key={r.id}
-                    className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                    className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${unresolved ? 'text-destructive' : ''}`}
                     onClick={() => { setEditRdv(r); setModalOpen(true); }}
                   >
                     <td className="px-4 py-3 font-medium">
