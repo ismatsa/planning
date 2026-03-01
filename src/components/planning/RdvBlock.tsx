@@ -17,6 +17,7 @@ const statusDot: Record<StatutRdv, string> = {
   confirme: 'bg-green-400',
   annule: 'bg-destructive',
   noshow: 'bg-background/60',
+  termine: 'bg-emerald-500',
 };
 
 export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConflict, isResizing }: Props) {
@@ -24,17 +25,23 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const poste = postes.find(p => p.id === rdv.posteId);
   const metier = METIERS.find(m => m.id === poste?.metierId);
 
+  const isNoShow = rdv.statut === 'noshow';
+
   const bgColor = hasConflict
     ? 'hsl(var(--destructive))'
-    : metier
-      ? `hsl(var(--${metier.couleur}))`
-      : 'hsl(var(--muted))';
+    : isNoShow
+      ? '#000000'
+      : metier
+        ? `hsl(var(--${metier.couleur}))`
+        : 'hsl(var(--muted))';
 
   const textColor = hasConflict
     ? 'hsl(var(--destructive-foreground))'
-    : metier
-      ? `hsl(var(--${metier.couleur}-foreground))`
-      : 'hsl(var(--muted-foreground))';
+    : isNoShow
+      ? '#ffffff'
+      : metier
+        ? `hsl(var(--${metier.couleur}-foreground))`
+        : 'hsl(var(--muted-foreground))';
 
   const [showTooltip, setShowTooltip] = useState(false);
   const [hovered, setHovered] = useState(false);

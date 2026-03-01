@@ -22,7 +22,8 @@ const statusBadgeClass: Record<StatutRdv, string> = {
   prevu: 'bg-muted text-muted-foreground',
   confirme: 'bg-green-100 text-green-700',
   annule: 'bg-destructive/10 text-destructive',
-  noshow: 'bg-mecanique-light text-mecanique',
+  noshow: 'bg-black text-white',
+  termine: 'bg-emerald-100 text-emerald-700',
 };
 
 export default function RendezVousList() {

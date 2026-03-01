@@ -35,7 +35,7 @@ export interface ExceptionDisponibilite {
   plagesOverride?: PlageHoraire[];
 }
 
-export type StatutRdv = 'prevu' | 'confirme' | 'annule' | 'noshow';
+export type StatutRdv = 'prevu' | 'confirme' | 'annule' | 'noshow' | 'termine';
 
 export interface RendezVous {
   id: string;
@@ -86,4 +86,5 @@ export const STATUT_LABELS: Record<StatutRdv, string> = {
   confirme: 'Confirmé',
   annule: 'Annulé',
   noshow: 'No-show',
+  termine: 'Terminé',
 };
