@@ -153,13 +153,13 @@ export function PhoneInput({
   return (
     <div className={cn('flex gap-1.5', className)}>
       <Select value={countryCode} onValueChange={onCountryCodeChange}>
-        <SelectTrigger className="w-[100px] shrink-0">
-          <SelectValue />
+        <SelectTrigger className="w-[52px] shrink-0 px-2">
+          <span className="text-base">{COUNTRY_CODES.find(c => c.code === countryCode)?.flag ?? '🌐'}</span>
         </SelectTrigger>
         <SelectContent className="max-h-48 bg-popover z-50">
           {COUNTRY_CODES.map(cc => (
             <SelectItem key={cc.code} value={cc.code}>
-              {cc.label}
+              {cc.flag} {cc.code} {cc.name}
             </SelectItem>
           ))}
         </SelectContent>
