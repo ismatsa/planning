@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { RendezVous, StatutRdv, STATUT_LABELS } from '@/types';
 import { format } from 'date-fns';
+import { parsePhone } from '@/components/ui/phone-input';
 import { useStore } from '@/store/StoreContext';
 import { CheckSquare } from 'lucide-react';
 import { isUnresolved } from '@/lib/planning';
@@ -176,7 +177,7 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
           {isOwner && rdv.clientNom && (
             <div className="pt-1 border-t border-border">
               <span className="font-semibold">{rdv.clientNom}</span>
-              {rdv.clientTel && <span className="ml-2 text-muted-foreground">{rdv.clientTel}</span>}
+              {rdv.clientTel && <span className="ml-2 text-muted-foreground">{parsePhone(rdv.clientTel).number || rdv.clientTel}</span>}
             </div>
           )}
 

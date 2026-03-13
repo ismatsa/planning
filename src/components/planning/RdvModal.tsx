@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { PhoneInput, parsePhone, serializePhone } from '@/components/ui/phone-input';
 import { useStore } from '@/store/StoreContext';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
@@ -48,7 +49,8 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
   const [dureeHeures, setDureeHeures] = useState('1');
   const [dureeMinutes, setDureeMinutes] = useState('0');
   const [clientNom, setClientNom] = useState('');
-  const [clientTel, setClientTel] = useState('');
+  const [clientTelCode, setClientTelCode] = useState('+212');
+  const [clientTelNum, setClientTelNum] = useState('');
   const [marque, setMarque] = useState('');
   const [modele, setModele] = useState('');
   const [annee, setAnnee] = useState('');
@@ -78,7 +80,9 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setDureeMinutes((rem % 60).toString());
       setHeureFin(format(new Date(rdv.fin), 'HH:mm'));
       setClientNom(rdv.clientNom || '');
-      setClientTel(rdv.clientTel || '');
+      const parsed = parsePhone(rdv.clientTel || '');
+      setClientTelCode(parsed.countryCode);
+      setClientTelNum(parsed.number);
       setMarque(rdv.marque || '');
       setModele(rdv.modele || '');
       setAnnee(rdv.annee || '');
@@ -94,7 +98,8 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setHeureDebut(defaultTime || '09:00');
       setDuree(60);
       setClientNom('');
-      setClientTel('');
+      setClientTelCode('+212');
+      setClientTelNum('');
       setMarque('');
       setModele('');
       setAnnee('');
@@ -246,7 +251,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
         debut: debut.toISOString(),
         fin: fin.toISOString(),
         clientNom: clientNom || undefined,
-        clientTel: clientTel || undefined,
+        clientTel: serializePhone(clientTelCode, clientTelNum) || undefined,
         marque: marque || undefined,
         modele: modele || undefined,
         annee: annee || undefined,
@@ -261,7 +266,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
         debut: debut.toISOString(),
         fin: fin.toISOString(),
         clientNom: clientNom || undefined,
-        clientTel: clientTel || undefined,
+        clientTel: serializePhone(clientTelCode, clientTelNum) || undefined,
         marque: marque || undefined,
         modele: modele || undefined,
         annee: annee || undefined,
@@ -385,7 +390,12 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Téléphone</Label>
-              <Input placeholder="06 00 00 00 00" value={clientTel} onChange={e => setClientTel(e.target.value)} />
+              <PhoneInput
+                countryCode={clientTelCode}
+                number={clientTelNum}
+                onCountryCodeChange={setClientTelCode}
+                onNumberChange={setClientTelNum}
+              />
             </div>
           </div>
 
