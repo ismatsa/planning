@@ -292,7 +292,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg animate-slide-in max-h-[85dvh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-xl animate-slide-in max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="font-display text-lg">
             {isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
