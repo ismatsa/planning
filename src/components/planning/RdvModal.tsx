@@ -447,7 +447,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 sm:gap-0 shrink-0">
           {isEdit && (
             <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
               Supprimer
