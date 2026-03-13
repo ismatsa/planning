@@ -266,7 +266,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
         debut: debut.toISOString(),
         fin: fin.toISOString(),
         clientNom: clientNom || undefined,
-        clientTel: clientTel || undefined,
+        clientTel: serializePhone(clientTelCode, clientTelNum) || undefined,
         marque: marque || undefined,
         modele: modele || undefined,
         annee: annee || undefined,
