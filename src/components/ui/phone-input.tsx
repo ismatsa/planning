@@ -10,19 +10,20 @@ import {
 import { Input } from '@/components/ui/input';
 
 const COUNTRY_CODES = [
-  { code: '+212', label: '🇲🇦 +212', country: 'MA' },
-  { code: '+33', label: '🇫🇷 +33', country: 'FR' },
-  { code: '+1', label: '🇺🇸 +1', country: 'US' },
-  { code: '+44', label: '🇬🇧 +44', country: 'GB' },
-  { code: '+34', label: '🇪🇸 +34', country: 'ES' },
-  { code: '+49', label: '🇩🇪 +49', country: 'DE' },
-  { code: '+39', label: '🇮🇹 +39', country: 'IT' },
-  { code: '+32', label: '🇧🇪 +32', country: 'BE' },
-  { code: '+31', label: '🇳🇱 +31', country: 'NL' },
-  { code: '+216', label: '🇹🇳 +216', country: 'TN' },
-  { code: '+213', label: '🇩🇿 +213', country: 'DZ' },
-  { code: '+966', label: '🇸🇦 +966', country: 'SA' },
-  { code: '+971', label: '🇦🇪 +971', country: 'AE' },
+  { code: '+212', flag: '🇲🇦', name: 'Maroc', country: 'MA' },
+  { code: '+33', flag: '🇫🇷', name: 'France', country: 'FR' },
+  { code: '+1', flag: '🇺🇸', name: 'États-Unis', country: 'US' },
+  { code: '+44', flag: '🇬🇧', name: 'Royaume-Uni', country: 'GB' },
+  { code: '+34', flag: '🇪🇸', name: 'Espagne', country: 'ES' },
+  { code: '+49', flag: '🇩🇪', name: 'Allemagne', country: 'DE' },
+  { code: '+39', flag: '🇮🇹', name: 'Italie', country: 'IT' },
+  { code: '+32', flag: '🇧🇪', name: 'Belgique', country: 'BE' },
+  { code: '+31', flag: '🇳🇱', name: 'Pays-Bas', country: 'NL' },
+  { code: '+216', flag: '🇹🇳', name: 'Tunisie', country: 'TN' },
+  { code: '+213', flag: '🇩🇿', name: 'Algérie', country: 'DZ' },
+  { code: '+966', flag: '🇸🇦', name: 'Arabie Saoudite', country: 'SA' },
+  { code: '+971', flag: '🇦🇪', name: 'Émirats Arabes Unis', country: 'AE' },
+  { code: '+41', flag: '🇨🇭', name: 'Suisse', country: 'CH' },
 ];
 
 // Sort by code length descending so longer codes match first
