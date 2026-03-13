@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { RendezVous, StatutRdv, STATUT_LABELS } from '@/types';
 import { format } from 'date-fns';
+import { parsePhone } from '@/components/ui/phone-input';
 import { useStore } from '@/store/StoreContext';
 import { CheckSquare } from 'lucide-react';
 import { isUnresolved } from '@/lib/planning';
