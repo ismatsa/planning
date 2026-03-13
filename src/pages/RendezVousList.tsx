@@ -20,8 +20,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Search, MoreHorizontal } from 'lucide-react';
+import { Search, MoreHorizontal, MessageCircle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import RdvModal from '@/components/planning/RdvModal';
+import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
 import { getEventState, roundToNearest15Minutes, isUnresolved } from '@/lib/planning';
