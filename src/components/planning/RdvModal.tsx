@@ -49,7 +49,8 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
   const [dureeHeures, setDureeHeures] = useState('1');
   const [dureeMinutes, setDureeMinutes] = useState('0');
   const [clientNom, setClientNom] = useState('');
-  const [clientTel, setClientTel] = useState('');
+  const [clientTelCode, setClientTelCode] = useState('+212');
+  const [clientTelNum, setClientTelNum] = useState('');
   const [marque, setMarque] = useState('');
   const [modele, setModele] = useState('');
   const [annee, setAnnee] = useState('');
