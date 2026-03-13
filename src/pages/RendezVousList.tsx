@@ -151,6 +151,7 @@ export default function RendezVousList() {
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Horaire</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Poste</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Client</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Téléphone</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Véhicule</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Statut</th>
                 <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Actions</th>
