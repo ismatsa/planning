@@ -80,7 +80,9 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setDureeMinutes((rem % 60).toString());
       setHeureFin(format(new Date(rdv.fin), 'HH:mm'));
       setClientNom(rdv.clientNom || '');
-      setClientTel(rdv.clientTel || '');
+      const parsed = parsePhone(rdv.clientTel || '');
+      setClientTelCode(parsed.countryCode);
+      setClientTelNum(parsed.number);
       setMarque(rdv.marque || '');
       setModele(rdv.modele || '');
       setAnnee(rdv.annee || '');
