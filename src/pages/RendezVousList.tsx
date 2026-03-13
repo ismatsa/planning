@@ -20,8 +20,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Search, MoreHorizontal } from 'lucide-react';
+import { Search, MoreHorizontal, MessageCircle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import RdvModal from '@/components/planning/RdvModal';
+import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
 import { getEventState, roundToNearest15Minutes, isUnresolved } from '@/lib/planning';
@@ -145,6 +151,7 @@ export default function RendezVousList() {
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Horaire</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Poste</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Client</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Téléphone</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Véhicule</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Statut</th>
                 <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Actions</th>
@@ -179,6 +186,30 @@ export default function RendezVousList() {
                       </span>
                     </td>
                     <td className="px-4 py-3">{r.createdBy === user?.id ? (r.clientNom || '—') : '—'}</td>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      {r.createdBy === user?.id && r.clientTel ? (() => {
+                        const { countryCode, number } = parsePhone(r.clientTel);
+                        const waNum = toWhatsAppNumber(countryCode, number);
+                        const display = `${countryCode} ${number}`;
+                        return (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={`https://wa.me/${waNum}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-sm hover:underline cursor-pointer"
+                                style={{ color: '#25D366' }}
+                              >
+                                <MessageCircle className="h-4 w-4 shrink-0" />
+                                <span>{display}</span>
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent>Envoyer un message WhatsApp</TooltipContent>
+                          </Tooltip>
+                        );
+                      })() : '—'}
+                    </td>
                     <td className="px-4 py-3 text-xs">{[r.marque, r.modele].filter(Boolean).join(' ') || '—'}</td>
                     <td className="px-4 py-3">
                       <Badge variant="secondary" className={statusBadgeClass[r.statut]}>
