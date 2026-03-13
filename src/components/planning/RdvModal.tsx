@@ -292,14 +292,20 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg animate-slide-in">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg animate-slide-in max-h-[85dvh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="font-display text-lg">
             {isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2">
+        <div className="grid gap-4 py-2 overflow-y-auto flex-1 -mx-6 px-6 pb-4 [&_input:focus]:ring-2 [&_input:focus]:ring-primary/50 [&_textarea:focus]:ring-2 [&_textarea:focus]:ring-primary/50 [&_input:focus]:scroll-mt-4 [&_textarea:focus]:scroll-mt-4 sm:overflow-y-visible sm:flex-none sm:mx-0 sm:px-0 sm:pb-0" onFocus={(e) => {
+            if (window.innerWidth < 768 && (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+              setTimeout(() => {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }
+          }}>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier</Label>
@@ -441,7 +447,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 sm:gap-0 shrink-0">
           {isEdit && (
             <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
               Supprimer
