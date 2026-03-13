@@ -299,7 +299,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2 overflow-y-auto flex-1 -mx-6 px-6 pb-4 [&_input:focus]:ring-2 [&_input:focus]:ring-primary/50 [&_textarea:focus]:ring-2 [&_textarea:focus]:ring-primary/50 [&_input:focus]:scroll-mt-4 [&_textarea:focus]:scroll-mt-4 sm:overflow-y-visible sm:flex-none sm:mx-0 sm:px-0 sm:pb-0" onFocus={(e) => {
+        <div className="grid gap-4 py-2 overflow-y-auto flex-1 -mx-6 px-6 pb-4 [&_input:focus]:ring-2 [&_input:focus]:ring-primary/50 [&_textarea:focus]:ring-2 [&_textarea:focus]:ring-primary/50 [&_input:focus]:scroll-mt-4 [&_textarea:focus]:scroll-mt-4" onFocus={(e) => {
             if (window.innerWidth < 768 && (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
               setTimeout(() => {
                 e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
