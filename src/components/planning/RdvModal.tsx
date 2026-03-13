@@ -98,7 +98,8 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       setHeureDebut(defaultTime || '09:00');
       setDuree(60);
       setClientNom('');
-      setClientTel('');
+      setClientTelCode('+212');
+      setClientTelNum('');
       setMarque('');
       setModele('');
       setAnnee('');
