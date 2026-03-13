@@ -177,7 +177,7 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
           {isOwner && rdv.clientNom && (
             <div className="pt-1 border-t border-border">
               <span className="font-semibold">{rdv.clientNom}</span>
-              {rdv.clientTel && <span className="ml-2 text-muted-foreground">{rdv.clientTel}</span>}
+              {rdv.clientTel && <span className="ml-2 text-muted-foreground">{parsePhone(rdv.clientTel).number || rdv.clientTel}</span>}
             </div>
           )}
 
