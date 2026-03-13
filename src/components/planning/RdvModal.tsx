@@ -390,7 +390,12 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Téléphone</Label>
-              <Input placeholder="06 00 00 00 00" value={clientTel} onChange={e => setClientTel(e.target.value)} />
+              <PhoneInput
+                countryCode={clientTelCode}
+                number={clientTelNum}
+                onCountryCodeChange={setClientTelCode}
+                onNumberChange={setClientTelNum}
+              />
             </div>
           </div>
 
