@@ -42,7 +42,7 @@ const statusBadgeClass: Record<StatutRdv, string> = {
 };
 
 export default function RendezVousList() {
-  const { rdvs, postes, updateRdv, metiers } = useStore();
+  const { rdvs, postes, updateRdv, metiers, appointmentResponsibles } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const [filterMetier, setFilterMetier] = useState<string>('all');
   const [filterStatut, setFilterStatut] = useState<string>('all');
