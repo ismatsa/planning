@@ -105,8 +105,9 @@ export default function WeeklyPlanning() {
 
   // --- Resize handlers ---
   const handleResizeStart = useCallback((rdv: RendezVous, edge: 'left' | 'right', e: React.MouseEvent) => {
-    if (rdv.createdBy !== user?.id) {
-      toast.error("Vous ne pouvez modifier que vos propres rendez-vous.");
+    const responsibles = appointmentResponsibles[rdv.id] || [];
+    if (!responsibles.includes(user?.id || '')) {
+      toast.error("Seuls les responsables peuvent modifier ce rendez-vous.");
       return;
     }
     const start = new Date(rdv.debut);
