@@ -22,19 +22,20 @@ import { useStore } from '@/store/StoreContext';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Eye } from 'lucide-react';
 import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   rdv?: RendezVous | null;
+  readOnly?: boolean;
   defaultDate?: Date;
   defaultPosteId?: string;
   defaultTime?: string;
 }
 
-export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPosteId, defaultTime }: Props) {
+export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime }: Props) {
   const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers } = useStore();
   const isEdit = !!rdv;
 
@@ -295,8 +296,14 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
       <DialogContent className="sm:max-w-xl animate-slide-in max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="font-display text-lg">
-            {isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
+            {readOnly ? 'Détails du rendez-vous' : isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
           </DialogTitle>
+          {readOnly && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+              <Eye className="h-3.5 w-3.5" />
+              Consultation uniquement — seul le créateur peut modifier ce rendez-vous.
+            </p>
+          )}
         </DialogHeader>
 
         <div className="grid gap-4 py-2 overflow-y-auto flex-1 -mx-6 px-6 pb-4 [&_input:focus]:ring-2 [&_input:focus]:ring-primary/50 [&_textarea:focus]:ring-2 [&_textarea:focus]:ring-primary/50 [&_input:focus]:scroll-mt-4 [&_textarea:focus]:scroll-mt-4" onFocus={(e) => {
@@ -309,7 +316,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier</Label>
-              <Select value={metierId} onValueChange={v => setMetierId(v as MetierType)}>
+              <Select value={metierId} onValueChange={v => setMetierId(v as MetierType)} disabled={readOnly}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {metiers.map(m => (
@@ -320,7 +327,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste</Label>
-              <Select value={posteId} onValueChange={setPosteId}>
+              <Select value={posteId} onValueChange={setPosteId} disabled={readOnly}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {filteredPostes.map(p => (
@@ -334,18 +341,18 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Date début</Label>
-              <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+              <Input type="date" value={date} onChange={e => setDate(e.target.value)} disabled={readOnly} />
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Date fin</Label>
-              <Input type="date" value={dateFin} onChange={e => handleDateFinChange(e.target.value)} />
+              <Input type="date" value={dateFin} onChange={e => handleDateFinChange(e.target.value)} disabled={readOnly} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Heure début</Label>
-              <Select value={heureDebut} onValueChange={setHeureDebut}>
+              <Select value={heureDebut} onValueChange={setHeureDebut} disabled={readOnly}>
                 <SelectTrigger><SelectValue placeholder="--:--" /></SelectTrigger>
                 <SelectContent className="max-h-48 bg-popover z-50">
                   {timeSlotOptions.map(t => (
@@ -356,7 +363,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Heure fin</Label>
-              <Select value={heureFin} onValueChange={handleHeureFinChange}>
+              <Select value={heureFin} onValueChange={handleHeureFinChange} disabled={readOnly}>
                 <SelectTrigger><SelectValue placeholder="--:--" /></SelectTrigger>
                 <SelectContent className="max-h-48 bg-popover z-50">
                   {timeSlotOptions.map(t => (
@@ -370,15 +377,15 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Durée (j)</Label>
-              <Input type="number" min="0" value={dureeJours} onChange={e => handleDureeJoursChange(e.target.value)} />
+              <Input type="number" min="0" value={dureeJours} onChange={e => handleDureeJoursChange(e.target.value)} disabled={readOnly} />
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Durée (h)</Label>
-              <Input type="number" min="0" max="23" value={dureeHeures} onChange={e => handleDureeHeuresChange(e.target.value)} />
+              <Input type="number" min="0" max="23" value={dureeHeures} onChange={e => handleDureeHeuresChange(e.target.value)} disabled={readOnly} />
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Durée (min)</Label>
-              <Input type="number" min="0" step="15" value={dureeMinutes} onChange={e => handleDureeMinutesChange(e.target.value)} />
+              <Input type="number" min="0" step="15" value={dureeMinutes} onChange={e => handleDureeMinutesChange(e.target.value)} disabled={readOnly} />
             </div>
           </div>
 
@@ -392,7 +399,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Client (nom)</Label>
-              <Input placeholder="Nom du client" value={clientNom} onChange={e => setClientNom(e.target.value)} />
+              <Input placeholder="Nom du client" value={clientNom} onChange={e => setClientNom(e.target.value)} disabled={readOnly} />
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Téléphone</Label>
@@ -401,6 +408,7 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
                 number={clientTelNum}
                 onCountryCodeChange={setClientTelCode}
                 onNumberChange={setClientTelNum}
+                disabled={readOnly}
               />
             </div>
           </div>
@@ -408,33 +416,33 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Marque</Label>
-              <Input placeholder="Ex: BMW" value={marque} onChange={e => setMarque(e.target.value)} />
+              <Input placeholder="Ex: BMW" value={marque} onChange={e => setMarque(e.target.value)} disabled={readOnly} />
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Modèle</Label>
-              <Input placeholder="Ex: Série 3" value={modele} onChange={e => setModele(e.target.value)} />
+              <Input placeholder="Ex: Série 3" value={modele} onChange={e => setModele(e.target.value)} disabled={readOnly} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Année</Label>
-              <Input placeholder="Ex: 2020" value={annee} onChange={e => setAnnee(e.target.value)} />
+              <Input placeholder="Ex: 2020" value={annee} onChange={e => setAnnee(e.target.value)} disabled={readOnly} />
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">VIN</Label>
-              <Input placeholder="N° de châssis" value={vin} onChange={e => setVin(e.target.value)} />
+              <Input placeholder="N° de châssis" value={vin} onChange={e => setVin(e.target.value)} disabled={readOnly} />
             </div>
           </div>
 
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1.5">Notes internes</Label>
-            <Textarea placeholder="Ex: prévoir huile, carto stage 1…" value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
+            <Textarea placeholder="Ex: prévoir huile, carto stage 1…" value={notes} onChange={e => setNotes(e.target.value)} rows={2} disabled={readOnly} />
           </div>
 
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1.5">Statut</Label>
-            <Select value={statut} onValueChange={v => setStatut(v as StatutRdv)}>
+            <Select value={statut} onValueChange={v => setStatut(v as StatutRdv)} disabled={readOnly}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(STATUT_LABELS).map(([k, v]) => {
@@ -448,15 +456,21 @@ export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPoste
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0 shrink-0">
-          {isEdit && (
-            <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
-              Supprimer
-            </Button>
+          {readOnly ? (
+            <Button variant="outline" onClick={onClose}>Fermer</Button>
+          ) : (
+            <>
+              {isEdit && (
+                <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
+                  Supprimer
+                </Button>
+              )}
+              <Button variant="outline" onClick={onClose}>Annuler</Button>
+              <Button onClick={handleSubmit} disabled={saving}>
+                {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
+              </Button>
+            </>
           )}
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

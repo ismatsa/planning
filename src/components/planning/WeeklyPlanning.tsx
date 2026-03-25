@@ -79,10 +79,6 @@ export default function WeeklyPlanning() {
 
   function openEditRdv(rdv: RendezVous) {
     if (resizingRdvId) return;
-    if (rdv.createdBy !== user?.id) {
-      toast.error("Vous ne pouvez modifier que vos propres rendez-vous.");
-      return;
-    }
     setEditRdv(rdv);
     setModalOpen(true);
   }
@@ -398,6 +394,7 @@ export default function WeeklyPlanning() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         rdv={editRdv}
+        readOnly={!!editRdv && editRdv.createdBy !== user?.id}
         defaultDate={newRdvDefaults.date}
         defaultPosteId={newRdvDefaults.posteId}
         defaultTime={newRdvDefaults.time}

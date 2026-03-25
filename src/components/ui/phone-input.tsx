@@ -105,9 +105,10 @@ interface PhoneInputProps {
   onCountryCodeChange: (code: string) => void;
   onNumberChange: (num: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function PhoneInput({ countryCode, number, onCountryCodeChange, onNumberChange, className }: PhoneInputProps) {
+export function PhoneInput({ countryCode, number, onCountryCodeChange, onNumberChange, className, disabled }: PhoneInputProps) {
   function processInput(raw: string) {
     const cleaned = cleanPhone(raw);
     const detected = detectCountryCode(cleaned);
@@ -140,7 +141,7 @@ export function PhoneInput({ countryCode, number, onCountryCodeChange, onNumberC
 
   return (
     <div className={cn("flex gap-1.5", className)}>
-      <Select value={countryCode} onValueChange={onCountryCodeChange}>
+      <Select value={countryCode} onValueChange={onCountryCodeChange} disabled={disabled}>
         <SelectTrigger className="w-[52px] shrink-0 px-2">
           <span className="text-base">{COUNTRY_CODES.find((c) => c.code === countryCode)?.flag ?? "🌐"}</span>
         </SelectTrigger>
@@ -158,6 +159,7 @@ export function PhoneInput({ countryCode, number, onCountryCodeChange, onNumberC
         onChange={handleChange}
         onPaste={handlePaste}
         onBlur={handleBlur}
+        disabled={disabled}
       />
     </div>
   );
