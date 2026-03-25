@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'update') {
-      const { user_id, poste_ids, active } = payload
+      const { user_id, poste_ids, active, company } = payload
       if (!user_id) throw new Error('user_id requis')
 
       // Check target role
