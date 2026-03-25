@@ -47,6 +47,7 @@ export default function UserManagement() {
 
   // Edit form
   const [editPosteIds, setEditPosteIds] = useState<string[]>([]);
+  const [editCompany, setEditCompany] = useState('');
 
   async function loadUsers() {
     const [profilesRes, rolesRes, permsRes] = await Promise.all([
