@@ -84,14 +84,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Update active status
-      if (active !== undefined) {
-        await adminClient.from('profiles').update({ active }).eq('id', user_id)
-        if (!active) {
-          await adminClient.auth.admin.updateUserById(user_id, { ban_duration: '876000h' })
-        } else {
-          await adminClient.auth.admin.updateUserById(user_id, { ban_duration: 'none' })
-        }
+      // Update profile fields
+      const profileUpdate: Record<string, any> = {}
+      if (active !== undefined) profileUpdate.active = active
+      if (company !== undefined) profileUpdate.company = company
+      
+      if (Object.keys(profileUpdate).length > 0) {
+        await adminClient.from('profiles').update(profileUpdate).eq('id', user_id)
+      }
+      
+      if (active === false) {
+        await adminClient.auth.admin.updateUserById(user_id, { ban_duration: '876000h' })
+      } else if (active === true) {
+        await adminClient.auth.admin.updateUserById(user_id, { ban_duration: 'none' })
       }
 
       // Update permissions (only for contributeurs)
