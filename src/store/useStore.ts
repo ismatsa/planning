@@ -80,16 +80,22 @@ export function useAppStore() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
+  // Pivot data: responsibles & intervenants per appointment
+  const [appointmentResponsibles, setAppointmentResponsibles] = useState<Record<string, string[]>>({});
+  const [appointmentIntervenants, setAppointmentIntervenants] = useState<Record<string, string[]>>({});
+
   // Load all data on mount
   useEffect(() => {
     async function loadAll() {
-      const [metiersRes, postesRes, disposRes, exceptionsRes, rdvsRes, settingsRes] = await Promise.all([
+      const [metiersRes, postesRes, disposRes, exceptionsRes, rdvsRes, settingsRes, respRes, intRes] = await Promise.all([
         supabase.from('metiers').select('*'),
         supabase.from('postes').select('*'),
         supabase.from('disponibilite_postes').select('*'),
         supabase.from('exception_disponibilites').select('*'),
         supabase.from('rendez_vous').select('*'),
         supabase.from('app_settings').select('*').eq('id', 1).single(),
+        supabase.from('appointment_responsibles').select('*'),
+        supabase.from('appointment_intervenants').select('*'),
       ]);
 
       if (metiersRes.data) setMetiers(metiersRes.data.map(mapMetier));
@@ -98,6 +104,27 @@ export function useAppStore() {
       if (exceptionsRes.data) setExceptions(exceptionsRes.data.map(mapException));
       if (rdvsRes.data) setRdvs(rdvsRes.data.map(mapRdv));
       if (settingsRes.data) setSettings(mapSettings(settingsRes.data));
+
+      // Build pivot maps
+      if (respRes.data) {
+        const map: Record<string, string[]> = {};
+        for (const r of respRes.data) {
+          const aid = (r as any).appointment_id;
+          if (!map[aid]) map[aid] = [];
+          map[aid].push((r as any).user_id);
+        }
+        setAppointmentResponsibles(map);
+      }
+      if (intRes.data) {
+        const map: Record<string, string[]> = {};
+        for (const r of intRes.data) {
+          const aid = (r as any).appointment_id;
+          if (!map[aid]) map[aid] = [];
+          map[aid].push((r as any).intervenant_id);
+        }
+        setAppointmentIntervenants(map);
+      }
+
       setLoaded(true);
     }
     loadAll();
