@@ -169,7 +169,7 @@ export function useAppStore() {
     }
   }, []);
 
-  const updateRdv = useCallback(async (rdv: RendezVous) => {
+  const updateRdv = useCallback(async (rdv: RendezVous, responsibleIds?: string[], intervenantIds?: string[]) => {
     const { data, error } = await supabase.from('rendez_vous').update({
       poste_id: rdv.posteId,
       debut: rdv.debut,
@@ -186,6 +186,28 @@ export function useAppStore() {
 
     if (data && !error) {
       setRdvs(prev => prev.map(r => r.id === rdv.id ? mapRdv(data) : r));
+
+      // Update responsibles if provided
+      if (responsibleIds !== undefined) {
+        await supabase.from('appointment_responsibles').delete().eq('appointment_id', rdv.id);
+        if (responsibleIds.length > 0) {
+          await supabase.from('appointment_responsibles').insert(
+            responsibleIds.map(uid => ({ appointment_id: rdv.id, user_id: uid })) as any
+          );
+        }
+        setAppointmentResponsibles(prev => ({ ...prev, [rdv.id]: responsibleIds }));
+      }
+
+      // Update intervenants if provided
+      if (intervenantIds !== undefined) {
+        await supabase.from('appointment_intervenants').delete().eq('appointment_id', rdv.id);
+        if (intervenantIds.length > 0) {
+          await supabase.from('appointment_intervenants').insert(
+            intervenantIds.map(iid => ({ appointment_id: rdv.id, intervenant_id: iid })) as any
+          );
+        }
+        setAppointmentIntervenants(prev => ({ ...prev, [rdv.id]: intervenantIds }));
+      }
     }
   }, []);
 
