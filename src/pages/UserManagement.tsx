@@ -63,6 +63,7 @@ export default function UserManagement() {
     const merged: UserRow[] = profiles.map((p: any) => ({
       id: p.id,
       email: p.email,
+      company: p.company || null,
       role: (roles.find((r: any) => r.user_id === p.id)?.role as 'administrateur' | 'contributeur') || 'contributeur',
       active: p.active,
       posteIds: perms.filter((perm: any) => perm.user_id === p.id).map((perm: any) => perm.poste_id),
