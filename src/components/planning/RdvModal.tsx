@@ -342,8 +342,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     }
   }
 
-  // Multi-select helper component
-  function MultiSelectField({ 
+  // Searchable multi-select component
+  function SearchableMultiSelect({ 
     label, 
     options, 
     selected, 
@@ -351,6 +351,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     disabled, 
     required,
     getLabel,
+    placeholder,
   }: { 
     label: string;
     options: { id: string; label: string }[];
@@ -359,7 +360,17 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     disabled?: boolean;
     required?: boolean;
     getLabel: (id: string) => string;
+    placeholder?: string;
   }) {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
+
+    const filtered = useMemo(() => {
+      if (!searchTerm.trim()) return options;
+      const s = searchTerm.toLowerCase();
+      return options.filter(o => o.label.toLowerCase().includes(s));
+    }, [options, searchTerm]);
+
     return (
       <div>
         <Label className="text-xs font-medium text-muted-foreground mb-1.5">
@@ -378,11 +389,11 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
             )}
           </div>
         ) : (
-          <Popover>
+          <Popover open={isOpen} onOpenChange={(v) => { setIsOpen(v); if (!v) setSearchTerm(''); }}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full justify-start font-normal h-auto min-h-[2.5rem] py-1.5">
                 {selected.length === 0 ? (
-                  <span className="text-muted-foreground">Sélectionner…</span>
+                  <span className="text-muted-foreground text-sm">{placeholder || 'Sélectionner…'}</span>
                 ) : (
                   <div className="flex flex-wrap gap-1">
                     {selected.map(id => (
@@ -401,25 +412,36 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-64 p-2 max-h-48 overflow-auto" align="start">
-              {options.map(opt => (
-                <label key={opt.id} className="flex items-center gap-2 text-sm cursor-pointer py-1.5 px-2 rounded hover:bg-muted/50">
-                  <Checkbox
-                    checked={selected.includes(opt.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        onChange([...selected, opt.id]);
-                      } else {
-                        onChange(selected.filter(s => s !== opt.id));
-                      }
-                    }}
-                  />
-                  {opt.label}
-                </label>
-              ))}
-              {options.length === 0 && (
-                <p className="text-xs text-muted-foreground px-2 py-1">Aucune option disponible</p>
-              )}
+            <PopoverContent className="w-64 p-0" align="start" onWheel={(e) => e.stopPropagation()}>
+              <div className="p-2 border-b">
+                <Input
+                  placeholder={placeholder || 'Rechercher…'}
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="h-8 text-sm"
+                  autoFocus
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto overscroll-contain p-1">
+                {filtered.map(opt => (
+                  <label key={opt.id} className="flex items-center gap-2 text-sm cursor-pointer py-1.5 px-2 rounded hover:bg-muted/50">
+                    <Checkbox
+                      checked={selected.includes(opt.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          onChange([...selected, opt.id]);
+                        } else {
+                          onChange(selected.filter(s => s !== opt.id));
+                        }
+                      }}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+                {filtered.length === 0 && (
+                  <p className="text-xs text-muted-foreground px-2 py-2">Aucun résultat</p>
+                )}
+              </div>
             </PopoverContent>
           </Popover>
         )}
