@@ -450,7 +450,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   }
 
   const responsibleOptions = useMemo(() => 
-    profileOptions.map(p => ({ id: p.id, label: `${p.company} (${p.email})` })),
+    profileOptions.map(p => ({ id: p.id, label: p.company })),
     [profileOptions]
   );
 
