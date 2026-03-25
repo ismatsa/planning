@@ -455,15 +455,21 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
           </div>
 
         <DialogFooter className="gap-2 sm:gap-0 shrink-0">
-          {isEdit && (
-            <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
-              Supprimer
-            </Button>
+          {readOnly ? (
+            <Button variant="outline" onClick={onClose}>Fermer</Button>
+          ) : (
+            <>
+              {isEdit && (
+                <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
+                  Supprimer
+                </Button>
+              )}
+              <Button variant="outline" onClick={onClose}>Annuler</Button>
+              <Button onClick={handleSubmit} disabled={saving}>
+                {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
+              </Button>
+            </>
           )}
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
