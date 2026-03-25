@@ -123,7 +123,7 @@ export default function WeeklyPlanning() {
     resizeRef.current = { rdv, edge, startX: e.clientX, origLeftPx: leftPx, origWidthPx: widthPx, dayDate };
     setResizingRdvId(rdv.id);
     setResizePreview({ left: leftPx, width: widthPx });
-  }, [minMinutes, PX_PER_MINUTE, user?.id]);
+  }, [minMinutes, PX_PER_MINUTE, user?.id, appointmentResponsibles]);
 
   useEffect(() => {
     if (!resizingRdvId) return;
