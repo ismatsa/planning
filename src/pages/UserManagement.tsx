@@ -43,6 +43,7 @@ export default function UserManagement() {
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<'administrateur' | 'contributeur'>('contributeur');
   const [newPosteIds, setNewPosteIds] = useState<string[]>([]);
+  const [newCompany, setNewCompany] = useState('');
 
   // Edit form
   const [editPosteIds, setEditPosteIds] = useState<string[]>([]);
