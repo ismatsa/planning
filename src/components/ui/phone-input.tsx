@@ -105,9 +105,10 @@ interface PhoneInputProps {
   onCountryCodeChange: (code: string) => void;
   onNumberChange: (num: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function PhoneInput({ countryCode, number, onCountryCodeChange, onNumberChange, className }: PhoneInputProps) {
+export function PhoneInput({ countryCode, number, onCountryCodeChange, onNumberChange, className, disabled }: PhoneInputProps) {
   function processInput(raw: string) {
     const cleaned = cleanPhone(raw);
     const detected = detectCountryCode(cleaned);
