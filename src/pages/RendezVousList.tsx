@@ -218,7 +218,7 @@ export default function RendezVousList() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                      {r.createdBy === user?.id ? (
+                      {(appointmentResponsibles[r.id] || []).includes(user?.id || '') ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-7 w-7">
