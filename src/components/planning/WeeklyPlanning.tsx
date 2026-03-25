@@ -18,7 +18,7 @@ const SLOT_WIDTH = 80; // px per time slot
 const DAYS_SHOWN = 6;
 
 export default function WeeklyPlanning() {
-  const { rdvs, postes, settings, updateRdv, checkConflict, metiers } = useStore();
+  const { rdvs, postes, settings, updateRdv, checkConflict, metiers, appointmentResponsibles } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const { collapsed } = useSidebarState();
   const [startDate, setStartDate] = useState(new Date());
