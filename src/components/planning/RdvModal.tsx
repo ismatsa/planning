@@ -481,6 +481,35 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               }, 300);
             }
           }}>
+          {/* Responsable & Intervenant - top row */}
+          <div className="grid grid-cols-2 gap-3">
+            <SearchableMultiSelect
+              label="Responsable"
+              options={responsibleOptions}
+              selected={selectedResponsibles}
+              onChange={setSelectedResponsibles}
+              disabled={readOnly}
+              required
+              placeholder="Rechercher un responsable..."
+              getLabel={(id) => {
+                const p = profileOptions.find(p => p.id === id);
+                return p ? p.company : id;
+              }}
+            />
+            <SearchableMultiSelect
+              label="Intervenant"
+              options={intervenantOpts}
+              selected={selectedIntervenants}
+              onChange={setSelectedIntervenants}
+              disabled={readOnly}
+              placeholder="Rechercher un intervenant..."
+              getLabel={(id) => {
+                const i = intervenantOptions.find(i => i.id === id);
+                return i ? i.name : id;
+              }}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier</Label>
