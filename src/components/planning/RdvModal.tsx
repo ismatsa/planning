@@ -22,7 +22,7 @@ import { useStore } from '@/store/StoreContext';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Eye } from 'lucide-react';
 import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
 
 interface Props {
