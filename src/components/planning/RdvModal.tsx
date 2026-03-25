@@ -593,32 +593,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
             </div>
           )}
 
-          {/* Responsable */}
-          <MultiSelectField
-            label="Responsable"
-            options={responsibleOptions}
-            selected={selectedResponsibles}
-            onChange={setSelectedResponsibles}
-            disabled={readOnly}
-            required
-            getLabel={(id) => {
-              const p = profileOptions.find(p => p.id === id);
-              return p ? `${p.company}` : id;
-            }}
-          />
-
-          {/* Intervenant */}
-          <MultiSelectField
-            label="Intervenant"
-            options={intervenantOpts}
-            selected={selectedIntervenants}
-            onChange={setSelectedIntervenants}
-            disabled={readOnly}
-            getLabel={(id) => {
-              const i = intervenantOptions.find(i => i.id === id);
-              return i ? i.name : id;
-            }}
-          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>
