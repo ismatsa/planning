@@ -17,13 +17,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { PhoneInput, parsePhone, serializePhone } from '@/components/ui/phone-input';
 import { useStore } from '@/store/StoreContext';
+import { supabase } from '@/integrations/supabase/client';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
-import { AlertCircle, Eye } from 'lucide-react';
+import { AlertCircle, Eye, X } from 'lucide-react';
 import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface Props {
   open: boolean;
@@ -35,8 +43,19 @@ interface Props {
   defaultTime?: string;
 }
 
+interface ProfileOption {
+  id: string;
+  email: string;
+  company: string;
+}
+
+interface IntervenantOption {
+  id: string;
+  name: string;
+}
+
 export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime }: Props) {
-  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers } = useStore();
+  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
   const isEdit = !!rdv;
 
   const [metierId, setMetierId] = useState<MetierType>('lavage');
@@ -61,7 +80,35 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   const [conflict, setConflict] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Responsable & Intervenant
+  const [selectedResponsibles, setSelectedResponsibles] = useState<string[]>([]);
+  const [selectedIntervenants, setSelectedIntervenants] = useState<string[]>([]);
+  const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
+  const [intervenantOptions, setIntervenantOptions] = useState<IntervenantOption[]>([]);
+
   const filteredPostes = useMemo(() => postes.filter(p => p.metierId === metierId && p.actif), [postes, metierId]);
+
+  // Load profile options (users with company) and intervenant options
+  useEffect(() => {
+    if (!open) return;
+    async function loadOptions() {
+      const [profilesRes, intervenantsRes] = await Promise.all([
+        supabase.from('profiles').select('id, email, company'),
+        supabase.from('intervenants').select('id, name').order('name'),
+      ]);
+      if (profilesRes.data) {
+        setProfileOptions(
+          (profilesRes.data as any[])
+            .filter(p => p.company && p.company.trim() !== '')
+            .map(p => ({ id: p.id, email: p.email, company: p.company }))
+        );
+      }
+      if (intervenantsRes.data) {
+        setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
+      }
+    }
+    loadOptions();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -90,6 +137,9 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setVin(rdv.vin || '');
       setNotes(rdv.notes || '');
       setStatut(rdv.statut);
+      // Load pivot data
+      setSelectedResponsibles(appointmentResponsibles[rdv.id] || []);
+      setSelectedIntervenants(appointmentIntervenants[rdv.id] || []);
     } else {
       const poste = defaultPosteId ? postes.find(p => p.id === defaultPosteId) : null;
       setMetierId(poste?.metierId || 'lavage');
@@ -107,6 +157,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setVin('');
       setNotes('');
       setStatut('prevu');
+      setSelectedResponsibles([]);
+      setSelectedIntervenants([]);
     }
     setConflict(null);
     setSaving(false);
@@ -119,7 +171,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     }
   }, [metierId, postes, isEdit]);
 
-  // Compute full duration in minutes from date+time start to date+time end
   function computeTotalMinutes(startDate: string, startTime: string, endDate: string, endTime: string): number {
     if (!startDate || !startTime || !endDate || !endTime) return 0;
     const s = new Date(`${startDate}T${startTime}:00`);
@@ -139,7 +190,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     setDuree(totalMinutes);
   }
 
-  // Sync fin date+time from duree when start changes
   const syncFinFromDuree = useCallback((startDate: string, startTime: string, totalMinutes: number) => {
     if (!startDate || !startTime) return;
     const fin = addMinutes(new Date(`${startDate}T${startTime}:00`), totalMinutes);
@@ -147,7 +197,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     setHeureFin(format(fin, 'HH:mm'));
   }, []);
 
-  // When user changes heure début or date début, recalculate fin from current durée
   useEffect(() => {
     if (heureDebut && date && duree > 0) {
       syncFinFromDuree(date, heureDebut, duree);
@@ -196,7 +245,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     setDureeFields(total);
   }
 
-  // Generate quarter-hour options based on business hours
   const timeSlotOptions = useMemo(() => {
     const options: string[] = [];
     const [minH, minM] = settings.heureMin.split(':').map(Number);
@@ -210,8 +258,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     }
     return options;
   }, [settings.heureMin, settings.heureMax]);
-  // Determine if the current RDV (in edit mode) is future/en_cours/past
-  // Use form values so it stays reactive to user edits
+
   const eventState = useMemo(() => {
     if (!rdv) return 'futur' as const;
     const debutStr = `${date}T${heureDebut}:00`;
@@ -222,17 +269,21 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   async function handleSubmit() {
     if (!posteId || !date || !heureDebut) return;
 
+    // Validate responsibles
+    if (selectedResponsibles.length === 0) {
+      toast.error('Veuillez sélectionner au moins un responsable.');
+      return;
+    }
+
     let debut = new Date(`${date}T${heureDebut}:00`);
     let fin = new Date(`${dateFin}T${heureFin}:00`);
 
-    // If switching to 'termine' or 'noshow' while event is en_cours, snap fin to nearest 15min
     if (
       (statut === 'termine' || statut === 'noshow') &&
       rdv &&
       getEventState(rdv.debut, rdv.fin) === 'en_cours'
     ) {
       fin = roundToNearest15Minutes(new Date());
-      // Keep debut unchanged from original
       debut = new Date(rdv.debut);
     }
 
@@ -259,7 +310,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         vin: vin || undefined,
         notes: notes || undefined,
         statut,
-      });
+      }, selectedResponsibles, selectedIntervenants);
       toast.success('Rendez-vous modifié.');
     } else {
       await addRdv({
@@ -274,7 +325,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         vin: vin || undefined,
         notes: notes || undefined,
         statut,
-      });
+      }, selectedResponsibles, selectedIntervenants);
       toast.success('Rendez-vous ajouté.');
     }
     setSaving(false);
@@ -291,6 +342,101 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     }
   }
 
+  // Multi-select helper component
+  function MultiSelectField({ 
+    label, 
+    options, 
+    selected, 
+    onChange, 
+    disabled, 
+    required,
+    getLabel,
+  }: { 
+    label: string;
+    options: { id: string; label: string }[];
+    selected: string[];
+    onChange: (ids: string[]) => void;
+    disabled?: boolean;
+    required?: boolean;
+    getLabel: (id: string) => string;
+  }) {
+    return (
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground mb-1.5">
+          {label}{required && ' *'}
+        </Label>
+        {disabled ? (
+          <div className="flex flex-wrap gap-1.5 min-h-[2.5rem] items-center rounded-md border border-input bg-background px-3 py-2">
+            {selected.length === 0 ? (
+              <span className="text-sm text-muted-foreground">—</span>
+            ) : (
+              selected.map(id => (
+                <Badge key={id} variant="secondary" className="text-xs">
+                  {getLabel(id)}
+                </Badge>
+              ))
+            )}
+          </div>
+        ) : (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start font-normal h-auto min-h-[2.5rem] py-1.5">
+                {selected.length === 0 ? (
+                  <span className="text-muted-foreground">Sélectionner…</span>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {selected.map(id => (
+                      <Badge key={id} variant="secondary" className="text-xs gap-1">
+                        {getLabel(id)}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onChange(selected.filter(s => s !== id));
+                          }}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2 max-h-48 overflow-auto" align="start">
+              {options.map(opt => (
+                <label key={opt.id} className="flex items-center gap-2 text-sm cursor-pointer py-1.5 px-2 rounded hover:bg-muted/50">
+                  <Checkbox
+                    checked={selected.includes(opt.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        onChange([...selected, opt.id]);
+                      } else {
+                        onChange(selected.filter(s => s !== opt.id));
+                      }
+                    }}
+                  />
+                  {opt.label}
+                </label>
+              ))}
+              {options.length === 0 && (
+                <p className="text-xs text-muted-foreground px-2 py-1">Aucune option disponible</p>
+              )}
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+    );
+  }
+
+  const responsibleOptions = useMemo(() => 
+    profileOptions.map(p => ({ id: p.id, label: `${p.company} (${p.email})` })),
+    [profileOptions]
+  );
+
+  const intervenantOpts = useMemo(() => 
+    intervenantOptions.map(i => ({ id: i.id, label: i.name })),
+    [intervenantOptions]
+  );
+
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="sm:max-w-xl animate-slide-in max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden">
@@ -301,7 +447,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
           {readOnly && (
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
               <Eye className="h-3.5 w-3.5" />
-              Consultation uniquement — seul le créateur peut modifier ce rendez-vous.
+              Consultation uniquement — seuls les responsables peuvent modifier ce rendez-vous.
             </p>
           )}
         </DialogHeader>
@@ -396,6 +542,33 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
             </div>
           )}
 
+          {/* Responsable */}
+          <MultiSelectField
+            label="Responsable"
+            options={responsibleOptions}
+            selected={selectedResponsibles}
+            onChange={setSelectedResponsibles}
+            disabled={readOnly}
+            required
+            getLabel={(id) => {
+              const p = profileOptions.find(p => p.id === id);
+              return p ? `${p.company}` : id;
+            }}
+          />
+
+          {/* Intervenant */}
+          <MultiSelectField
+            label="Intervenant"
+            options={intervenantOpts}
+            selected={selectedIntervenants}
+            onChange={setSelectedIntervenants}
+            disabled={readOnly}
+            getLabel={(id) => {
+              const i = intervenantOptions.find(i => i.id === id);
+              return i ? i.name : id;
+            }}
+          />
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">Client (nom)</Label>
@@ -446,7 +619,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(STATUT_LABELS).map(([k, v]) => {
-                  // 'termine' only available for past or en_cours events
                   if (k === 'termine' && eventState === 'futur') return null;
                   return <SelectItem key={k} value={k}>{v}</SelectItem>;
                 })}
