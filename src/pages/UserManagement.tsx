@@ -261,6 +261,10 @@ export default function UserManagement() {
               <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 6 caractères" />
             </div>
             <div className="grid gap-1.5">
+              <Label>Société</Label>
+              <Input value={newCompany} onChange={e => setNewCompany(e.target.value)} placeholder="Nom de la société" />
+            </div>
+            <div className="grid gap-1.5">
               <Label>Rôle</Label>
               <Select value={newRole} onValueChange={v => setNewRole(v as any)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
