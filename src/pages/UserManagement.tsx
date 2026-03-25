@@ -138,7 +138,7 @@ export default function UserManagement() {
     if (!editUser) return;
     setSaving(true);
     const { data, error } = await supabase.functions.invoke('manage-users', {
-      body: { action: 'update', user_id: editUser.id, poste_ids: editPosteIds },
+      body: { action: 'update', user_id: editUser.id, poste_ids: editPosteIds, company: editCompany || null },
     });
     setSaving(false);
     if (error || data?.error) {
