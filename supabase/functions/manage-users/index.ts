@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const { action, ...payload } = await req.json()
 
     if (action === 'create') {
-      const { email, password, role, poste_ids } = payload
+      const { email, password, role, poste_ids, company } = payload
       if (!email || !password || !role) throw new Error('Email, mot de passe et rôle requis')
 
       // Create auth user
@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       if (createError) throw createError
 
       // Create profile
-      await adminClient.from('profiles').insert({ id: newUser.user.id, email })
+      await adminClient.from('profiles').insert({ id: newUser.user.id, email, company: company || null })
 
       // Assign role
       await adminClient.from('user_roles').insert({ user_id: newUser.user.id, role })
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'update') {
-      const { user_id, poste_ids, active } = payload
+      const { user_id, poste_ids, active, company } = payload
       if (!user_id) throw new Error('user_id requis')
 
       // Check target role
@@ -84,14 +84,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Update active status
-      if (active !== undefined) {
-        await adminClient.from('profiles').update({ active }).eq('id', user_id)
-        if (!active) {
-          await adminClient.auth.admin.updateUserById(user_id, { ban_duration: '876000h' })
-        } else {
-          await adminClient.auth.admin.updateUserById(user_id, { ban_duration: 'none' })
-        }
+      // Update profile fields
+      const profileUpdate: Record<string, any> = {}
+      if (active !== undefined) profileUpdate.active = active
+      if (company !== undefined) profileUpdate.company = company
+      
+      if (Object.keys(profileUpdate).length > 0) {
+        await adminClient.from('profiles').update(profileUpdate).eq('id', user_id)
+      }
+      
+      if (active === false) {
+        await adminClient.auth.admin.updateUserById(user_id, { ban_duration: '876000h' })
+      } else if (active === true) {
+        await adminClient.auth.admin.updateUserById(user_id, { ban_duration: 'none' })
       }
 
       // Update permissions (only for contributeurs)

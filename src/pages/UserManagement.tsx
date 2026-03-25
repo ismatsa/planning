@@ -23,6 +23,7 @@ import { Plus, Pencil, Trash2, Ban, CheckCircle } from 'lucide-react';
 interface UserRow {
   id: string;
   email: string;
+  company: string | null;
   role: 'administrateur' | 'contributeur';
   active: boolean;
   posteIds: string[];
@@ -42,9 +43,11 @@ export default function UserManagement() {
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<'administrateur' | 'contributeur'>('contributeur');
   const [newPosteIds, setNewPosteIds] = useState<string[]>([]);
+  const [newCompany, setNewCompany] = useState('');
 
   // Edit form
   const [editPosteIds, setEditPosteIds] = useState<string[]>([]);
+  const [editCompany, setEditCompany] = useState('');
 
   async function loadUsers() {
     const [profilesRes, rolesRes, permsRes] = await Promise.all([
@@ -60,6 +63,7 @@ export default function UserManagement() {
     const merged: UserRow[] = profiles.map((p: any) => ({
       id: p.id,
       email: p.email,
+      company: p.company || null,
       role: (roles.find((r: any) => r.user_id === p.id)?.role as 'administrateur' | 'contributeur') || 'contributeur',
       active: p.active,
       posteIds: perms.filter((perm: any) => perm.user_id === p.id).map((perm: any) => perm.poste_id),
@@ -76,13 +80,14 @@ export default function UserManagement() {
     setNewPassword('');
     setNewRole('contributeur');
     setNewPosteIds([]);
+    setNewCompany('');
   }
 
   async function handleCreate() {
     if (!newEmail || !newPassword) return;
     setSaving(true);
     const { data, error } = await supabase.functions.invoke('manage-users', {
-      body: { action: 'create', email: newEmail, password: newPassword, role: newRole, poste_ids: newRole === 'contributeur' ? newPosteIds : [] },
+      body: { action: 'create', email: newEmail, password: newPassword, role: newRole, poste_ids: newRole === 'contributeur' ? newPosteIds : [], company: newCompany || null },
     });
     setSaving(false);
     if (error || data?.error) {
@@ -126,13 +131,14 @@ export default function UserManagement() {
   function openEdit(user: UserRow) {
     setEditUser(user);
     setEditPosteIds(user.posteIds);
+    setEditCompany(user.company || '');
   }
 
   async function handleSaveEdit() {
     if (!editUser) return;
     setSaving(true);
     const { data, error } = await supabase.functions.invoke('manage-users', {
-      body: { action: 'update', user_id: editUser.id, poste_ids: editPosteIds },
+      body: { action: 'update', user_id: editUser.id, poste_ids: editPosteIds, company: editCompany || null },
     });
     setSaving(false);
     if (error || data?.error) {
@@ -194,6 +200,7 @@ export default function UserManagement() {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Email</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Société</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Rôle</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Statut</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Postes autorisés</th>
@@ -204,6 +211,7 @@ export default function UserManagement() {
               {users.map(u => (
                 <tr key={u.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">{u.email}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{u.company || '—'}</td>
                   <td className="px-4 py-3">
                     <Badge variant="secondary" className={u.role === 'administrateur' ? 'bg-primary/10 text-primary' : ''}>
                       {u.role === 'administrateur' ? 'Administrateur' : 'Contributeur'}
@@ -219,11 +227,9 @@ export default function UserManagement() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {u.role === 'contributeur' && (
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(u)} title="Modifier les postes">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(u)} title="Modifier">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                      )}
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleToggleActive(u)} title={u.active ? 'Désactiver' : 'Réactiver'}>
                         {u.active ? <Ban className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
                       </Button>
@@ -255,6 +261,10 @@ export default function UserManagement() {
               <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 6 caractères" />
             </div>
             <div className="grid gap-1.5">
+              <Label>Société</Label>
+              <Input value={newCompany} onChange={e => setNewCompany(e.target.value)} placeholder="Nom de la société" />
+            </div>
+            <div className="grid gap-1.5">
               <Label>Rôle</Label>
               <Select value={newRole} onValueChange={v => setNewRole(v as any)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -284,10 +294,21 @@ export default function UserManagement() {
       <Dialog open={!!editUser} onOpenChange={v => !v && setEditUser(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">Modifier les postes autorisés</DialogTitle>
+            <DialogTitle className="font-display">Modifier l'utilisateur</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">{editUser?.email}</p>
-          <PosteSelector selected={editPosteIds} onChange={(id, checked) => togglePoste(id, checked, 'edit')} />
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-1.5">
+              <Label>Société</Label>
+              <Input value={editCompany} onChange={e => setEditCompany(e.target.value)} placeholder="Nom de la société" />
+            </div>
+            {editUser?.role === 'contributeur' && (
+              <div className="grid gap-1.5">
+                <Label>Postes autorisés</Label>
+                <PosteSelector selected={editPosteIds} onChange={(id, checked) => togglePoste(id, checked, 'edit')} />
+              </div>
+            )}
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditUser(null)}>Annuler</Button>
             <Button onClick={handleSaveEdit} disabled={saving}>
