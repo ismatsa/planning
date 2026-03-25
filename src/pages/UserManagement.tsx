@@ -131,6 +131,7 @@ export default function UserManagement() {
   function openEdit(user: UserRow) {
     setEditUser(user);
     setEditPosteIds(user.posteIds);
+    setEditCompany(user.company || '');
   }
 
   async function handleSaveEdit() {
