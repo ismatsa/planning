@@ -296,8 +296,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       <DialogContent className="sm:max-w-xl animate-slide-in max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="font-display text-lg">
-            {isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
+            {readOnly ? 'Détails du rendez-vous' : isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
           </DialogTitle>
+          {readOnly && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+              <Eye className="h-3.5 w-3.5" />
+              Consultation uniquement — seul le créateur peut modifier ce rendez-vous.
+            </p>
+          )}
         </DialogHeader>
 
         <div className="grid gap-4 py-2 overflow-y-auto flex-1 -mx-6 px-6 pb-4 [&_input:focus]:ring-2 [&_input:focus]:ring-primary/50 [&_textarea:focus]:ring-2 [&_textarea:focus]:ring-primary/50 [&_input:focus]:scroll-mt-4 [&_textarea:focus]:scroll-mt-4" onFocus={(e) => {
