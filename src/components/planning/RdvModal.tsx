@@ -453,6 +453,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               </SelectContent>
             </Select>
           </div>
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-0 shrink-0">
           {readOnly ? (
