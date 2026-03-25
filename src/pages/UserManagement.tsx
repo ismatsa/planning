@@ -294,10 +294,21 @@ export default function UserManagement() {
       <Dialog open={!!editUser} onOpenChange={v => !v && setEditUser(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">Modifier les postes autorisés</DialogTitle>
+            <DialogTitle className="font-display">Modifier l'utilisateur</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">{editUser?.email}</p>
-          <PosteSelector selected={editPosteIds} onChange={(id, checked) => togglePoste(id, checked, 'edit')} />
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-1.5">
+              <Label>Société</Label>
+              <Input value={editCompany} onChange={e => setEditCompany(e.target.value)} placeholder="Nom de la société" />
+            </div>
+            {editUser?.role === 'contributeur' && (
+              <div className="grid gap-1.5">
+                <Label>Postes autorisés</Label>
+                <PosteSelector selected={editPosteIds} onChange={(id, checked) => togglePoste(id, checked, 'edit')} />
+              </div>
+            )}
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditUser(null)}>Annuler</Button>
             <Button onClick={handleSaveEdit} disabled={saving}>
