@@ -35,6 +35,71 @@ export type Database = {
         }
         Relationships: []
       }
+      appointment_intervenants: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          intervenant_id: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          intervenant_id: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          intervenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_intervenants_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "rendez_vous"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_intervenants_intervenant_id_fkey"
+            columns: ["intervenant_id"]
+            isOneToOne: false
+            referencedRelation: "intervenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointment_responsibles: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_responsibles_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "rendez_vous"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disponibilite_postes: {
         Row: {
           duree_defaut: number

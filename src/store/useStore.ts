@@ -80,16 +80,22 @@ export function useAppStore() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
+  // Pivot data: responsibles & intervenants per appointment
+  const [appointmentResponsibles, setAppointmentResponsibles] = useState<Record<string, string[]>>({});
+  const [appointmentIntervenants, setAppointmentIntervenants] = useState<Record<string, string[]>>({});
+
   // Load all data on mount
   useEffect(() => {
     async function loadAll() {
-      const [metiersRes, postesRes, disposRes, exceptionsRes, rdvsRes, settingsRes] = await Promise.all([
+      const [metiersRes, postesRes, disposRes, exceptionsRes, rdvsRes, settingsRes, respRes, intRes] = await Promise.all([
         supabase.from('metiers').select('*'),
         supabase.from('postes').select('*'),
         supabase.from('disponibilite_postes').select('*'),
         supabase.from('exception_disponibilites').select('*'),
         supabase.from('rendez_vous').select('*'),
         supabase.from('app_settings').select('*').eq('id', 1).single(),
+        supabase.from('appointment_responsibles').select('*'),
+        supabase.from('appointment_intervenants').select('*'),
       ]);
 
       if (metiersRes.data) setMetiers(metiersRes.data.map(mapMetier));
@@ -98,12 +104,33 @@ export function useAppStore() {
       if (exceptionsRes.data) setExceptions(exceptionsRes.data.map(mapException));
       if (rdvsRes.data) setRdvs(rdvsRes.data.map(mapRdv));
       if (settingsRes.data) setSettings(mapSettings(settingsRes.data));
+
+      // Build pivot maps
+      if (respRes.data) {
+        const map: Record<string, string[]> = {};
+        for (const r of respRes.data) {
+          const aid = (r as any).appointment_id;
+          if (!map[aid]) map[aid] = [];
+          map[aid].push((r as any).user_id);
+        }
+        setAppointmentResponsibles(map);
+      }
+      if (intRes.data) {
+        const map: Record<string, string[]> = {};
+        for (const r of intRes.data) {
+          const aid = (r as any).appointment_id;
+          if (!map[aid]) map[aid] = [];
+          map[aid].push((r as any).intervenant_id);
+        }
+        setAppointmentIntervenants(map);
+      }
+
       setLoaded(true);
     }
     loadAll();
   }, []);
 
-  const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }) => {
+  const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }, responsibleIds?: string[], intervenantIds?: string[]) => {
     const { data: { session } } = await supabase.auth.getSession();
     const { data, error } = await supabase.from('rendez_vous').insert({
       poste_id: rdv.posteId,
@@ -121,11 +148,28 @@ export function useAppStore() {
     } as any).select().single();
 
     if (data && !error) {
-      setRdvs(prev => [...prev, mapRdv(data)]);
+      const newRdv = mapRdv(data);
+      setRdvs(prev => [...prev, newRdv]);
+
+      // Save responsibles
+      if (responsibleIds && responsibleIds.length > 0) {
+        await supabase.from('appointment_responsibles').insert(
+          responsibleIds.map(uid => ({ appointment_id: newRdv.id, user_id: uid })) as any
+        );
+        setAppointmentResponsibles(prev => ({ ...prev, [newRdv.id]: responsibleIds }));
+      }
+
+      // Save intervenants
+      if (intervenantIds && intervenantIds.length > 0) {
+        await supabase.from('appointment_intervenants').insert(
+          intervenantIds.map(iid => ({ appointment_id: newRdv.id, intervenant_id: iid })) as any
+        );
+        setAppointmentIntervenants(prev => ({ ...prev, [newRdv.id]: intervenantIds }));
+      }
     }
   }, []);
 
-  const updateRdv = useCallback(async (rdv: RendezVous) => {
+  const updateRdv = useCallback(async (rdv: RendezVous, responsibleIds?: string[], intervenantIds?: string[]) => {
     const { data, error } = await supabase.from('rendez_vous').update({
       poste_id: rdv.posteId,
       debut: rdv.debut,
@@ -142,6 +186,28 @@ export function useAppStore() {
 
     if (data && !error) {
       setRdvs(prev => prev.map(r => r.id === rdv.id ? mapRdv(data) : r));
+
+      // Update responsibles if provided
+      if (responsibleIds !== undefined) {
+        await supabase.from('appointment_responsibles').delete().eq('appointment_id', rdv.id);
+        if (responsibleIds.length > 0) {
+          await supabase.from('appointment_responsibles').insert(
+            responsibleIds.map(uid => ({ appointment_id: rdv.id, user_id: uid })) as any
+          );
+        }
+        setAppointmentResponsibles(prev => ({ ...prev, [rdv.id]: responsibleIds }));
+      }
+
+      // Update intervenants if provided
+      if (intervenantIds !== undefined) {
+        await supabase.from('appointment_intervenants').delete().eq('appointment_id', rdv.id);
+        if (intervenantIds.length > 0) {
+          await supabase.from('appointment_intervenants').insert(
+            intervenantIds.map(iid => ({ appointment_id: rdv.id, intervenant_id: iid })) as any
+          );
+        }
+        setAppointmentIntervenants(prev => ({ ...prev, [rdv.id]: intervenantIds }));
+      }
     }
   }, []);
 
@@ -238,6 +304,7 @@ export function useAppStore() {
 
   return {
     metiers, rdvs, postes, disponibilites, exceptions, settings, loaded,
+    appointmentResponsibles, appointmentIntervenants,
     addRdv, updateRdv, deleteRdv, checkConflict,
     addMetier, renameMetier, deleteMetier,
     addPoste, renamePoste,

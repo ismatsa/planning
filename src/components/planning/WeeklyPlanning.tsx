@@ -18,7 +18,7 @@ const SLOT_WIDTH = 80; // px per time slot
 const DAYS_SHOWN = 6;
 
 export default function WeeklyPlanning() {
-  const { rdvs, postes, settings, updateRdv, checkConflict, metiers } = useStore();
+  const { rdvs, postes, settings, updateRdv, checkConflict, metiers, appointmentResponsibles } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const { collapsed } = useSidebarState();
   const [startDate, setStartDate] = useState(new Date());
@@ -105,8 +105,9 @@ export default function WeeklyPlanning() {
 
   // --- Resize handlers ---
   const handleResizeStart = useCallback((rdv: RendezVous, edge: 'left' | 'right', e: React.MouseEvent) => {
-    if (rdv.createdBy !== user?.id) {
-      toast.error("Vous ne pouvez modifier que vos propres rendez-vous.");
+    const responsibles = appointmentResponsibles[rdv.id] || [];
+    if (!responsibles.includes(user?.id || '')) {
+      toast.error("Seuls les responsables peuvent modifier ce rendez-vous.");
       return;
     }
     const start = new Date(rdv.debut);
@@ -122,7 +123,7 @@ export default function WeeklyPlanning() {
     resizeRef.current = { rdv, edge, startX: e.clientX, origLeftPx: leftPx, origWidthPx: widthPx, dayDate };
     setResizingRdvId(rdv.id);
     setResizePreview({ left: leftPx, width: widthPx });
-  }, [minMinutes, PX_PER_MINUTE, user?.id]);
+  }, [minMinutes, PX_PER_MINUTE, user?.id, appointmentResponsibles]);
 
   useEffect(() => {
     if (!resizingRdvId) return;
@@ -394,7 +395,7 @@ export default function WeeklyPlanning() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         rdv={editRdv}
-        readOnly={!!editRdv && editRdv.createdBy !== user?.id}
+        readOnly={!!editRdv && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
         defaultDate={newRdvDefaults.date}
         defaultPosteId={newRdvDefaults.posteId}
         defaultTime={newRdvDefaults.time}

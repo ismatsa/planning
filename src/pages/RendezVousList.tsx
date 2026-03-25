@@ -42,7 +42,7 @@ const statusBadgeClass: Record<StatutRdv, string> = {
 };
 
 export default function RendezVousList() {
-  const { rdvs, postes, updateRdv, metiers } = useStore();
+  const { rdvs, postes, updateRdv, metiers, appointmentResponsibles } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const [filterMetier, setFilterMetier] = useState<string>('all');
   const [filterStatut, setFilterStatut] = useState<string>('all');
@@ -167,11 +167,8 @@ export default function RendezVousList() {
                     key={r.id}
                     className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${unresolved ? 'text-destructive' : ''}`}
                     onClick={() => {
-                      if (r.createdBy !== user?.id) {
-                        toast.error("Vous ne pouvez modifier que vos propres rendez-vous.");
-                        return;
-                      }
-                      setEditRdv(r); setModalOpen(true);
+                      setEditRdv(r);
+                      setModalOpen(true);
                     }}
                   >
                     <td className="px-4 py-3 font-medium">
@@ -185,9 +182,13 @@ export default function RendezVousList() {
                         {poste?.nom}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{r.createdBy === user?.id ? (r.clientNom || '—') : '—'}</td>
+                    <td className="px-4 py-3">{
+                      (appointmentResponsibles[r.id] || []).includes(user?.id || '') || r.createdBy === user?.id
+                        ? (r.clientNom || '—')
+                        : '—'
+                    }</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      {r.createdBy === user?.id && r.clientTel ? (() => {
+                      {((appointmentResponsibles[r.id] || []).includes(user?.id || '') || r.createdBy === user?.id) && r.clientTel ? (() => {
                         const { countryCode, number } = parsePhone(r.clientTel);
                         const waNum = toWhatsAppNumber(countryCode, number);
                         const display = `${countryCode} ${number}`;
@@ -217,7 +218,7 @@ export default function RendezVousList() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                      {r.createdBy === user?.id ? (
+                      {(appointmentResponsibles[r.id] || []).includes(user?.id || '') ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-7 w-7">
@@ -250,7 +251,12 @@ export default function RendezVousList() {
         </div>
       )}
 
-      <RdvModal open={modalOpen} onClose={() => setModalOpen(false)} rdv={editRdv} />
+      <RdvModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        rdv={editRdv}
+        readOnly={!!editRdv && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
+      />
     </div>
   );
 }
