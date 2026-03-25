@@ -304,6 +304,7 @@ export function useAppStore() {
 
   return {
     metiers, rdvs, postes, disponibilites, exceptions, settings, loaded,
+    appointmentResponsibles, appointmentIntervenants,
     addRdv, updateRdv, deleteRdv, checkConflict,
     addMetier, renameMetier, deleteMetier,
     addPoste, renamePoste,
