@@ -130,7 +130,7 @@ export function useAppStore() {
     loadAll();
   }, []);
 
-  const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }) => {
+  const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }, responsibleIds?: string[], intervenantIds?: string[]) => {
     const { data: { session } } = await supabase.auth.getSession();
     const { data, error } = await supabase.from('rendez_vous').insert({
       poste_id: rdv.posteId,
@@ -148,7 +148,24 @@ export function useAppStore() {
     } as any).select().single();
 
     if (data && !error) {
-      setRdvs(prev => [...prev, mapRdv(data)]);
+      const newRdv = mapRdv(data);
+      setRdvs(prev => [...prev, newRdv]);
+
+      // Save responsibles
+      if (responsibleIds && responsibleIds.length > 0) {
+        await supabase.from('appointment_responsibles').insert(
+          responsibleIds.map(uid => ({ appointment_id: newRdv.id, user_id: uid })) as any
+        );
+        setAppointmentResponsibles(prev => ({ ...prev, [newRdv.id]: responsibleIds }));
+      }
+
+      // Save intervenants
+      if (intervenantIds && intervenantIds.length > 0) {
+        await supabase.from('appointment_intervenants').insert(
+          intervenantIds.map(iid => ({ appointment_id: newRdv.id, intervenant_id: iid })) as any
+        );
+        setAppointmentIntervenants(prev => ({ ...prev, [newRdv.id]: intervenantIds }));
+      }
     }
   }, []);
 
