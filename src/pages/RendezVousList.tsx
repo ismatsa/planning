@@ -182,7 +182,11 @@ export default function RendezVousList() {
                         {poste?.nom}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{r.createdBy === user?.id ? (r.clientNom || '—') : '—'}</td>
+                    <td className="px-4 py-3">{
+                      (appointmentResponsibles[r.id] || []).includes(user?.id || '') || r.createdBy === user?.id
+                        ? (r.clientNom || '—')
+                        : '—'
+                    }</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       {r.createdBy === user?.id && r.clientTel ? (() => {
                         const { countryCode, number } = parsePhone(r.clientTel);
