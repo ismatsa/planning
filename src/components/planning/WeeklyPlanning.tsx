@@ -394,6 +394,7 @@ export default function WeeklyPlanning() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         rdv={editRdv}
+        readOnly={!!editRdv && editRdv.createdBy !== user?.id}
         defaultDate={newRdvDefaults.date}
         defaultPosteId={newRdvDefaults.posteId}
         defaultTime={newRdvDefaults.time}

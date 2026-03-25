@@ -29,12 +29,13 @@ interface Props {
   open: boolean;
   onClose: () => void;
   rdv?: RendezVous | null;
+  readOnly?: boolean;
   defaultDate?: Date;
   defaultPosteId?: string;
   defaultTime?: string;
 }
 
-export default function RdvModal({ open, onClose, rdv, defaultDate, defaultPosteId, defaultTime }: Props) {
+export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime }: Props) {
   const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers } = useStore();
   const isEdit = !!rdv;
 
