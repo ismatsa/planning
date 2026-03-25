@@ -227,11 +227,9 @@ export default function UserManagement() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {u.role === 'contributeur' && (
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(u)} title="Modifier les postes">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(u)} title="Modifier">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                      )}
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleToggleActive(u)} title={u.active ? 'Désactiver' : 'Réactiver'}>
                         {u.active ? <Ban className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
                       </Button>
