@@ -161,18 +161,21 @@ export type Database = {
       profiles: {
         Row: {
           active: boolean
+          company: string | null
           created_at: string
           email: string
           id: string
         }
         Insert: {
           active?: boolean
+          company?: string | null
           created_at?: string
           email: string
           id: string
         }
         Update: {
           active?: boolean
+          company?: string | null
           created_at?: string
           email?: string
           id?: string
