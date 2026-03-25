@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const { action, ...payload } = await req.json()
 
     if (action === 'create') {
-      const { email, password, role, poste_ids } = payload
+      const { email, password, role, poste_ids, company } = payload
       if (!email || !password || !role) throw new Error('Email, mot de passe et rôle requis')
 
       // Create auth user
@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       if (createError) throw createError
 
       // Create profile
-      await adminClient.from('profiles').insert({ id: newUser.user.id, email })
+      await adminClient.from('profiles').insert({ id: newUser.user.id, email, company: company || null })
 
       // Assign role
       await adminClient.from('user_roles').insert({ user_id: newUser.user.id, role })
