@@ -251,7 +251,12 @@ export default function RendezVousList() {
         </div>
       )}
 
-      <RdvModal open={modalOpen} onClose={() => setModalOpen(false)} rdv={editRdv} />
+      <RdvModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        rdv={editRdv}
+        readOnly={!!editRdv && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
+      />
     </div>
   );
 }
