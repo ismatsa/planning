@@ -167,11 +167,8 @@ export default function RendezVousList() {
                     key={r.id}
                     className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${unresolved ? 'text-destructive' : ''}`}
                     onClick={() => {
-                      if (r.createdBy !== user?.id) {
-                        toast.error("Vous ne pouvez modifier que vos propres rendez-vous.");
-                        return;
-                      }
-                      setEditRdv(r); setModalOpen(true);
+                      setEditRdv(r);
+                      setModalOpen(true);
                     }}
                   >
                     <td className="px-4 py-3 font-medium">
