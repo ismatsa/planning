@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '@/store/StoreContext';
 import { useAuth } from '@/store/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +11,14 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 
+// ... keep existing code (JOURS_LABELS)
 const JOURS_LABELS = [
   { value: 1, label: 'Lun' },
   { value: 2, label: 'Mar' },
@@ -22,6 +28,12 @@ const JOURS_LABELS = [
   { value: 6, label: 'Sam' },
   { value: 0, label: 'Dim' },
 ];
+
+interface Intervenant {
+  id: string;
+  name: string;
+  created_at: string;
+}
 
 export default function Parametres() {
   const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste } = useStore();
@@ -44,6 +56,67 @@ export default function Parametres() {
   const [renamingPosteId, setRenamingPosteId] = useState<string | null>(null);
   const [renamingPosteValue, setRenamingPosteValue] = useState('');
 
+  // --- Intervenants state ---
+  const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
+  const [addIntOpen, setAddIntOpen] = useState(false);
+  const [newIntName, setNewIntName] = useState('');
+  const [savingInt, setSavingInt] = useState(false);
+  const [renamingIntId, setRenamingIntId] = useState<string | null>(null);
+  const [renamingIntValue, setRenamingIntValue] = useState('');
+  const [deleteIntTarget, setDeleteIntTarget] = useState<Intervenant | null>(null);
+
+  // Load intervenants
+  async function loadIntervenants() {
+    const { data } = await supabase.from('intervenants').select('*').order('name');
+    if (data) setIntervenants(data as Intervenant[]);
+  }
+
+  useEffect(() => { loadIntervenants(); }, []);
+
+  // Add intervenant
+  async function handleAddIntervenant() {
+    const name = newIntName.trim();
+    if (!name) return;
+    if (intervenants.some(i => i.name.toLowerCase() === name.toLowerCase())) {
+      toast.error('Un intervenant avec ce nom existe déjà.');
+      return;
+    }
+    setSavingInt(true);
+    const { error } = await supabase.from('intervenants').insert({ name });
+    setSavingInt(false);
+    if (error) { toast.error('Erreur lors de l\'ajout.'); return; }
+    toast.success(`Intervenant « ${name} » ajouté.`);
+    setAddIntOpen(false);
+    setNewIntName('');
+    loadIntervenants();
+  }
+
+  // Rename intervenant
+  async function handleRenameIntervenant(id: string) {
+    const name = renamingIntValue.trim();
+    if (!name) return;
+    if (intervenants.some(i => i.id !== id && i.name.toLowerCase() === name.toLowerCase())) {
+      toast.error('Ce nom est déjà utilisé.');
+      return;
+    }
+    const { error } = await supabase.from('intervenants').update({ name }).eq('id', id);
+    if (error) { toast.error('Erreur lors du renommage.'); return; }
+    toast.success('Intervenant renommé.');
+    setRenamingIntId(null);
+    loadIntervenants();
+  }
+
+  // Delete intervenant
+  async function handleDeleteIntervenant() {
+    if (!deleteIntTarget) return;
+    const { error } = await supabase.from('intervenants').delete().eq('id', deleteIntTarget.id);
+    if (error) { toast.error('Erreur lors de la suppression.'); return; }
+    toast.success('Intervenant supprimé.');
+    setDeleteIntTarget(null);
+    loadIntervenants();
+  }
+
+  // ... keep existing code (toggleJour, togglePosteActif, category CRUD, poste CRUD)
   function toggleJour(jour: number) {
     setSettings(prev => ({
       ...prev,
@@ -57,7 +130,6 @@ export default function Parametres() {
     setPostes(prev => prev.map(p => p.id === posteId ? { ...p, actif: !p.actif } : p));
   }
 
-  // --- Category CRUD ---
   async function handleAddCategory() {
     const nom = newCatNom.trim();
     if (!nom) return;
@@ -110,7 +182,6 @@ export default function Parametres() {
     }
   }
 
-  // --- Poste CRUD ---
   function openAddPoste(metierId: string) {
     setAddPosteMetierId(metierId);
     setNewPosteNom('');
@@ -232,7 +303,6 @@ export default function Parametres() {
                 const mPostes = postes.filter(p => p.metierId === m.id);
                 return (
                   <div key={m.id} className="border rounded-lg p-3">
-                    {/* Category header */}
                     <div className="flex items-center gap-2 mb-2">
                       {renamingCatId === m.id ? (
                         <div className="flex items-center gap-1.5 flex-1">
@@ -279,8 +349,6 @@ export default function Parametres() {
                         </>
                       )}
                     </div>
-
-                    {/* Postes list */}
                     <div className="flex flex-wrap gap-2">
                       {mPostes.map(p => (
                         <div key={p.id} className="flex items-center gap-1.5">
@@ -335,6 +403,73 @@ export default function Parametres() {
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Intervenants */}
+        <Card>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-semibold">Intervenants</CardTitle>
+            {isAdmin && (
+              <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={() => { setNewIntName(''); setAddIntOpen(true); }}>
+                <Plus className="h-3.5 w-3.5" />
+                Intervenant
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {intervenants.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucun intervenant pour le moment.</p>
+            ) : (
+              <div className="grid gap-1.5">
+                {intervenants.map(i => (
+                  <div key={i.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/30 transition-colors">
+                    {renamingIntId === i.id ? (
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <Input
+                          value={renamingIntValue}
+                          onChange={e => setRenamingIntValue(e.target.value)}
+                          className="h-7 text-sm w-48"
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleRenameIntervenant(i.id);
+                            if (e.key === 'Escape') setRenamingIntId(null);
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleRenameIntervenant(i.id)}>
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setRenamingIntId(null)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-sm flex-1">{i.name}</span>
+                        {isAdmin && (
+                          <div className="flex items-center gap-0.5">
+                            <Button
+                              size="icon" variant="ghost" className="h-6 w-6"
+                              onClick={() => { setRenamingIntId(i.id); setRenamingIntValue(i.name); }}
+                              title="Renommer"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="icon" variant="ghost" className="h-6 w-6 text-destructive"
+                              onClick={() => setDeleteIntTarget(i)}
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -392,6 +527,51 @@ export default function Parametres() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add Intervenant Dialog */}
+      <Dialog open={addIntOpen} onOpenChange={v => !v && setAddIntOpen(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Ajouter un intervenant</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid gap-1.5">
+              <Label>Nom de l'intervenant</Label>
+              <Input
+                value={newIntName}
+                onChange={e => setNewIntName(e.target.value)}
+                placeholder="Nom de l'intervenant"
+                autoFocus
+                onKeyDown={e => e.key === 'Enter' && handleAddIntervenant()}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddIntOpen(false)}>Annuler</Button>
+            <Button onClick={handleAddIntervenant} disabled={savingInt || !newIntName.trim()}>
+              {savingInt ? 'Ajout…' : 'Ajouter'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Intervenant Confirmation */}
+      <AlertDialog open={!!deleteIntTarget} onOpenChange={v => !v && setDeleteIntTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet intervenant ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'intervenant <strong>{deleteIntTarget?.name}</strong> sera définitivement supprimé. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteIntervenant} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
