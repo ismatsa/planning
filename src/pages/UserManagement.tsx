@@ -200,6 +200,7 @@ export default function UserManagement() {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Email</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Société</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Rôle</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Statut</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Postes autorisés</th>
@@ -210,6 +211,7 @@ export default function UserManagement() {
               {users.map(u => (
                 <tr key={u.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">{u.email}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{u.company || '—'}</td>
                   <td className="px-4 py-3">
                     <Badge variant="secondary" className={u.role === 'administrateur' ? 'bg-primary/10 text-primary' : ''}>
                       {u.role === 'administrateur' ? 'Administrateur' : 'Contributeur'}
