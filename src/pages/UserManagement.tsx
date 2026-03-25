@@ -87,7 +87,7 @@ export default function UserManagement() {
     if (!newEmail || !newPassword) return;
     setSaving(true);
     const { data, error } = await supabase.functions.invoke('manage-users', {
-      body: { action: 'create', email: newEmail, password: newPassword, role: newRole, poste_ids: newRole === 'contributeur' ? newPosteIds : [] },
+      body: { action: 'create', email: newEmail, password: newPassword, role: newRole, poste_ids: newRole === 'contributeur' ? newPosteIds : [], company: newCompany || null },
     });
     setSaving(false);
     if (error || data?.error) {
