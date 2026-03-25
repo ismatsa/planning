@@ -23,6 +23,7 @@ import { Plus, Pencil, Trash2, Ban, CheckCircle } from 'lucide-react';
 interface UserRow {
   id: string;
   email: string;
+  company: string | null;
   role: 'administrateur' | 'contributeur';
   active: boolean;
   posteIds: string[];
