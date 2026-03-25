@@ -80,6 +80,7 @@ export default function UserManagement() {
     setNewPassword('');
     setNewRole('contributeur');
     setNewPosteIds([]);
+    setNewCompany('');
   }
 
   async function handleCreate() {
