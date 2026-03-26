@@ -144,6 +144,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       // Load pivot data
       setSelectedResponsibles(appointmentResponsibles[rdv.id] || []);
       setSelectedIntervenants(appointmentIntervenants[rdv.id] || []);
+      setBillingResponsible(rdv.billingResponsibleUserId || '');
     } else {
       const poste = defaultPosteId ? postes.find(p => p.id === defaultPosteId) : null;
       setMetierId(poste?.metierId || 'lavage');
