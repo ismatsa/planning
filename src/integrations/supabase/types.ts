@@ -103,6 +103,7 @@ export type Database = {
       devis: {
         Row: {
           annee: string | null
+          assigned_user_id: string | null
           billing_responsible_user_id: string | null
           client_nom: string | null
           client_tel: string | null
@@ -118,6 +119,7 @@ export type Database = {
         }
         Insert: {
           annee?: string | null
+          assigned_user_id?: string | null
           billing_responsible_user_id?: string | null
           client_nom?: string | null
           client_tel?: string | null
@@ -133,6 +135,7 @@ export type Database = {
         }
         Update: {
           annee?: string | null
+          assigned_user_id?: string | null
           billing_responsible_user_id?: string | null
           client_nom?: string | null
           client_tel?: string | null

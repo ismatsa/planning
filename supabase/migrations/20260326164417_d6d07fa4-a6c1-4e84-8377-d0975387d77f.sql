@@ -1,0 +1,1 @@
+ALTER TABLE public.devis ADD COLUMN assigned_user_id uuid DEFAULT NULL;

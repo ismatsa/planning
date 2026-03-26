@@ -14,6 +14,7 @@ function mapDevis(row: any): Devis {
     notes: row.notes || undefined,
     statut: row.statut as StatutDevis,
     billingResponsibleUserId: row.billing_responsible_user_id || undefined,
+    assignedUserId: row.assigned_user_id || undefined,
     createdBy: row.created_by || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -87,6 +88,7 @@ export function useDevisStore() {
       notes: devis.notes || null,
       statut: devis.statut,
       billing_responsible_user_id: devis.billingResponsibleUserId || null,
+      assigned_user_id: devis.assignedUserId || null,
       created_by: session?.user?.id || null,
     } as any).select().single();
 
@@ -136,6 +138,7 @@ export function useDevisStore() {
       notes: devis.notes || null,
       statut: devis.statut,
       billing_responsible_user_id: devis.billingResponsibleUserId || null,
+      assigned_user_id: devis.assignedUserId || null,
     }).eq('id', devis.id).select().single();
 
     if (data && !error) {

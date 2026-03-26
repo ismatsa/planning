@@ -45,6 +45,7 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
   const [selectedIntervenants, setSelectedIntervenants] = useState<string[]>([]);
   const [selectedMetiers, setSelectedMetiers] = useState<string[]>([]);
   const [billingResponsible, setBillingResponsible] = useState('');
+  const [assignedUserId, setAssignedUserId] = useState('');
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<IntervenantOption[]>([]);
 
@@ -84,6 +85,7 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
       setSelectedIntervenants(devisIntervenants[devis.id] || []);
       setSelectedMetiers(devisMetiers[devis.id] || []);
       setBillingResponsible(devis.billingResponsibleUserId || '');
+      setAssignedUserId(devis.assignedUserId || '');
     }
   }, [devis, devisResponsibles, devisIntervenants, devisMetiers]);
 
@@ -125,6 +127,7 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
       notes: notes || undefined,
       statut,
       billingResponsibleUserId: effectiveBilling,
+      assignedUserId: assignedUserId || undefined,
     };
 
     if (isEdit && devis) {
@@ -139,15 +142,8 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
     setSaving(false);
   }
 
-  async function handleDelete() {
-    if (devis) {
-      setSaving(true);
-      await deleteDevis(devis.id);
-      toast.success('Devis supprimé.');
-      setSaving(false);
-      onDeleted?.();
-    }
-  }
+  const activeProfiles = useMemo(() =>
+    profileOptions.filter(p => p.company && p.company.trim() !== ''), [profileOptions]);
 
   return (
     <div className="grid gap-4">
@@ -174,6 +170,20 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
           placeholder="Rechercher un intervenant..."
           getLabel={(id) => intervenantOptions.find(i => i.id === id)?.name || id}
         />
+      </div>
+
+      {/* Assigné à */}
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground mb-1.5">Assigné à</Label>
+        <Select value={assignedUserId} onValueChange={setAssignedUserId}>
+          <SelectTrigger><SelectValue placeholder="Non assigné" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Non assigné</SelectItem>
+            {activeProfiles.map(p => (
+              <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Facturation */}
@@ -261,11 +271,6 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
 
       {/* Actions */}
       <div className="flex items-center gap-2 pt-2">
-        {isEdit && (
-          <Button variant="destructive" size="sm" onClick={handleDelete} disabled={saving}>
-            Supprimer
-          </Button>
-        )}
         {isEdit && devis?.statut === 'valide' && onConvert && (
           <Button size="sm" variant="outline" onClick={() => onConvert(devis)}>
             Convertir en rendez-vous

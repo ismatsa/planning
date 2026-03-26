@@ -32,6 +32,7 @@ export interface Devis {
   notes?: string;
   statut: StatutDevis;
   billingResponsibleUserId?: string;
+  assignedUserId?: string;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
