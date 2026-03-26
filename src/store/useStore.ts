@@ -145,6 +145,7 @@ export function useAppStore() {
       vin: rdv.vin || null,
       notes: rdv.notes || null,
       statut: rdv.statut,
+      billing_responsible_user_id: rdv.billingResponsibleUserId || null,
       created_by: session?.user?.id || null,
     } as any).select().single();
 
