@@ -110,10 +110,20 @@ export default function RendezVousList() {
           const isPast = endTime < now;
           if (isPast && ['noshow', 'annule', 'termine'].includes(r.statut)) return false;
         }
+        // Filter by responsibles
+        if (filterResponsibles.length > 0) {
+          const rdvResps = appointmentResponsibles[r.id] || [];
+          if (!filterResponsibles.some(fr => rdvResps.includes(fr))) return false;
+        }
+        // Filter by intervenants
+        if (filterIntervenants.length > 0) {
+          const rdvInts = appointmentIntervenants[r.id] || [];
+          if (!filterIntervenants.some(fi => rdvInts.includes(fi))) return false;
+        }
         return true;
       })
       .sort((a, b) => new Date(b.debut).getTime() - new Date(a.debut).getTime());
-  }, [rdvs, postes, filterMetier, filterStatut, search, hidePastEvents, isAdmin, permissions]);
+  }, [rdvs, postes, filterMetier, filterStatut, search, hidePastEvents, isAdmin, permissions, filterResponsibles, filterIntervenants, appointmentResponsibles, appointmentIntervenants]);
 
   async function changeStatut(rdv: RendezVous, newStatut: StatutRdv) {
     let fin = rdv.fin;
