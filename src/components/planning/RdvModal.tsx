@@ -159,7 +159,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setVin('');
       setNotes('');
       setStatut('prevu');
-      setSelectedResponsibles([]);
+      // Auto-prefill current user as responsible if they have a company
+      // profileOptions may not be loaded yet, so we also handle it in a separate effect
+      if (user) {
+        const currentProfile = profileOptions.find(p => p.id === user.id);
+        setSelectedResponsibles(currentProfile ? [currentProfile.id] : []);
+      } else {
+        setSelectedResponsibles([]);
+      }
       setSelectedIntervenants([]);
     }
     setConflict(null);
