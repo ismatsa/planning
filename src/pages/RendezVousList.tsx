@@ -44,7 +44,7 @@ const statusBadgeClass: Record<StatutRdv, string> = {
 };
 
 export default function RendezVousList() {
-  const { rdvs, postes, updateRdv, metiers, appointmentResponsibles } = useStore();
+  const { rdvs, postes, updateRdv, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const [filterMetier, setFilterMetier] = useState<string>('all');
   const [filterStatut, setFilterStatut] = useState<string>('all');
@@ -52,7 +52,42 @@ export default function RendezVousList() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
   const [hidePastEvents, setHidePastEvents] = useState(false);
+  const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
+  const [filterIntervenants, setFilterIntervenants] = useState<string[]>([]);
 
+  // Load profile options (users with company) and intervenant options
+  const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
+  const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    async function loadOptions() {
+      const [profilesRes, intervenantsRes] = await Promise.all([
+        supabase.from('profiles').select('id, company'),
+        supabase.from('intervenants').select('id, name').order('name'),
+      ]);
+      if (profilesRes.data) {
+        setProfileOptions(
+          (profilesRes.data as any[])
+            .filter(p => p.company && p.company.trim() !== '')
+            .map(p => ({ id: p.id, company: p.company }))
+        );
+      }
+      if (intervenantsRes.data) {
+        setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
+      }
+    }
+    loadOptions();
+  }, []);
+
+  const responsibleFilterOptions = useMemo(() =>
+    profileOptions.map(p => ({ id: p.id, label: p.company })),
+    [profileOptions]
+  );
+
+  const intervenantFilterOptions = useMemo(() =>
+    intervenantOptions.map(i => ({ id: i.id, label: i.name })),
+    [intervenantOptions]
+  );
   const filtered = useMemo(() => {
     const now = Date.now();
     return rdvs
