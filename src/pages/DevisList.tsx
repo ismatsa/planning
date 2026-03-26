@@ -1,0 +1,301 @@
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useStore } from '@/store/StoreContext';
+import { useAuth } from '@/store/AuthContext';
+import { useDevisStore } from '@/store/useDevisStore';
+import { STATUT_DEVIS_LABELS, StatutDevis, Devis } from '@/types/devis';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Search, Plus } from 'lucide-react';
+import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
+import DevisModal from '@/components/devis/DevisModal';
+import { supabase } from '@/integrations/supabase/client';
+import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
+import { MessageCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
+const statusBadgeClass: Record<StatutDevis, string> = {
+  demande_recue: 'bg-blue-100 text-blue-700',
+  a_chiffrer: 'bg-amber-100 text-amber-700',
+  en_cours_de_devis: 'bg-indigo-100 text-indigo-700',
+  en_attente_infos: 'bg-orange-100 text-orange-700',
+  devis_pret: 'bg-teal-100 text-teal-700',
+  devis_envoye: 'bg-purple-100 text-purple-700',
+  valide: 'bg-green-100 text-green-700',
+  refuse: 'bg-destructive/10 text-destructive',
+  annule: 'bg-muted text-muted-foreground',
+};
+
+export default function DevisList() {
+  const { metiers } = useStore();
+  const { user } = useAuth();
+  const {
+    devisList, devisResponsibles, devisIntervenants, devisMetiers,
+    addDevis, updateDevis, deleteDevis,
+  } = useDevisStore();
+  const navigate = useNavigate();
+
+  const [search, setSearch] = useState('');
+  const [filterMetier, setFilterMetier] = useState('all');
+  const [filterStatut, setFilterStatut] = useState('all');
+  const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
+  const [filterIntervenants, setFilterIntervenants] = useState<string[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editDevis, setEditDevis] = useState<Devis | null>(null);
+
+  // Converting devis to RDV
+  const [convertDevis, setConvertDevis] = useState<Devis | null>(null);
+
+  const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
+  const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    async function loadOptions() {
+      const [profilesRes, intervenantsRes] = await Promise.all([
+        supabase.from('profiles').select('id, company'),
+        supabase.from('intervenants').select('id, name').order('name'),
+      ]);
+      if (profilesRes.data) {
+        setProfileOptions(
+          (profilesRes.data as any[])
+            .filter(p => p.company && p.company.trim() !== '')
+            .map(p => ({ id: p.id, company: p.company }))
+        );
+      }
+      if (intervenantsRes.data) {
+        setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
+      }
+    }
+    loadOptions();
+  }, []);
+
+  const responsibleFilterOptions = useMemo(() =>
+    profileOptions.map(p => ({ id: p.id, label: p.company })), [profileOptions]);
+  const intervenantFilterOptions = useMemo(() =>
+    intervenantOptions.map(i => ({ id: i.id, label: i.name })), [intervenantOptions]);
+
+  const filtered = useMemo(() => {
+    return devisList
+      .filter(d => {
+        if (filterStatut !== 'all' && d.statut !== filterStatut) return false;
+        if (filterMetier !== 'all') {
+          const dMetiers = devisMetiers[d.id] || [];
+          if (!dMetiers.includes(filterMetier)) return false;
+        }
+        if (search) {
+          const s = search.toLowerCase();
+          const vehicleStr = [d.marque, d.modele].filter(Boolean).join(' ').toLowerCase();
+          if (
+            !d.clientNom?.toLowerCase().includes(s) &&
+            !vehicleStr.includes(s)
+          ) return false;
+        }
+        if (filterResponsibles.length > 0) {
+          const resps = devisResponsibles[d.id] || [];
+          if (!filterResponsibles.some(fr => resps.includes(fr))) return false;
+        }
+        if (filterIntervenants.length > 0) {
+          const ints = devisIntervenants[d.id] || [];
+          if (!filterIntervenants.some(fi => ints.includes(fi))) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers]);
+
+  function handleConvert(devis: Devis) {
+    // Navigate to planning with devis data in state
+    const metierIds = devisMetiers[devis.id] || [];
+    const responsibleIds = devisResponsibles[devis.id] || [];
+    const intervenantIds = devisIntervenants[devis.id] || [];
+    navigate('/', {
+      state: {
+        convertFromDevis: {
+          ...devis,
+          metierIds,
+          responsibleIds,
+          intervenantIds,
+        },
+      },
+    });
+  }
+
+  function getReadOnly(d: Devis): boolean {
+    const resps = devisResponsibles[d.id] || [];
+    if (resps.length === 0) return false;
+    return !resps.includes(user?.id || '');
+  }
+
+  return (
+    <div className="p-6 max-w-6xl">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-display font-bold">Demandes de devis</h1>
+          <p className="text-sm text-muted-foreground">{devisList.length} devis au total</p>
+        </div>
+        <Button onClick={() => { setEditDevis(null); setModalOpen(true); }}>
+          <Plus className="h-4 w-4 mr-2" /> Nouveau devis
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-56" />
+        </div>
+        <Select value={filterMetier} onValueChange={setFilterMetier}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Métier" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les métiers</SelectItem>
+            {metiers.map(m => <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatut} onValueChange={setFilterStatut}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="Statut" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous statuts</SelectItem>
+            {Object.entries(STATUT_DEVIS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <div className="w-48">
+          <SearchableMultiSelect
+            options={responsibleFilterOptions}
+            selected={filterResponsibles}
+            onChange={setFilterResponsibles}
+            placeholder="Responsable…"
+            compact
+            getLabel={(id) => profileOptions.find(p => p.id === id)?.company || id}
+          />
+        </div>
+        <div className="w-48">
+          <SearchableMultiSelect
+            options={intervenantFilterOptions}
+            selected={filterIntervenants}
+            onChange={setFilterIntervenants}
+            placeholder="Intervenant…"
+            compact
+            getLabel={(id) => intervenantOptions.find(i => i.id === id)?.name || id}
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-lg font-medium">Aucun devis</p>
+          <p className="text-sm mt-1">Créez une demande de devis pour démarrer.</p>
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Date</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Client</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Téléphone</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Véhicule</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Métiers</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Responsable(s)</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Facturation</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(d => {
+                const resps = devisResponsibles[d.id] || [];
+                const dMetiers = devisMetiers[d.id] || [];
+                const billingProfile = d.billingResponsibleUserId
+                  ? profileOptions.find(p => p.id === d.billingResponsibleUserId)
+                  : null;
+                const canSeeDetails = resps.includes(user?.id || '') || d.createdBy === user?.id;
+
+                return (
+                  <tr
+                    key={d.id}
+                    className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => { setEditDevis(d); setModalOpen(true); }}
+                  >
+                    <td className="px-4 py-3 font-medium">
+                      {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
+                    </td>
+                    <td className="px-4 py-3">{canSeeDetails ? (d.clientNom || '—') : '—'}</td>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      {canSeeDetails && d.clientTel ? (() => {
+                        const { countryCode, number } = parsePhone(d.clientTel);
+                        const waNum = toWhatsAppNumber(countryCode, number);
+                        const display = `${countryCode} ${number}`;
+                        return (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={`https://wa.me/${waNum}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-sm hover:underline cursor-pointer"
+                                style={{ color: '#25D366' }}
+                              >
+                                <MessageCircle className="h-4 w-4 shrink-0" />
+                                <span>{display}</span>
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent>Envoyer un message WhatsApp</TooltipContent>
+                          </Tooltip>
+                        );
+                      })() : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs">{[d.marque, d.modele, d.annee].filter(Boolean).join(' ') || '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {dMetiers.map(mid => {
+                          const m = metiers.find(m => m.id === mid);
+                          return (
+                            <span key={mid} className={`inline-block px-2 py-0.5 rounded text-xs font-medium metier-${m?.couleur}-light`}>
+                              {m?.nom || mid}
+                            </span>
+                          );
+                        })}
+                        {dMetiers.length === 0 && '—'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {resps.map(rid => profileOptions.find(p => p.id === rid)?.company || '').filter(Boolean).join(', ') || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {billingProfile ? billingProfile.company : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="secondary" className={statusBadgeClass[d.statut]}>
+                        {STATUT_DEVIS_LABELS[d.statut]}
+                      </Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <DevisModal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setEditDevis(null); }}
+        devis={editDevis}
+        readOnly={editDevis ? getReadOnly(editDevis) : false}
+        devisResponsibles={devisResponsibles}
+        devisIntervenants={devisIntervenants}
+        devisMetiers={devisMetiers}
+        onAdd={addDevis}
+        onUpdate={updateDevis}
+        onDelete={deleteDevis}
+        onConvert={handleConvert}
+      />
+    </div>
+  );
+}
