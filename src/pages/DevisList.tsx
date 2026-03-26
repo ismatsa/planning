@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/StoreContext';
 import { useAuth } from '@/store/AuthContext';
-import { useDevisStore } from '@/store/useDevisStore';
 import { STATUT_DEVIS_LABELS, StatutDevis, Devis } from '@/types/devis';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
