@@ -23,6 +23,9 @@ interface Props {
   onSaved?: (devis: Devis) => void;
   onDeleted?: () => void;
   onConvert?: (devis: Devis) => void;
+  /** Controlled assignment — when provided, the form uses these instead of internal state */
+  assignedUserId?: string;
+  onAssignedUserIdChange?: (id: string) => void;
 }
 
 export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Props) {
