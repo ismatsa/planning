@@ -182,7 +182,33 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assign
         />
       </div>
 
-      {/* Assignment field hidden — rendered externally via controlled props */}
+      {/* Assignment — shown inline only when NOT controlled externally */}
+      {externalAssignedUserId === undefined && (
+        <div className={`rounded-lg p-4 -mx-1 border-2 transition-colors ${
+          assignedUserId
+            ? 'bg-primary/5 border-primary/30'
+            : 'bg-destructive/5 border-destructive/40'
+        }`}>
+          <div className="flex items-center gap-2 mb-2">
+            <UserCheck className={`h-4 w-4 ${assignedUserId ? 'text-primary' : 'text-destructive'}`} />
+            <span className="text-sm font-semibold text-foreground">Assigner à</span>
+          </div>
+          {!assignedUserId && (
+            <p className="text-xs text-destructive font-medium mb-2 flex items-center gap-1">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Veuillez assigner ce devis à un utilisateur
+            </p>
+          )}
+          <Select value={assignedUserId || undefined} onValueChange={setAssignedUserId}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner un utilisateur" /></SelectTrigger>
+            <SelectContent>
+              {activeProfiles.map(p => (
+                <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Facturation */}
       {selectedResponsibles.length >= 2 && (
