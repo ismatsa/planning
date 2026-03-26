@@ -478,6 +478,21 @@ export default function Parametres() {
                     ) : (
                       <>
                         <span className="text-sm flex-1">{i.name}</span>
+                        <Select
+                          value={i.responsable_user_id || '_none'}
+                          onValueChange={v => handleChangeResponsable(i.id, v === '_none' ? null : v)}
+                          disabled={!isAdmin}
+                        >
+                          <SelectTrigger className="h-7 text-xs w-44">
+                            <SelectValue placeholder="Aucun responsable" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">Aucun</SelectItem>
+                            {profileOptions.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         {isAdmin && (
                           <div className="flex items-center gap-0.5">
                             <Button
