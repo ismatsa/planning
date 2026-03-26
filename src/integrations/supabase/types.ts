@@ -155,6 +155,7 @@ export type Database = {
         Row: {
           content_type: string | null
           created_at: string
+          data_url: string | null
           devis_id: string
           file_name: string
           file_path: string
@@ -165,6 +166,7 @@ export type Database = {
         Insert: {
           content_type?: string | null
           created_at?: string
+          data_url?: string | null
           devis_id: string
           file_name: string
           file_path: string
@@ -175,6 +177,7 @@ export type Database = {
         Update: {
           content_type?: string | null
           created_at?: string
+          data_url?: string | null
           devis_id?: string
           file_name?: string
           file_path?: string
