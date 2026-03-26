@@ -410,7 +410,17 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               label="Responsable"
               options={responsibleOptions}
               selected={selectedResponsibles}
-              onChange={setSelectedResponsibles}
+              onChange={(ids) => {
+                setSelectedResponsibles(ids);
+                // Clean billing if selected billing responsible was removed
+                if (billingResponsible && !ids.includes(billingResponsible)) {
+                  setBillingResponsible('');
+                }
+                // If going from 2+ to 1, clear billing
+                if (ids.length < 2) {
+                  setBillingResponsible('');
+                }
+              }}
               disabled={readOnly}
               required
               placeholder="Rechercher un responsable..."
@@ -432,6 +442,26 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               }}
             />
           </div>
+
+          {/* Facturation - only visible when 2+ responsibles */}
+          {selectedResponsibles.length >= 2 && (
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Facturation</Label>
+              <Select value={billingResponsible} onValueChange={setBillingResponsible} disabled={readOnly}>
+                <SelectTrigger><SelectValue placeholder="Qui facture le client ?" /></SelectTrigger>
+                <SelectContent>
+                  {selectedResponsibles.map(id => {
+                    const p = profileOptions.find(p => p.id === id);
+                    return (
+                      <SelectItem key={id} value={id}>
+                        {p ? p.company : id}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
