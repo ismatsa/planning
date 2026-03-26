@@ -57,6 +57,7 @@ function mapRdv(row: any): RendezVous {
     vin: row.vin || undefined,
     notes: row.notes || undefined,
     statut: row.statut,
+    billingResponsibleUserId: row.billing_responsible_user_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdBy: row.created_by || undefined,
