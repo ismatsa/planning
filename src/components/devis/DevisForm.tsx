@@ -28,7 +28,7 @@ interface Props {
   onAssignedUserIdChange?: (id: string) => void;
 }
 
-export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Props) {
+export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assignedUserId: externalAssignedUserId, onAssignedUserIdChange }: Props) {
   const { user } = useAuth();
   const { metiers, devis: devisStore } = useStore();
   const { addDevis, updateDevis, deleteDevis, devisResponsibles, devisIntervenants, devisMetiers } = devisStore;
