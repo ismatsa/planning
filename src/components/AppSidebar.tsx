@@ -18,7 +18,7 @@ export default function AppSidebar() {
     return devisStore.devisList.filter(d => d.assignedUserId === user.id).length;
   }, [devisStore.devisList, user]);
 
-  const sections = [
+  const sections: { title: string; items: { to: string; icon: any; label: string; adminOnly?: boolean; badge?: number }[] }[] = [
     {
       title: 'Événements',
       items: [
