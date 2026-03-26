@@ -321,6 +321,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     setSaving(true);
 
     if (isEdit) {
+      const effectiveBilling = selectedResponsibles.length >= 2 ? (billingResponsible || undefined) : undefined;
       await updateRdv({
         ...rdv!,
         posteId,
@@ -334,6 +335,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         vin: vin || undefined,
         notes: notes || undefined,
         statut,
+        billingResponsibleUserId: effectiveBilling,
       }, selectedResponsibles, selectedIntervenants);
       toast.success('Rendez-vous modifié.');
     } else {
