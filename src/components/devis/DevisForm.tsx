@@ -85,6 +85,7 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
       setSelectedIntervenants(devisIntervenants[devis.id] || []);
       setSelectedMetiers(devisMetiers[devis.id] || []);
       setBillingResponsible(devis.billingResponsibleUserId || '');
+      setAssignedUserId(devis.assignedUserId || '');
     }
   }, [devis, devisResponsibles, devisIntervenants, devisMetiers]);
 
