@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { PhoneInput, parsePhone, serializePhone } from '@/components/ui/phone-input';
 import { useStore } from '@/store/StoreContext';
+import { useAuth } from '@/store/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
