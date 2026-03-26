@@ -59,7 +59,7 @@ export default function AppSidebar() {
                   {section.title}
                 </span>
                 {visibleItems.map(({ to, icon: Icon, label }) => {
-                  const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+                  const active = to === '/' ? location.pathname === '/' : to === '/devis' ? location.pathname === '/devis' : location.pathname.startsWith(to);
                   return (
                     <Link
                       key={to}

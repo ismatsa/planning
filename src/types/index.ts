@@ -51,6 +51,7 @@ export interface RendezVous {
   notes?: string;
   statut: StatutRdv;
   billingResponsibleUserId?: string;
+  sourceDevisId?: string;
   createdAt: string;
     updatedAt: string;
     createdBy?: string;

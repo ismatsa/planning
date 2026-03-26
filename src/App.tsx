@@ -16,6 +16,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import DevisList from "./pages/DevisList";
 import CreerDevis from "./pages/CreerDevis";
+import DevisDetail from "./pages/DevisDetail";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ function AppRoutes() {
           <Route path="/profil" element={<Profil />} />
           <Route path="/devis" element={<DevisList />} />
           <Route path="/devis/creer" element={<CreerDevis />} />
+          <Route path="/devis/:id" element={<DevisDetail />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

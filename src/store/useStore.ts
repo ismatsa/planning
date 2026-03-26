@@ -58,6 +58,7 @@ function mapRdv(row: any): RendezVous {
     notes: row.notes || undefined,
     statut: row.statut,
     billingResponsibleUserId: row.billing_responsible_user_id || undefined,
+    sourceDevisId: row.source_devis_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdBy: row.created_by || undefined,
@@ -146,6 +147,7 @@ export function useAppStore() {
       notes: rdv.notes || null,
       statut: rdv.statut,
       billing_responsible_user_id: rdv.billingResponsibleUserId || null,
+      source_devis_id: (rdv as any).sourceDevisId || null,
       created_by: session?.user?.id || null,
     } as any).select().single();
 
