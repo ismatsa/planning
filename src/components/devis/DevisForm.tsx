@@ -23,9 +23,12 @@ interface Props {
   onSaved?: (devis: Devis) => void;
   onDeleted?: () => void;
   onConvert?: (devis: Devis) => void;
+  /** Controlled assignment — when provided, the form uses these instead of internal state */
+  assignedUserId?: string;
+  onAssignedUserIdChange?: (id: string) => void;
 }
 
-export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Props) {
+export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assignedUserId: externalAssignedUserId, onAssignedUserIdChange }: Props) {
   const { user } = useAuth();
   const { metiers, devis: devisStore } = useStore();
   const { addDevis, updateDevis, deleteDevis, devisResponsibles, devisIntervenants, devisMetiers } = devisStore;
@@ -46,7 +49,9 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
   const [selectedIntervenants, setSelectedIntervenants] = useState<string[]>([]);
   const [selectedMetiers, setSelectedMetiers] = useState<string[]>([]);
   const [billingResponsible, setBillingResponsible] = useState('');
-  const [assignedUserId, setAssignedUserId] = useState('');
+  const [internalAssignedUserId, setInternalAssignedUserId] = useState('');
+  const assignedUserId = externalAssignedUserId !== undefined ? externalAssignedUserId : internalAssignedUserId;
+  const setAssignedUserId = onAssignedUserIdChange || setInternalAssignedUserId;
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<IntervenantOption[]>([]);
 
@@ -86,7 +91,7 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
       setSelectedIntervenants(devisIntervenants[devis.id] || []);
       setSelectedMetiers(devisMetiers[devis.id] || []);
       setBillingResponsible(devis.billingResponsibleUserId || '');
-      setAssignedUserId(devis.assignedUserId || '');
+      if (externalAssignedUserId === undefined) setInternalAssignedUserId(devis.assignedUserId || '');
     }
   }, [devis, devisResponsibles, devisIntervenants, devisMetiers]);
 
@@ -113,6 +118,10 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
     }
     if (selectedMetiers.length === 0) {
       toast.error('Veuillez sélectionner au moins un métier.');
+      return;
+    }
+    if (!assignedUserId) {
+      toast.error('Veuillez assigner ce devis à un utilisateur.');
       return;
     }
 
@@ -173,32 +182,33 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
         />
       </div>
 
-      {/* Assigné à — bloc mis en évidence */}
-      <div className={`rounded-lg p-4 -mx-1 border-2 transition-colors ${
-        assignedUserId
-          ? 'bg-primary/5 border-primary/30'
-          : 'bg-destructive/5 border-destructive/40'
-      }`}>
-        <div className="flex items-center gap-2 mb-2">
-          <UserCheck className={`h-4 w-4 ${assignedUserId ? 'text-primary' : 'text-destructive'}`} />
-          <span className="text-sm font-semibold text-foreground">Responsable du traitement</span>
+      {/* Assignment — shown inline only when NOT controlled externally */}
+      {externalAssignedUserId === undefined && (
+        <div className={`rounded-lg p-4 -mx-1 border-2 transition-colors ${
+          assignedUserId
+            ? 'bg-primary/5 border-primary/30'
+            : 'bg-destructive/5 border-destructive/40'
+        }`}>
+          <div className="flex items-center gap-2 mb-2">
+            <UserCheck className={`h-4 w-4 ${assignedUserId ? 'text-primary' : 'text-destructive'}`} />
+            <span className="text-sm font-semibold text-foreground">Assigner à</span>
+          </div>
+          {!assignedUserId && (
+            <p className="text-xs text-destructive font-medium mb-2 flex items-center gap-1">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Veuillez assigner ce devis à un utilisateur
+            </p>
+          )}
+          <Select value={assignedUserId || undefined} onValueChange={setAssignedUserId}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner un utilisateur" /></SelectTrigger>
+            <SelectContent>
+              {activeProfiles.map(p => (
+                <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        {!assignedUserId && (
-          <p className="text-xs text-destructive font-medium mb-2 flex items-center gap-1">
-            <AlertCircle className="h-3.5 w-3.5" />
-            Aucun utilisateur assigné — ce champ détermine qui doit traiter ce devis
-          </p>
-        )}
-        <Select value={assignedUserId || '__none__'} onValueChange={v => setAssignedUserId(v === '__none__' ? '' : v)}>
-          <SelectTrigger><SelectValue placeholder="Non assigné" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__none__">Non assigné</SelectItem>
-            {activeProfiles.map(p => (
-              <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      )}
 
       {/* Facturation */}
       {selectedResponsibles.length >= 2 && (

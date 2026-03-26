@@ -1,11 +1,18 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/StoreContext';
 import DevisForm from '@/components/devis/DevisForm';
 import DevisCommentFeed from '@/components/devis/DevisCommentFeed';
 import DevisAttachments from '@/components/devis/DevisAttachments';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Link as LinkIcon } from 'lucide-react';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { ArrowLeft, Link as LinkIcon, UserCheck, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ProfileOption { id: string; email: string; company: string; }
 
 export default function DevisDetail() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +21,27 @@ export default function DevisDetail() {
   const { devisList, devisMetiers, devisResponsibles, devisIntervenants } = devisStore;
 
   const devis = devisList.find(d => d.id === id);
+
+  const [assignedUserId, setAssignedUserId] = useState('');
+  const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
+
+  // Load profiles for the assignment selector
+  useEffect(() => {
+    supabase.from('profiles').select('id, email, company').then(({ data }) => {
+      if (data) {
+        setProfileOptions(
+          (data as any[])
+            .filter(p => p.company && p.company.trim() !== '')
+            .map(p => ({ id: p.id, email: p.email, company: p.company }))
+        );
+      }
+    });
+  }, []);
+
+  // Sync assignment from devis
+  useEffect(() => {
+    if (devis) setAssignedUserId(devis.assignedUserId || '');
+  }, [devis]);
 
   if (!devis) {
     return (
@@ -71,6 +99,8 @@ export default function DevisDetail() {
               onSaved={() => {}}
               onDeleted={() => navigate('/devis')}
               onConvert={handleConvert}
+              assignedUserId={assignedUserId}
+              onAssignedUserIdChange={setAssignedUserId}
             />
           </div>
 
@@ -79,9 +109,36 @@ export default function DevisDetail() {
           </div>
         </div>
 
-        {/* Right column: comment feed */}
-        <div className="lg:col-span-2">
-          <div className="rounded-lg border bg-card p-5 h-[calc(100vh-12rem)] flex flex-col">
+        {/* Right column: assignment + comment feed */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Assignment block */}
+          <div className={`rounded-lg border-2 p-4 transition-colors ${
+            assignedUserId
+              ? 'bg-primary/5 border-primary/30'
+              : 'bg-destructive/5 border-destructive/40'
+          }`}>
+            <div className="flex items-center gap-2 mb-3">
+              <UserCheck className={`h-4.5 w-4.5 ${assignedUserId ? 'text-primary' : 'text-destructive'}`} />
+              <span className="text-sm font-bold text-foreground">Assigner à</span>
+            </div>
+            {!assignedUserId && (
+              <p className="text-xs text-destructive font-medium mb-2 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5" />
+                Veuillez assigner ce devis à un utilisateur
+              </p>
+            )}
+            <Select value={assignedUserId || undefined} onValueChange={setAssignedUserId}>
+              <SelectTrigger><SelectValue placeholder="Sélectionner un utilisateur" /></SelectTrigger>
+              <SelectContent>
+                {profileOptions.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Discussion */}
+          <div className="rounded-lg border bg-card p-5 h-[calc(100vh-16rem)] flex flex-col">
             <DevisCommentFeed devisId={devis.id} />
           </div>
         </div>
