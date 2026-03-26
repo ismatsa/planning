@@ -14,6 +14,7 @@ function mapDevis(row: any): Devis {
     notes: row.notes || undefined,
     statut: row.statut as StatutDevis,
     billingResponsibleUserId: row.billing_responsible_user_id || undefined,
+    assignedUserId: row.assigned_user_id || undefined,
     createdBy: row.created_by || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
