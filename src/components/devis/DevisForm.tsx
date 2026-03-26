@@ -45,6 +45,7 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
   const [selectedIntervenants, setSelectedIntervenants] = useState<string[]>([]);
   const [selectedMetiers, setSelectedMetiers] = useState<string[]>([]);
   const [billingResponsible, setBillingResponsible] = useState('');
+  const [assignedUserId, setAssignedUserId] = useState('');
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<IntervenantOption[]>([]);
 
