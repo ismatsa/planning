@@ -592,6 +592,20 @@ export default function Parametres() {
                 onKeyDown={e => e.key === 'Enter' && handleAddIntervenant()}
               />
             </div>
+            <div className="grid gap-1.5">
+              <Label>Responsable</Label>
+              <Select value={newIntResponsable || '_none'} onValueChange={v => setNewIntResponsable(v === '_none' ? '' : v)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Aucun responsable" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Aucun</SelectItem>
+                  {profileOptions.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddIntOpen(false)}>Annuler</Button>
