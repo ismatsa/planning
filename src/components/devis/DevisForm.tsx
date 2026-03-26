@@ -142,15 +142,8 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
     setSaving(false);
   }
 
-  async function handleDelete() {
-    if (devis) {
-      setSaving(true);
-      await deleteDevis(devis.id);
-      toast.success('Devis supprimé.');
-      setSaving(false);
-      onDeleted?.();
-    }
-  }
+  const activeProfiles = useMemo(() =>
+    profileOptions.filter(p => p.company && p.company.trim() !== ''), [profileOptions]);
 
   return (
     <div className="grid gap-4">
