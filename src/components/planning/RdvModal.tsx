@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { PhoneInput, parsePhone, serializePhone } from '@/components/ui/phone-input';
 import { useStore } from '@/store/StoreContext';
+import { useAuth } from '@/store/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
@@ -56,6 +57,7 @@ interface IntervenantOption {
 
 export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime }: Props) {
   const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
+  const { user } = useAuth();
   const isEdit = !!rdv;
 
   const [metierId, setMetierId] = useState<MetierType>('lavage');
@@ -157,12 +159,30 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setVin('');
       setNotes('');
       setStatut('prevu');
-      setSelectedResponsibles([]);
+      // Auto-prefill current user as responsible if they have a company
+      // profileOptions may not be loaded yet, so we also handle it in a separate effect
+      if (user) {
+        const currentProfile = profileOptions.find(p => p.id === user.id);
+        setSelectedResponsibles(currentProfile ? [currentProfile.id] : []);
+      } else {
+        setSelectedResponsibles([]);
+      }
       setSelectedIntervenants([]);
     }
     setConflict(null);
     setSaving(false);
-  }, [open, rdv, defaultDate, defaultPosteId, defaultTime]);
+  }, [open, rdv, defaultDate, defaultPosteId, defaultTime, profileOptions, user]);
+
+  // When profileOptions load after modal opens (for new RDV), auto-prefill if not yet set
+  useEffect(() => {
+    if (!open || isEdit || !user) return;
+    if (selectedResponsibles.length === 0) {
+      const currentProfile = profileOptions.find(p => p.id === user.id);
+      if (currentProfile) {
+        setSelectedResponsibles([currentProfile.id]);
+      }
+    }
+  }, [profileOptions]);
 
   useEffect(() => {
     if (!isEdit) {
