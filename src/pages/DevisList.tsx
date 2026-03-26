@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/StoreContext';
 import { useAuth } from '@/store/AuthContext';
-import { STATUT_DEVIS_LABELS, StatutDevis, Devis } from '@/types/devis';
+import { STATUT_DEVIS_LABELS, StatutDevis } from '@/types/devis';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus } from 'lucide-react';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
-import DevisModal from '@/components/devis/DevisModal';
 import { supabase } from '@/integrations/supabase/client';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import { MessageCircle } from 'lucide-react';
@@ -33,10 +32,7 @@ const statusBadgeClass: Record<StatutDevis, string> = {
 
 export default function DevisList() {
   const { metiers, devis: devisStore } = useStore();
-  const {
-    devisList, devisResponsibles, devisIntervenants, devisMetiers,
-    addDevis, updateDevis, deleteDevis,
-  } = devisStore;
+  const { devisList, devisResponsibles, devisIntervenants, devisMetiers } = devisStore;
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -45,11 +41,6 @@ export default function DevisList() {
   const [filterStatut, setFilterStatut] = useState('all');
   const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
   const [filterIntervenants, setFilterIntervenants] = useState<string[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editDevis, setEditDevis] = useState<Devis | null>(null);
-
-  // Converting devis to RDV
-  const [convertDevis, setConvertDevis] = useState<Devis | null>(null);
 
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
@@ -108,29 +99,6 @@ export default function DevisList() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers]);
 
-  function handleConvert(devis: Devis) {
-    // Navigate to planning with devis data in state
-    const metierIds = devisMetiers[devis.id] || [];
-    const responsibleIds = devisResponsibles[devis.id] || [];
-    const intervenantIds = devisIntervenants[devis.id] || [];
-    navigate('/', {
-      state: {
-        convertFromDevis: {
-          ...devis,
-          metierIds,
-          responsibleIds,
-          intervenantIds,
-        },
-      },
-    });
-  }
-
-  function getReadOnly(d: Devis): boolean {
-    const resps = devisResponsibles[d.id] || [];
-    if (resps.length === 0) return false;
-    return !resps.includes(user?.id || '');
-  }
-
   return (
     <div className="p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
@@ -138,7 +106,7 @@ export default function DevisList() {
           <h1 className="text-xl font-display font-bold">Demandes de devis</h1>
           <p className="text-sm text-muted-foreground">{devisList.length} devis au total</p>
         </div>
-        <Button onClick={() => { setEditDevis(null); setModalOpen(true); }}>
+        <Button onClick={() => navigate('/devis/creer')}>
           <Plus className="h-4 w-4 mr-2" /> Nouveau devis
         </Button>
       </div>
@@ -219,7 +187,7 @@ export default function DevisList() {
                   <tr
                     key={d.id}
                     className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
-                    onClick={() => { setEditDevis(d); setModalOpen(true); }}
+                    onClick={() => navigate(`/devis/${d.id}`)}
                   >
                     <td className="px-4 py-3 font-medium">
                       {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
@@ -281,20 +249,6 @@ export default function DevisList() {
           </table>
         </div>
       )}
-
-      <DevisModal
-        open={modalOpen}
-        onClose={() => { setModalOpen(false); setEditDevis(null); }}
-        devis={editDevis}
-        readOnly={editDevis ? getReadOnly(editDevis) : false}
-        devisResponsibles={devisResponsibles}
-        devisIntervenants={devisIntervenants}
-        devisMetiers={devisMetiers}
-        onAdd={addDevis}
-        onUpdate={updateDevis}
-        onDelete={deleteDevis}
-        onConvert={handleConvert}
-      />
     </div>
   );
 }
