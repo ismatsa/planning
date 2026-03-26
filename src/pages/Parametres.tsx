@@ -68,18 +68,31 @@ export default function Parametres() {
   const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
   const [addIntOpen, setAddIntOpen] = useState(false);
   const [newIntName, setNewIntName] = useState('');
+  const [newIntResponsable, setNewIntResponsable] = useState('');
   const [savingInt, setSavingInt] = useState(false);
   const [renamingIntId, setRenamingIntId] = useState<string | null>(null);
   const [renamingIntValue, setRenamingIntValue] = useState('');
   const [deleteIntTarget, setDeleteIntTarget] = useState<Intervenant | null>(null);
+  const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
 
-  // Load intervenants
+  // Load intervenants + profiles
   async function loadIntervenants() {
     const { data } = await supabase.from('intervenants').select('*').order('name');
     if (data) setIntervenants(data as Intervenant[]);
   }
 
-  useEffect(() => { loadIntervenants(); }, []);
+  async function loadProfiles() {
+    const { data } = await supabase.from('profiles').select('id, email, company');
+    if (data) {
+      setProfileOptions(
+        (data as any[])
+          .filter(p => p.company && p.company.trim() !== '')
+          .map(p => ({ id: p.id, email: p.email, company: p.company }))
+      );
+    }
+  }
+
+  useEffect(() => { loadIntervenants(); loadProfiles(); }, []);
 
   // Add intervenant
   async function handleAddIntervenant() {
