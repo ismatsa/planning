@@ -115,6 +115,14 @@ export default function Parametres() {
     loadIntervenants();
   }
 
+  // Update responsable for intervenant
+  async function handleChangeResponsable(intervenantId: string, userId: string | null) {
+    const { error } = await supabase.from('intervenants').update({ responsable_user_id: userId }).eq('id', intervenantId);
+    if (error) { toast.error('Erreur lors de la mise à jour.'); return; }
+    toast.success('Responsable mis à jour.');
+    loadIntervenants();
+  }
+
   // Rename intervenant
   async function handleRenameIntervenant(id: string) {
     const name = renamingIntValue.trim();
