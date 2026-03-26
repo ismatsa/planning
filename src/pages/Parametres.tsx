@@ -103,12 +103,15 @@ export default function Parametres() {
       return;
     }
     setSavingInt(true);
-    const { error } = await supabase.from('intervenants').insert({ name });
+    const insertData: any = { name };
+    if (newIntResponsable) insertData.responsable_user_id = newIntResponsable;
+    const { error } = await supabase.from('intervenants').insert(insertData);
     setSavingInt(false);
     if (error) { toast.error('Erreur lors de l\'ajout.'); return; }
     toast.success(`Intervenant « ${name} » ajouté.`);
     setAddIntOpen(false);
     setNewIntName('');
+    setNewIntResponsable('');
     loadIntervenants();
   }
 
