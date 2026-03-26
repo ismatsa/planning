@@ -1,0 +1,1 @@
+ALTER TABLE public.rendez_vous ADD COLUMN billing_responsible_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
