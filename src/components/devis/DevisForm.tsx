@@ -175,10 +175,10 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
       {/* Assigné à */}
       <div>
         <Label className="text-xs font-medium text-muted-foreground mb-1.5">Assigné à</Label>
-        <Select value={assignedUserId} onValueChange={setAssignedUserId}>
+        <Select value={assignedUserId || '__none__'} onValueChange={v => setAssignedUserId(v === '__none__' ? '' : v)}>
           <SelectTrigger><SelectValue placeholder="Non assigné" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Non assigné</SelectItem>
+            <SelectItem value="__none__">Non assigné</SelectItem>
             {activeProfiles.map(p => (
               <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
             ))}
