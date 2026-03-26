@@ -148,6 +148,79 @@ export type Database = {
         }
         Relationships: []
       }
+      devis_attachments: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          devis_id: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          devis_id: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          devis_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_attachments_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devis_comments: {
+        Row: {
+          content: string
+          created_at: string
+          devis_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          devis_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          devis_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_comments_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devis_intervenants: {
         Row: {
           created_at: string
@@ -425,6 +498,7 @@ export type Database = {
           modele: string | null
           notes: string | null
           poste_id: string
+          source_devis_id: string | null
           statut: string
           updated_at: string
           vin: string | null
@@ -443,6 +517,7 @@ export type Database = {
           modele?: string | null
           notes?: string | null
           poste_id: string
+          source_devis_id?: string | null
           statut?: string
           updated_at?: string
           vin?: string | null
@@ -461,6 +536,7 @@ export type Database = {
           modele?: string | null
           notes?: string | null
           poste_id?: string
+          source_devis_id?: string | null
           statut?: string
           updated_at?: string
           vin?: string | null
@@ -471,6 +547,13 @@ export type Database = {
             columns: ["poste_id"]
             isOneToOne: false
             referencedRelation: "postes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rendez_vous_source_devis_id_fkey"
+            columns: ["source_devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
             referencedColumns: ["id"]
           },
         ]
