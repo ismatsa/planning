@@ -633,6 +633,11 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               </SelectContent>
             </Select>
           </div>
+
+          {/* Pièces jointes héritées du devis source */}
+          {rdv?.sourceDevisId && (
+            <DevisAttachments devisId={rdv.sourceDevisId} readOnly />
+          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0 shrink-0">
