@@ -236,6 +236,9 @@ export default function DevisList() {
                       {resps.map(rid => profileOptions.find(p => p.id === rid)?.company || '').filter(Boolean).join(', ') || '—'}
                     </td>
                     <td className="px-4 py-3 text-xs">
+                      {d.assignedUserId ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || '—') : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
                       {billingProfile ? billingProfile.company : '—'}
                     </td>
                     <td className="px-4 py-3">

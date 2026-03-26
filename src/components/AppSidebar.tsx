@@ -66,7 +66,7 @@ export default function AppSidebar() {
                 <span className="hidden lg:block text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold px-3 mb-1">
                   {section.title}
                 </span>
-                {visibleItems.map(({ to, icon: Icon, label }) => {
+                {visibleItems.map(({ to, icon: Icon, label, badge }) => {
                   const active = to === '/' ? location.pathname === '/' : to === '/devis' ? location.pathname === '/devis' : location.pathname.startsWith(to);
                   return (
                     <Link
@@ -81,7 +81,12 @@ export default function AppSidebar() {
                       `}
                     >
                       <Icon className="h-5 w-5 shrink-0" />
-                      <span className="hidden lg:block">{label}</span>
+                      <span className="hidden lg:block flex-1">{label}</span>
+                      {badge !== undefined && (
+                        <span className="hidden lg:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
+                          {badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
