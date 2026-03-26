@@ -181,6 +181,32 @@ export default function RendezVousList() {
           <Checkbox checked={hidePastEvents} onCheckedChange={(v) => setHidePastEvents(!!v)} />
           Masquer les événements passés
         </label>
+        <div className="w-48">
+          <SearchableMultiSelect
+            options={responsibleFilterOptions}
+            selected={filterResponsibles}
+            onChange={setFilterResponsibles}
+            placeholder="Responsable…"
+            compact
+            getLabel={(id) => {
+              const p = profileOptions.find(p => p.id === id);
+              return p ? p.company : id;
+            }}
+          />
+        </div>
+        <div className="w-48">
+          <SearchableMultiSelect
+            options={intervenantFilterOptions}
+            selected={filterIntervenants}
+            onChange={setFilterIntervenants}
+            placeholder="Intervenant…"
+            compact
+            getLabel={(id) => {
+              const i = intervenantOptions.find(i => i.id === id);
+              return i ? i.name : id;
+            }}
+          />
+        </div>
       </div>
 
       {/* Table */}
