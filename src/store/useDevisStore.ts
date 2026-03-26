@@ -88,6 +88,7 @@ export function useDevisStore() {
       notes: devis.notes || null,
       statut: devis.statut,
       billing_responsible_user_id: devis.billingResponsibleUserId || null,
+      assigned_user_id: devis.assignedUserId || null,
       created_by: session?.user?.id || null,
     } as any).select().single();
 
