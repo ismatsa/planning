@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import DevisAttachments from '@/components/devis/DevisAttachments';
+import RdvAttachments from '@/components/planning/RdvAttachments';
 import {
   Dialog,
   DialogContent,
