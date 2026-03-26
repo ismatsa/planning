@@ -86,6 +86,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   // Responsable & Intervenant
   const [selectedResponsibles, setSelectedResponsibles] = useState<string[]>([]);
   const [selectedIntervenants, setSelectedIntervenants] = useState<string[]>([]);
+  const [billingResponsible, setBillingResponsible] = useState<string>('');
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<IntervenantOption[]>([]);
 
