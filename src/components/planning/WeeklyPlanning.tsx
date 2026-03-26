@@ -407,12 +407,13 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
 
       <RdvModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => { setModalOpen(false); setDevisConversion(null); }}
         rdv={editRdv}
         readOnly={!!editRdv && (appointmentResponsibles[editRdv.id] || []).length > 0 && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
         defaultDate={newRdvDefaults.date}
         defaultPosteId={newRdvDefaults.posteId}
         defaultTime={newRdvDefaults.time}
+        prefillFromDevis={devisConversion}
       />
     </div>
   );
