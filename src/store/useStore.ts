@@ -184,6 +184,7 @@ export function useAppStore() {
       vin: rdv.vin || null,
       notes: rdv.notes || null,
       statut: rdv.statut,
+      billing_responsible_user_id: rdv.billingResponsibleUserId || null,
     }).eq('id', rdv.id).select().single();
 
     if (data && !error) {
