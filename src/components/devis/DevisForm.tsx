@@ -120,6 +120,10 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assign
       toast.error('Veuillez sélectionner au moins un métier.');
       return;
     }
+    if (!assignedUserId) {
+      toast.error('Veuillez assigner ce devis à un utilisateur.');
+      return;
+    }
 
     setSaving(true);
     const effectiveBilling = selectedResponsibles.length >= 2 ? (billingResponsible || undefined) : undefined;
