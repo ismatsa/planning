@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDevisStore } from '@/store/useDevisStore';
+import { useStore } from '@/store/StoreContext';
 import DevisModal from '@/components/devis/DevisModal';
 
 export default function CreerDevis() {
   const navigate = useNavigate();
-  const { addDevis, updateDevis, deleteDevis, devisResponsibles, devisIntervenants, devisMetiers } = useDevisStore();
+  const { devis: { addDevis, updateDevis, deleteDevis, devisResponsibles, devisIntervenants, devisMetiers } } = useStore();
   const [open, setOpen] = useState(true);
 
   return (
@@ -18,10 +18,7 @@ export default function CreerDevis() {
       devisResponsibles={devisResponsibles}
       devisIntervenants={devisIntervenants}
       devisMetiers={devisMetiers}
-      onAdd={async (...args) => {
-        const result = await addDevis(...args);
-        return result;
-      }}
+      onAdd={addDevis}
       onUpdate={updateDevis}
       onDelete={deleteDevis}
     />
