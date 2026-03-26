@@ -147,6 +147,7 @@ export function useAppStore() {
       notes: rdv.notes || null,
       statut: rdv.statut,
       billing_responsible_user_id: rdv.billingResponsibleUserId || null,
+      source_devis_id: (rdv as any).sourceDevisId || null,
       created_by: session?.user?.id || null,
     } as any).select().single();
 

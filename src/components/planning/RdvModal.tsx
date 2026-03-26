@@ -381,7 +381,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         notes: notes || undefined,
         statut,
         billingResponsibleUserId: effectiveBilling,
-      }, selectedResponsibles, selectedIntervenants);
+        sourceDevisId: prefillFromDevis?.sourceDevisId || undefined,
+      } as any, selectedResponsibles, selectedIntervenants);
       toast.success('Rendez-vous ajouté.');
     }
     setSaving(false);
