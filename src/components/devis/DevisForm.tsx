@@ -49,7 +49,9 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assign
   const [selectedIntervenants, setSelectedIntervenants] = useState<string[]>([]);
   const [selectedMetiers, setSelectedMetiers] = useState<string[]>([]);
   const [billingResponsible, setBillingResponsible] = useState('');
-  const [assignedUserId, setAssignedUserId] = useState('');
+  const [internalAssignedUserId, setInternalAssignedUserId] = useState('');
+  const assignedUserId = externalAssignedUserId !== undefined ? externalAssignedUserId : internalAssignedUserId;
+  const setAssignedUserId = onAssignedUserIdChange || setInternalAssignedUserId;
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<IntervenantOption[]>([]);
 
