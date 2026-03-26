@@ -100,6 +100,148 @@ export type Database = {
           },
         ]
       }
+      devis: {
+        Row: {
+          annee: string | null
+          billing_responsible_user_id: string | null
+          client_nom: string | null
+          client_tel: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          marque: string | null
+          modele: string | null
+          notes: string | null
+          statut: string
+          updated_at: string
+          vin: string | null
+        }
+        Insert: {
+          annee?: string | null
+          billing_responsible_user_id?: string | null
+          client_nom?: string | null
+          client_tel?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          marque?: string | null
+          modele?: string | null
+          notes?: string | null
+          statut?: string
+          updated_at?: string
+          vin?: string | null
+        }
+        Update: {
+          annee?: string | null
+          billing_responsible_user_id?: string | null
+          client_nom?: string | null
+          client_tel?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          marque?: string | null
+          modele?: string | null
+          notes?: string | null
+          statut?: string
+          updated_at?: string
+          vin?: string | null
+        }
+        Relationships: []
+      }
+      devis_intervenants: {
+        Row: {
+          created_at: string
+          devis_id: string
+          id: string
+          intervenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          devis_id: string
+          id?: string
+          intervenant_id: string
+        }
+        Update: {
+          created_at?: string
+          devis_id?: string
+          id?: string
+          intervenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_intervenants_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_intervenants_intervenant_id_fkey"
+            columns: ["intervenant_id"]
+            isOneToOne: false
+            referencedRelation: "intervenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devis_metiers: {
+        Row: {
+          created_at: string
+          devis_id: string
+          id: string
+          metier_id: string
+        }
+        Insert: {
+          created_at?: string
+          devis_id: string
+          id?: string
+          metier_id: string
+        }
+        Update: {
+          created_at?: string
+          devis_id?: string
+          id?: string
+          metier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_metiers_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devis_responsibles: {
+        Row: {
+          created_at: string
+          devis_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          devis_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          devis_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_responsibles_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disponibilite_postes: {
         Row: {
           duree_defaut: number
