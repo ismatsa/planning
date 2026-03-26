@@ -57,6 +57,7 @@ interface IntervenantOption {
 
 export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime }: Props) {
   const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
+  const { user } = useAuth();
   const isEdit = !!rdv;
 
   const [metierId, setMetierId] = useState<MetierType>('lavage');
