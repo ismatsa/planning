@@ -171,7 +171,18 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     }
     setConflict(null);
     setSaving(false);
-  }, [open, rdv, defaultDate, defaultPosteId, defaultTime]);
+  }, [open, rdv, defaultDate, defaultPosteId, defaultTime, profileOptions, user]);
+
+  // When profileOptions load after modal opens (for new RDV), auto-prefill if not yet set
+  useEffect(() => {
+    if (!open || isEdit || !user) return;
+    if (selectedResponsibles.length === 0) {
+      const currentProfile = profileOptions.find(p => p.id === user.id);
+      if (currentProfile) {
+        setSelectedResponsibles([currentProfile.id]);
+      }
+    }
+  }, [profileOptions]);
 
   useEffect(() => {
     if (!isEdit) {
