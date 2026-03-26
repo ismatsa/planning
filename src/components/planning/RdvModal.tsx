@@ -43,6 +43,7 @@ interface Props {
   defaultDate?: Date;
   defaultPosteId?: string;
   defaultTime?: string;
+  prefillFromDevis?: any;
 }
 
 interface ProfileOption {
