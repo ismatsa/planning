@@ -635,9 +635,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
             </Select>
           </div>
 
-          {/* Pièces jointes héritées du devis source */}
-          {rdv?.sourceDevisId && (
-            <DevisAttachments devisId={rdv.sourceDevisId} readOnly />
+          {/* Pièces jointes héritées du devis source (lecture seule) */}
+          {(rdv?.sourceDevisId || prefillFromDevis?.sourceDevisId) && (
+            <DevisAttachments devisId={rdv?.sourceDevisId || prefillFromDevis?.sourceDevisId} readOnly />
+          )}
+
+          {/* Pièces jointes propres au rendez-vous */}
+          {isEdit && rdv && (
+            <RdvAttachments rdvId={rdv.id} readOnly={readOnly} />
           )}
         </div>
 
