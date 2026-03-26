@@ -1,11 +1,23 @@
-import { Calendar, List, Clock, Settings, Users, User, LogOut, PanelLeftClose, PanelLeft, FileText, FilePlus } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/store/AuthContext';
-import { useStore } from '@/store/StoreContext';
-import { useSidebarState } from './AppLayout';
-import logo from '@/assets/powertech-short.png';
-import { Button } from '@/components/ui/button';
-import { useMemo } from 'react';
+import {
+  Calendar,
+  List,
+  Clock,
+  Settings,
+  Users,
+  User,
+  LogOut,
+  PanelLeftClose,
+  PanelLeft,
+  FileText,
+  FilePlus,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/store/AuthContext";
+import { useStore } from "@/store/StoreContext";
+import { useSidebarState } from "./AppLayout";
+import logo from "@/assets/powertech-short.png";
+import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 
 export default function AppSidebar() {
   const location = useLocation();
@@ -15,30 +27,38 @@ export default function AppSidebar() {
 
   const assignedCount = useMemo(() => {
     if (!user) return 0;
-    return devisStore.devisList.filter(d => d.assignedUserId === user.id).length;
+    return devisStore.devisList.filter((d) => d.assignedUserId === user.id).length;
   }, [devisStore.devisList, user]);
 
-  const sections: { title: string; items: { to: string; icon: any; label: string; adminOnly?: boolean; badge?: number }[] }[] = [
+  const sections: {
+    title: string;
+    items: { to: string; icon: any; label: string; adminOnly?: boolean; badge?: number }[];
+  }[] = [
     {
-      title: 'Événements',
+      title: "Événements",
       items: [
-        { to: '/', icon: Calendar, label: 'Planning' },
-        { to: '/rendez-vous', icon: List, label: 'Rendez-vous' },
-        { to: '/creneaux', icon: Clock, label: 'Créneaux', adminOnly: true },
+        { to: "/", icon: Calendar, label: "Planning" },
+        { to: "/rendez-vous", icon: List, label: "Rendez-vous" },
+        { to: "/creneaux", icon: Clock, label: "Créneaux", adminOnly: true },
       ],
     },
     {
-      title: 'Devis',
+      title: "Devis",
       items: [
-        { to: '/devis/creer', icon: FilePlus, label: 'Créer un devis' },
-        { to: '/devis', icon: FileText, label: 'Demandes de devis', badge: assignedCount > 0 ? assignedCount : undefined },
+        { to: "/devis/creer", icon: FilePlus, label: "Créer une demmande de devis" },
+        {
+          to: "/devis",
+          icon: FileText,
+          label: "Demandes de devis",
+          badge: assignedCount > 0 ? assignedCount : undefined,
+        },
       ],
     },
     {
-      title: 'Administration',
+      title: "Administration",
       items: [
-        { to: '/parametres', icon: Settings, label: 'Paramètres', adminOnly: true },
-        { to: '/utilisateurs', icon: Users, label: 'Utilisateurs', adminOnly: true },
+        { to: "/parametres", icon: Settings, label: "Paramètres", adminOnly: true },
+        { to: "/utilisateurs", icon: Users, label: "Utilisateurs", adminOnly: true },
       ],
     },
   ];
@@ -47,7 +67,7 @@ export default function AppSidebar() {
     <>
       <aside
         className={`fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-sidebar py-4 gap-2 transition-all duration-200 overflow-hidden
-          ${collapsed ? 'w-0 -translate-x-full' : 'w-16 lg:w-56 items-center lg:items-stretch lg:px-3'}`}
+          ${collapsed ? "w-0 -translate-x-full" : "w-16 lg:w-56 items-center lg:items-stretch lg:px-3"}`}
       >
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-4 px-2">
@@ -59,7 +79,7 @@ export default function AppSidebar() {
 
         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
           {sections.map((section) => {
-            const visibleItems = section.items.filter(item => !('adminOnly' in item && item.adminOnly) || isAdmin);
+            const visibleItems = section.items.filter((item) => !("adminOnly" in item && item.adminOnly) || isAdmin);
             if (visibleItems.length === 0) return null;
             return (
               <div key={section.title} className="mb-2">
@@ -67,15 +87,21 @@ export default function AppSidebar() {
                   {section.title}
                 </span>
                 {visibleItems.map(({ to, icon: Icon, label, badge }) => {
-                  const active = to === '/' ? location.pathname === '/' : to === '/devis' ? location.pathname === '/devis' : location.pathname.startsWith(to);
+                  const active =
+                    to === "/"
+                      ? location.pathname === "/"
+                      : to === "/devis"
+                        ? location.pathname === "/devis"
+                        : location.pathname.startsWith(to);
                   return (
                     <Link
                       key={to}
                       to={to}
                       className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
-                        ${active
-                          ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                        ${
+                          active
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         }
                         justify-center lg:justify-start
                       `}
@@ -111,15 +137,16 @@ export default function AppSidebar() {
           <Link
             to="/profil"
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
-              ${location.pathname === '/profil'
-                ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              ${
+                location.pathname === "/profil"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }
               justify-center lg:justify-start
             `}
           >
             <User className="h-5 w-5 shrink-0" />
-            <span className="hidden lg:block truncate">{user?.email || 'Profil'}</span>
+            <span className="hidden lg:block truncate">{user?.email || "Profil"}</span>
           </Link>
           <button
             onClick={() => logout()}
