@@ -328,7 +328,7 @@ export default function RendezVousList() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         rdv={editRdv}
-        readOnly={!!editRdv && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
+        readOnly={!!editRdv && (appointmentResponsibles[editRdv.id] || []).length > 0 && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
       />
     </div>
   );
