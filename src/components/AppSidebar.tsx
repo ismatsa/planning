@@ -1,23 +1,39 @@
-import { Calendar, List, Settings, Clock, User, Users, LogOut, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Calendar, List, Clock, Settings, Users, User, LogOut, PanelLeftClose, PanelLeft, FileText, FilePlus } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/store/AuthContext';
 import { useSidebarState } from './AppLayout';
 import logo from '@/assets/powertech-short.png';
 import { Button } from '@/components/ui/button';
 
-const navItems = [
-  { to: '/', icon: Calendar, label: 'Planning' },
-  { to: '/rendez-vous', icon: List, label: 'Rendez-vous' },
-  { to: '/creneaux', icon: Clock, label: 'Créneaux', adminOnly: true },
-  { to: '/parametres', icon: Settings, label: 'Paramètres', adminOnly: true },
-  { to: '/utilisateurs', icon: Users, label: 'Utilisateurs', adminOnly: true },
+const sections = [
+  {
+    title: 'Événements',
+    items: [
+      { to: '/', icon: Calendar, label: 'Planning' },
+      { to: '/rendez-vous', icon: List, label: 'Rendez-vous' },
+      { to: '/creneaux', icon: Clock, label: 'Créneaux', adminOnly: true },
+    ],
+  },
+  {
+    title: 'Devis',
+    items: [
+      { to: '/devis/creer', icon: FilePlus, label: 'Créer un devis' },
+      { to: '/devis', icon: FileText, label: 'Demandes de devis' },
+    ],
+  },
+  {
+    title: 'Administration',
+    items: [
+      { to: '/parametres', icon: Settings, label: 'Paramètres', adminOnly: true },
+      { to: '/utilisateurs', icon: Users, label: 'Utilisateurs', adminOnly: true },
+    ],
+  },
 ];
 
 export default function AppSidebar() {
   const location = useLocation();
   const { logout, user, isAdmin } = useAuth();
   const { collapsed, toggle } = useSidebarState();
-  const visibleItems = navItems.filter(item => !('adminOnly' in item) || isAdmin);
 
   return (
     <>
@@ -26,31 +42,42 @@ export default function AppSidebar() {
           ${collapsed ? 'w-0 -translate-x-full' : 'w-16 lg:w-56 items-center lg:items-stretch lg:px-3'}`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-6 px-2">
+        <div className="flex items-center justify-center gap-2 mb-4 px-2">
           <img src={logo} alt="PowerTech" className="h-9 w-9 object-contain" />
           <span className="hidden lg:block text-sidebar-primary-foreground font-display font-bold text-lg tracking-tight">
             PowerTech
           </span>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1">
-          {visibleItems.map(({ to, icon: Icon, label }) => {
-            const active = location.pathname === to;
+        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
+          {sections.map((section) => {
+            const visibleItems = section.items.filter(item => !('adminOnly' in item && item.adminOnly) || isAdmin);
+            if (visibleItems.length === 0) return null;
             return (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
-                  ${active
-                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                  }
-                  justify-center lg:justify-start
-                `}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                <span className="hidden lg:block">{label}</span>
-              </Link>
+              <div key={section.title} className="mb-2">
+                <span className="hidden lg:block text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold px-3 mb-1">
+                  {section.title}
+                </span>
+                {visibleItems.map(({ to, icon: Icon, label }) => {
+                  const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+                  return (
+                    <Link
+                      key={to}
+                      to={to}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
+                        ${active
+                          ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                        }
+                        justify-center lg:justify-start
+                      `}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                      <span className="hidden lg:block">{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>

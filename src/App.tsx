@@ -14,6 +14,8 @@ import Parametres from "./pages/Parametres";
 import Profil from "./pages/Profil";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import DevisList from "./pages/DevisList";
+import CreerDevis from "./pages/CreerDevis";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,8 @@ function AppRoutes() {
           <Route path="/parametres" element={<Parametres />} />
           <Route path="/utilisateurs" element={<UserManagement />} />
           <Route path="/profil" element={<Profil />} />
+          <Route path="/devis" element={<DevisList />} />
+          <Route path="/devis/creer" element={<CreerDevis />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
