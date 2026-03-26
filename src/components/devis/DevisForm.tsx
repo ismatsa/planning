@@ -91,7 +91,7 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assign
       setSelectedIntervenants(devisIntervenants[devis.id] || []);
       setSelectedMetiers(devisMetiers[devis.id] || []);
       setBillingResponsible(devis.billingResponsibleUserId || '');
-      setAssignedUserId(devis.assignedUserId || '');
+      if (externalAssignedUserId === undefined) setInternalAssignedUserId(devis.assignedUserId || '');
     }
   }, [devis, devisResponsibles, devisIntervenants, devisMetiers]);
 
