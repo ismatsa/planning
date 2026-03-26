@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '@/store/StoreContext';
 import { STATUT_LABELS, StatutRdv } from '@/types';
 import { format } from 'date-fns';
@@ -32,6 +32,8 @@ import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
 import { getEventState, roundToNearest15Minutes, isUnresolved } from '@/lib/planning';
 import { useAuth } from '@/store/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 
 const statusBadgeClass: Record<StatutRdv, string> = {
   prevu: 'bg-muted text-muted-foreground',
@@ -42,7 +44,7 @@ const statusBadgeClass: Record<StatutRdv, string> = {
 };
 
 export default function RendezVousList() {
-  const { rdvs, postes, updateRdv, metiers, appointmentResponsibles } = useStore();
+  const { rdvs, postes, updateRdv, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const [filterMetier, setFilterMetier] = useState<string>('all');
   const [filterStatut, setFilterStatut] = useState<string>('all');
@@ -50,7 +52,42 @@ export default function RendezVousList() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
   const [hidePastEvents, setHidePastEvents] = useState(false);
+  const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
+  const [filterIntervenants, setFilterIntervenants] = useState<string[]>([]);
 
+  // Load profile options (users with company) and intervenant options
+  const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
+  const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    async function loadOptions() {
+      const [profilesRes, intervenantsRes] = await Promise.all([
+        supabase.from('profiles').select('id, company'),
+        supabase.from('intervenants').select('id, name').order('name'),
+      ]);
+      if (profilesRes.data) {
+        setProfileOptions(
+          (profilesRes.data as any[])
+            .filter(p => p.company && p.company.trim() !== '')
+            .map(p => ({ id: p.id, company: p.company }))
+        );
+      }
+      if (intervenantsRes.data) {
+        setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
+      }
+    }
+    loadOptions();
+  }, []);
+
+  const responsibleFilterOptions = useMemo(() =>
+    profileOptions.map(p => ({ id: p.id, label: p.company })),
+    [profileOptions]
+  );
+
+  const intervenantFilterOptions = useMemo(() =>
+    intervenantOptions.map(i => ({ id: i.id, label: i.name })),
+    [intervenantOptions]
+  );
   const filtered = useMemo(() => {
     const now = Date.now();
     return rdvs
@@ -73,10 +110,20 @@ export default function RendezVousList() {
           const isPast = endTime < now;
           if (isPast && ['noshow', 'annule', 'termine'].includes(r.statut)) return false;
         }
+        // Filter by responsibles
+        if (filterResponsibles.length > 0) {
+          const rdvResps = appointmentResponsibles[r.id] || [];
+          if (!filterResponsibles.some(fr => rdvResps.includes(fr))) return false;
+        }
+        // Filter by intervenants
+        if (filterIntervenants.length > 0) {
+          const rdvInts = appointmentIntervenants[r.id] || [];
+          if (!filterIntervenants.some(fi => rdvInts.includes(fi))) return false;
+        }
         return true;
       })
       .sort((a, b) => new Date(b.debut).getTime() - new Date(a.debut).getTime());
-  }, [rdvs, postes, filterMetier, filterStatut, search, hidePastEvents, isAdmin, permissions]);
+  }, [rdvs, postes, filterMetier, filterStatut, search, hidePastEvents, isAdmin, permissions, filterResponsibles, filterIntervenants, appointmentResponsibles, appointmentIntervenants]);
 
   async function changeStatut(rdv: RendezVous, newStatut: StatutRdv) {
     let fin = rdv.fin;
@@ -134,6 +181,32 @@ export default function RendezVousList() {
           <Checkbox checked={hidePastEvents} onCheckedChange={(v) => setHidePastEvents(!!v)} />
           Masquer les événements passés
         </label>
+        <div className="w-48">
+          <SearchableMultiSelect
+            options={responsibleFilterOptions}
+            selected={filterResponsibles}
+            onChange={setFilterResponsibles}
+            placeholder="Responsable…"
+            compact
+            getLabel={(id) => {
+              const p = profileOptions.find(p => p.id === id);
+              return p ? p.company : id;
+            }}
+          />
+        </div>
+        <div className="w-48">
+          <SearchableMultiSelect
+            options={intervenantFilterOptions}
+            selected={filterIntervenants}
+            onChange={setFilterIntervenants}
+            placeholder="Intervenant…"
+            compact
+            getLabel={(id) => {
+              const i = intervenantOptions.find(i => i.id === id);
+              return i ? i.name : id;
+            }}
+          />
+        </div>
       </div>
 
       {/* Table */}
