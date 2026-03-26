@@ -34,6 +34,13 @@ interface Intervenant {
   id: string;
   name: string;
   created_at: string;
+  responsable_user_id: string | null;
+}
+
+interface ProfileOption {
+  id: string;
+  email: string;
+  company: string;
 }
 
 export default function Parametres() {
