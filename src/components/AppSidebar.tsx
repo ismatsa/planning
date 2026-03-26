@@ -1,39 +1,47 @@
 import { Calendar, List, Clock, Settings, Users, User, LogOut, PanelLeftClose, PanelLeft, FileText, FilePlus } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/store/AuthContext';
+import { useStore } from '@/store/StoreContext';
 import { useSidebarState } from './AppLayout';
 import logo from '@/assets/powertech-short.png';
 import { Button } from '@/components/ui/button';
-
-const sections = [
-  {
-    title: 'Événements',
-    items: [
-      { to: '/', icon: Calendar, label: 'Planning' },
-      { to: '/rendez-vous', icon: List, label: 'Rendez-vous' },
-      { to: '/creneaux', icon: Clock, label: 'Créneaux', adminOnly: true },
-    ],
-  },
-  {
-    title: 'Devis',
-    items: [
-      { to: '/devis/creer', icon: FilePlus, label: 'Créer un devis' },
-      { to: '/devis', icon: FileText, label: 'Demandes de devis' },
-    ],
-  },
-  {
-    title: 'Administration',
-    items: [
-      { to: '/parametres', icon: Settings, label: 'Paramètres', adminOnly: true },
-      { to: '/utilisateurs', icon: Users, label: 'Utilisateurs', adminOnly: true },
-    ],
-  },
-];
+import { useMemo } from 'react';
 
 export default function AppSidebar() {
   const location = useLocation();
   const { logout, user, isAdmin } = useAuth();
   const { collapsed, toggle } = useSidebarState();
+  const { devis: devisStore } = useStore();
+
+  const assignedCount = useMemo(() => {
+    if (!user) return 0;
+    return devisStore.devisList.filter(d => d.assignedUserId === user.id).length;
+  }, [devisStore.devisList, user]);
+
+  const sections = [
+    {
+      title: 'Événements',
+      items: [
+        { to: '/', icon: Calendar, label: 'Planning' },
+        { to: '/rendez-vous', icon: List, label: 'Rendez-vous' },
+        { to: '/creneaux', icon: Clock, label: 'Créneaux', adminOnly: true },
+      ],
+    },
+    {
+      title: 'Devis',
+      items: [
+        { to: '/devis/creer', icon: FilePlus, label: 'Créer un devis' },
+        { to: '/devis', icon: FileText, label: 'Demandes de devis', badge: assignedCount > 0 ? assignedCount : undefined },
+      ],
+    },
+    {
+      title: 'Administration',
+      items: [
+        { to: '/parametres', icon: Settings, label: 'Paramètres', adminOnly: true },
+        { to: '/utilisateurs', icon: Users, label: 'Utilisateurs', adminOnly: true },
+      ],
+    },
+  ];
 
   return (
     <>
