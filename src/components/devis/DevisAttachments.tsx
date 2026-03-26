@@ -1,18 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/store/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Paperclip, Download, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Attachment {
-  id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number | null;
-  content_type: string | null;
-  created_at: string;
-}
+import {
+  listAttachments,
+  uploadAttachment,
+  deleteAttachment,
+  getAttachmentUrl,
+  formatFileSize,
+  type AttachmentMeta,
+} from '@/services/attachmentsService';
 
 interface Props {
   devisId: string;
@@ -21,19 +19,12 @@ interface Props {
 
 export default function DevisAttachments({ devisId, readOnly }: Props) {
   const { user } = useAuth();
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    async function load() {
-      const { data } = await supabase.from('devis_attachments')
-        .select('*')
-        .eq('devis_id', devisId)
-        .order('created_at', { ascending: true });
-      if (data) setAttachments(data as any[]);
-    }
-    load();
+    listAttachments(devisId).then(setAttachments);
   }, [devisId]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -42,27 +33,11 @@ export default function DevisAttachments({ devisId, readOnly }: Props) {
 
     setUploading(true);
     for (const file of Array.from(files)) {
-      const filePath = `${devisId}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('devis-attachments')
-        .upload(filePath, file);
-
-      if (uploadError) {
+      const result = await uploadAttachment(devisId, file, user.id);
+      if (result) {
+        setAttachments(prev => [...prev, result]);
+      } else {
         toast.error(`Erreur upload: ${file.name}`);
-        continue;
-      }
-
-      const { data: record, error: insertError } = await supabase.from('devis_attachments').insert({
-        devis_id: devisId,
-        file_name: file.name,
-        file_path: filePath,
-        file_size: file.size,
-        content_type: file.type,
-        uploaded_by: user.id,
-      } as any).select().single();
-
-      if (record && !insertError) {
-        setAttachments(prev => [...prev, record as any]);
       }
     }
     toast.success('Fichier(s) ajouté(s).');
@@ -70,22 +45,19 @@ export default function DevisAttachments({ devisId, readOnly }: Props) {
     if (inputRef.current) inputRef.current.value = '';
   }
 
-  async function handleDelete(att: Attachment) {
-    await supabase.storage.from('devis-attachments').remove([att.file_path]);
-    await supabase.from('devis_attachments').delete().eq('id', att.id);
+  async function handleDelete(att: AttachmentMeta) {
+    await deleteAttachment(att);
     setAttachments(prev => prev.filter(a => a.id !== att.id));
     toast.success('Fichier supprimé.');
   }
 
-  function getPublicUrl(filePath: string) {
-    return supabase.storage.from('devis-attachments').getPublicUrl(filePath).data.publicUrl;
-  }
-
-  function formatSize(bytes: number | null) {
-    if (!bytes) return '';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  function handleOpen(att: AttachmentMeta) {
+    const url = getAttachmentUrl(att);
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      toast.info('Le fichier sera disponible une fois le backend de stockage connecté.');
+    }
   }
 
   return (
@@ -113,13 +85,11 @@ export default function DevisAttachments({ devisId, readOnly }: Props) {
         {attachments.map(att => (
           <div key={att.id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm bg-muted/30">
             <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="truncate flex-1 font-medium">{att.file_name}</span>
-            <span className="text-xs text-muted-foreground shrink-0">{formatSize(att.file_size)}</span>
-            <a href={getPublicUrl(att.file_path)} target="_blank" rel="noopener noreferrer">
-              <Button size="icon" variant="ghost" className="h-7 w-7">
-                <Download className="h-3.5 w-3.5" />
-              </Button>
-            </a>
+            <span className="truncate flex-1 font-medium">{att.fileName}</span>
+            <span className="text-xs text-muted-foreground shrink-0">{formatFileSize(att.fileSize)}</span>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpen(att)}>
+              <Download className="h-3.5 w-3.5" />
+            </Button>
             {!readOnly && (
               <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete(att)}>
                 <Trash2 className="h-3.5 w-3.5" />
