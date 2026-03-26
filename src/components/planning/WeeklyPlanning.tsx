@@ -32,6 +32,15 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
   const [devisConversion, setDevisConversion] = useState<any>(null);
   const [visibleMetiers, setVisibleMetiers] = useState<Set<string>>(new Set(metiers.map(m => m.id)));
 
+  // Open modal from devis conversion
+  useEffect(() => {
+    if (convertFromDevis) {
+      setDevisConversion(convertFromDevis);
+      setEditRdv(null);
+      setModalOpen(true);
+    }
+  }, [convertFromDevis]);
+
   // Resize state
   const [resizingRdvId, setResizingRdvId] = useState<string | null>(null);
   const [resizePreview, setResizePreview] = useState<{ left: number; width: number } | null>(null);
