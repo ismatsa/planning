@@ -16,6 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 
 // ... keep existing code (JOURS_LABELS)
@@ -33,6 +34,13 @@ interface Intervenant {
   id: string;
   name: string;
   created_at: string;
+  responsable_user_id: string | null;
+}
+
+interface ProfileOption {
+  id: string;
+  email: string;
+  company: string;
 }
 
 export default function Parametres() {
@@ -60,18 +68,31 @@ export default function Parametres() {
   const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
   const [addIntOpen, setAddIntOpen] = useState(false);
   const [newIntName, setNewIntName] = useState('');
+  const [newIntResponsable, setNewIntResponsable] = useState('');
   const [savingInt, setSavingInt] = useState(false);
   const [renamingIntId, setRenamingIntId] = useState<string | null>(null);
   const [renamingIntValue, setRenamingIntValue] = useState('');
   const [deleteIntTarget, setDeleteIntTarget] = useState<Intervenant | null>(null);
+  const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
 
-  // Load intervenants
+  // Load intervenants + profiles
   async function loadIntervenants() {
     const { data } = await supabase.from('intervenants').select('*').order('name');
     if (data) setIntervenants(data as Intervenant[]);
   }
 
-  useEffect(() => { loadIntervenants(); }, []);
+  async function loadProfiles() {
+    const { data } = await supabase.from('profiles').select('id, email, company');
+    if (data) {
+      setProfileOptions(
+        (data as any[])
+          .filter(p => p.company && p.company.trim() !== '')
+          .map(p => ({ id: p.id, email: p.email, company: p.company }))
+      );
+    }
+  }
+
+  useEffect(() => { loadIntervenants(); loadProfiles(); }, []);
 
   // Add intervenant
   async function handleAddIntervenant() {
@@ -82,12 +103,23 @@ export default function Parametres() {
       return;
     }
     setSavingInt(true);
-    const { error } = await supabase.from('intervenants').insert({ name });
+    const insertData: any = { name };
+    if (newIntResponsable) insertData.responsable_user_id = newIntResponsable;
+    const { error } = await supabase.from('intervenants').insert(insertData);
     setSavingInt(false);
     if (error) { toast.error('Erreur lors de l\'ajout.'); return; }
     toast.success(`Intervenant « ${name} » ajouté.`);
     setAddIntOpen(false);
     setNewIntName('');
+    setNewIntResponsable('');
+    loadIntervenants();
+  }
+
+  // Update responsable for intervenant
+  async function handleChangeResponsable(intervenantId: string, userId: string | null) {
+    const { error } = await supabase.from('intervenants').update({ responsable_user_id: userId }).eq('id', intervenantId);
+    if (error) { toast.error('Erreur lors de la mise à jour.'); return; }
+    toast.success('Responsable mis à jour.');
     loadIntervenants();
   }
 
@@ -446,6 +478,21 @@ export default function Parametres() {
                     ) : (
                       <>
                         <span className="text-sm flex-1">{i.name}</span>
+                        <Select
+                          value={i.responsable_user_id || '_none'}
+                          onValueChange={v => handleChangeResponsable(i.id, v === '_none' ? null : v)}
+                          disabled={!isAdmin}
+                        >
+                          <SelectTrigger className="h-7 text-xs w-44">
+                            <SelectValue placeholder="Aucun responsable" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">Aucun</SelectItem>
+                            {profileOptions.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         {isAdmin && (
                           <div className="flex items-center gap-0.5">
                             <Button
@@ -544,6 +591,20 @@ export default function Parametres() {
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && handleAddIntervenant()}
               />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Responsable</Label>
+              <Select value={newIntResponsable || '_none'} onValueChange={v => setNewIntResponsable(v === '_none' ? '' : v)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Aucun responsable" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Aucun</SelectItem>
+                  {profileOptions.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.company}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

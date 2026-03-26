@@ -1,0 +1,1 @@
+ALTER TABLE public.intervenants ADD COLUMN responsable_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
