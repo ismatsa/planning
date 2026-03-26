@@ -127,6 +127,7 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
       notes: notes || undefined,
       statut,
       billingResponsibleUserId: effectiveBilling,
+      assignedUserId: assignedUserId || undefined,
     };
 
     if (isEdit && devis) {
