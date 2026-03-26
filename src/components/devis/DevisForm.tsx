@@ -271,11 +271,6 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
 
       {/* Actions */}
       <div className="flex items-center gap-2 pt-2">
-        {isEdit && (
-          <Button variant="destructive" size="sm" onClick={handleDelete} disabled={saving}>
-            Supprimer
-          </Button>
-        )}
         {isEdit && devis?.statut === 'valide' && onConvert && (
           <Button size="sm" variant="outline" onClick={() => onConvert(devis)}>
             Convertir en rendez-vous

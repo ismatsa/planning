@@ -138,6 +138,7 @@ export function useDevisStore() {
       notes: devis.notes || null,
       statut: devis.statut,
       billing_responsible_user_id: devis.billingResponsibleUserId || null,
+      assigned_user_id: devis.assignedUserId || null,
     }).eq('id', devis.id).select().single();
 
     if (data && !error) {
