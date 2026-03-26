@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '@/store/StoreContext';
 import { STATUT_LABELS, StatutRdv } from '@/types';
 import { format } from 'date-fns';
@@ -32,6 +32,8 @@ import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
 import { getEventState, roundToNearest15Minutes, isUnresolved } from '@/lib/planning';
 import { useAuth } from '@/store/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 
 const statusBadgeClass: Record<StatutRdv, string> = {
   prevu: 'bg-muted text-muted-foreground',
