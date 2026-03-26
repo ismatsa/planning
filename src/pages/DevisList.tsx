@@ -11,12 +11,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, CalendarDays, Bell } from 'lucide-react';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 import { supabase } from '@/integrations/supabase/client';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import { MessageCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
+const TERMINAL_STATUSES: StatutDevis[] = ['valide', 'refuse', 'annule'];
 
 const statusBadgeClass: Record<StatutDevis, string> = {
   demande_recue: 'bg-blue-100 text-blue-700',
@@ -41,15 +43,18 @@ export default function DevisList() {
   const [filterStatut, setFilterStatut] = useState('all');
   const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
   const [filterIntervenants, setFilterIntervenants] = useState<string[]>([]);
+  const [onlyMine, setOnlyMine] = useState(false);
 
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
+  const [linkedRdvMap, setLinkedRdvMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function loadOptions() {
-      const [profilesRes, intervenantsRes] = await Promise.all([
+      const [profilesRes, intervenantsRes, rdvRes] = await Promise.all([
         supabase.from('profiles').select('id, company'),
         supabase.from('intervenants').select('id, name').order('name'),
+        supabase.from('rendez_vous').select('id, source_devis_id').not('source_devis_id', 'is', null),
       ]);
       if (profilesRes.data) {
         setProfileOptions(
@@ -60,6 +65,13 @@ export default function DevisList() {
       }
       if (intervenantsRes.data) {
         setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
+      }
+      if (rdvRes.data) {
+        const map: Record<string, string> = {};
+        for (const r of rdvRes.data as any[]) {
+          if (r.source_devis_id) map[r.source_devis_id] = r.id;
+        }
+        setLinkedRdvMap(map);
       }
     }
     loadOptions();
@@ -73,6 +85,10 @@ export default function DevisList() {
   const filtered = useMemo(() => {
     return devisList
       .filter(d => {
+        if (onlyMine) {
+          if (d.assignedUserId !== user?.id) return false;
+          if (TERMINAL_STATUSES.includes(d.statut)) return false;
+        }
         if (filterStatut !== 'all' && d.statut !== filterStatut) return false;
         if (filterMetier !== 'all') {
           const dMetiers = devisMetiers[d.id] || [];
@@ -97,7 +113,23 @@ export default function DevisList() {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers]);
+  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, user]);
+
+  const myActionCount = useMemo(() => {
+    if (!user) return 0;
+    return devisList.filter(d => d.assignedUserId === user.id && !TERMINAL_STATUSES.includes(d.statut)).length;
+  }, [devisList, user]);
+
+  function getRowStyle(d: { statut: StatutDevis; assignedUserId?: string }) {
+    const isTerminal = TERMINAL_STATUSES.includes(d.statut);
+    const isAssignedToMe = d.assignedUserId === user?.id;
+    const isDevisEnvoye = d.statut === 'devis_envoye';
+
+    if (isTerminal) return 'opacity-50';
+    if (isAssignedToMe && !isTerminal) return 'bg-accent/40 border-l-4 border-l-primary';
+    if (isDevisEnvoye) return 'bg-orange-50 border-l-4 border-l-orange-400';
+    return '';
+  }
 
   return (
     <div className="p-6 max-w-6xl">
@@ -113,6 +145,19 @@ export default function DevisList() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
+        <Button
+          variant={onlyMine ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setOnlyMine(!onlyMine)}
+          className="gap-1.5"
+        >
+          🔥 Mes devis à traiter
+          {myActionCount > 0 && (
+            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+              {myActionCount}
+            </span>
+          )}
+        </Button>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-56" />
@@ -183,11 +228,15 @@ export default function DevisList() {
                   ? profileOptions.find(p => p.id === d.billingResponsibleUserId)
                   : null;
                 const canSeeDetails = resps.includes(user?.id || '') || d.createdBy === user?.id;
+                const isTerminal = TERMINAL_STATUSES.includes(d.statut);
+                const isAssignedToMe = d.assignedUserId === user?.id && !isTerminal;
+                const isDevisEnvoye = d.statut === 'devis_envoye';
+                const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
 
                 return (
                   <tr
                     key={d.id}
-                    className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                    className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${getRowStyle(d)}`}
                     onClick={() => navigate(`/devis/${d.id}`)}
                   >
                     <td className="px-4 py-3 font-medium">
@@ -242,9 +291,35 @@ export default function DevisList() {
                       {billingProfile ? billingProfile.company : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant="secondary" className={statusBadgeClass[d.statut]}>
-                        {STATUT_DEVIS_LABELS[d.statut]}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge variant="secondary" className={statusBadgeClass[d.statut]}>
+                          {STATUT_DEVIS_LABELS[d.statut]}
+                        </Badge>
+                        {isAssignedToMe && (
+                          <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
+                            À traiter
+                          </Badge>
+                        )}
+                        {isDevisEnvoye && !isTerminal && (
+                          <Badge variant="outline" className="border-orange-400 text-orange-600 text-[10px] px-1.5 py-0 gap-0.5 animate-pulse">
+                            <Bell className="h-3 w-3" />
+                            À relancer
+                          </Badge>
+                        )}
+                        {linkedRdvId && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={e => { e.stopPropagation(); navigate(`/rendez-vous`); }}
+                                className="inline-flex items-center text-primary hover:text-primary/80"
+                              >
+                                <CalendarDays className="h-4 w-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Voir le rendez-vous lié</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
