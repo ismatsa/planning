@@ -1,0 +1,1 @@
+ALTER TABLE public.devis_attachments ADD COLUMN IF NOT EXISTS data_url text;
