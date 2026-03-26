@@ -271,6 +271,7 @@ export type Database = {
       rendez_vous: {
         Row: {
           annee: string | null
+          billing_responsible_user_id: string | null
           client_nom: string | null
           client_tel: string | null
           created_at: string
@@ -288,6 +289,7 @@ export type Database = {
         }
         Insert: {
           annee?: string | null
+          billing_responsible_user_id?: string | null
           client_nom?: string | null
           client_tel?: string | null
           created_at?: string
@@ -305,6 +307,7 @@ export type Database = {
         }
         Update: {
           annee?: string | null
+          billing_responsible_user_id?: string | null
           client_nom?: string | null
           client_tel?: string | null
           created_at?: string

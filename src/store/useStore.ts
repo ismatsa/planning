@@ -57,6 +57,7 @@ function mapRdv(row: any): RendezVous {
     vin: row.vin || undefined,
     notes: row.notes || undefined,
     statut: row.statut,
+    billingResponsibleUserId: row.billing_responsible_user_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdBy: row.created_by || undefined,
@@ -144,6 +145,7 @@ export function useAppStore() {
       vin: rdv.vin || null,
       notes: rdv.notes || null,
       statut: rdv.statut,
+      billing_responsible_user_id: rdv.billingResponsibleUserId || null,
       created_by: session?.user?.id || null,
     } as any).select().single();
 
@@ -182,6 +184,7 @@ export function useAppStore() {
       vin: rdv.vin || null,
       notes: rdv.notes || null,
       statut: rdv.statut,
+      billing_responsible_user_id: rdv.billingResponsibleUserId || null,
     }).eq('id', rdv.id).select().single();
 
     if (data && !error) {

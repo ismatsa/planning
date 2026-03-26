@@ -50,6 +50,7 @@ export interface RendezVous {
   vin?: string;
   notes?: string;
   statut: StatutRdv;
+  billingResponsibleUserId?: string;
   createdAt: string;
     updatedAt: string;
     createdBy?: string;

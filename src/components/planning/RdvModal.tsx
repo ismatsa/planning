@@ -86,6 +86,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   // Responsable & Intervenant
   const [selectedResponsibles, setSelectedResponsibles] = useState<string[]>([]);
   const [selectedIntervenants, setSelectedIntervenants] = useState<string[]>([]);
+  const [billingResponsible, setBillingResponsible] = useState<string>('');
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<IntervenantOption[]>([]);
 
@@ -143,6 +144,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       // Load pivot data
       setSelectedResponsibles(appointmentResponsibles[rdv.id] || []);
       setSelectedIntervenants(appointmentIntervenants[rdv.id] || []);
+      setBillingResponsible(rdv.billingResponsibleUserId || '');
     } else {
       const poste = defaultPosteId ? postes.find(p => p.id === defaultPosteId) : null;
       setMetierId(poste?.metierId || 'lavage');
@@ -160,6 +162,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setVin('');
       setNotes('');
       setStatut('prevu');
+      setBillingResponsible('');
       // Auto-prefill current user as responsible if they have a company
       // profileOptions may not be loaded yet, so we also handle it in a separate effect
       if (user) {
@@ -318,6 +321,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     setSaving(true);
 
     if (isEdit) {
+      const effectiveBilling = selectedResponsibles.length >= 2 ? (billingResponsible || undefined) : undefined;
       await updateRdv({
         ...rdv!,
         posteId,
@@ -331,9 +335,11 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         vin: vin || undefined,
         notes: notes || undefined,
         statut,
+        billingResponsibleUserId: effectiveBilling,
       }, selectedResponsibles, selectedIntervenants);
       toast.success('Rendez-vous modifié.');
     } else {
+      const effectiveBilling = selectedResponsibles.length >= 2 ? (billingResponsible || undefined) : undefined;
       await addRdv({
         posteId,
         debut: debut.toISOString(),
@@ -346,6 +352,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         vin: vin || undefined,
         notes: notes || undefined,
         statut,
+        billingResponsibleUserId: effectiveBilling,
       }, selectedResponsibles, selectedIntervenants);
       toast.success('Rendez-vous ajouté.');
     }
@@ -403,7 +410,17 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               label="Responsable"
               options={responsibleOptions}
               selected={selectedResponsibles}
-              onChange={setSelectedResponsibles}
+              onChange={(ids) => {
+                setSelectedResponsibles(ids);
+                // Clean billing if selected billing responsible was removed
+                if (billingResponsible && !ids.includes(billingResponsible)) {
+                  setBillingResponsible('');
+                }
+                // If going from 2+ to 1, clear billing
+                if (ids.length < 2) {
+                  setBillingResponsible('');
+                }
+              }}
               disabled={readOnly}
               required
               placeholder="Rechercher un responsable..."
@@ -425,6 +442,26 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               }}
             />
           </div>
+
+          {/* Facturation - only visible when 2+ responsibles */}
+          {selectedResponsibles.length >= 2 && (
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Facturation</Label>
+              <Select value={billingResponsible} onValueChange={setBillingResponsible} disabled={readOnly}>
+                <SelectTrigger><SelectValue placeholder="Qui facture le client ?" /></SelectTrigger>
+                <SelectContent>
+                  {selectedResponsibles.map(id => {
+                    const p = profileOptions.find(p => p.id === id);
+                    return (
+                      <SelectItem key={id} value={id}>
+                        {p ? p.company : id}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
