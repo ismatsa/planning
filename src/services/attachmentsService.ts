@@ -1,14 +1,13 @@
 /**
- * Attachments Service — Storage-agnostic abstraction layer.
+ * Attachments Service — Supabase Storage backend.
  *
- * Currently uses a placeholder implementation that stores file metadata
- * in Supabase (database only) and converts files to data URLs for preview.
- *
- * To connect a real backend, replace the methods in PlaceholderStorageProvider
- * with calls to your server endpoint (e.g. POST /api/attachments/upload).
+ * Files are stored in the `devis-attachments` bucket under quotes/{quote_id}/{filename}.
+ * Metadata lives in `devis_attachments`.
  */
 
 import { supabase } from '@/integrations/supabase/client';
+
+const BUCKET = 'devis-attachments';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -22,58 +21,9 @@ export interface AttachmentMeta {
   storagePath: string;
   uploadedBy: string | null;
   createdAt: string;
-  /** When using the placeholder provider, the file content as a data URL */
-  dataUrl?: string;
 }
 
-export interface StorageProvider {
-  /** Upload a file and return its storage path */
-  upload(devisId: string, file: File): Promise<{ storagePath: string; dataUrl?: string }>;
-  /** Get a downloadable/viewable URL for a stored file */
-  getUrl(attachment: AttachmentMeta): string | null;
-  /** Delete the stored file */
-  delete(storagePath: string): Promise<void>;
-}
-
-// ── Placeholder Provider (data URL — no server needed) ─────────────────────
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-const placeholderProvider: StorageProvider = {
-  async upload(devisId: string, file: File) {
-    const storagePath = `uploads/quotes/${devisId}/${Date.now()}_${file.name}`;
-    const dataUrl = await fileToDataUrl(file);
-    return { storagePath, dataUrl };
-  },
-
-  getUrl(attachment: AttachmentMeta) {
-    // In placeholder mode, the data URL is stored in the DB column `file_path`
-    // alongside the logical path. We use a convention: if file_path starts with
-    // "data:" it's a data URL; otherwise it's a server path.
-    return attachment.dataUrl || null;
-  },
-
-  async delete(_storagePath: string) {
-    // No-op in placeholder mode — nothing to delete on disk
-  },
-};
-
-// ── Active provider (swap this when backend is ready) ──────────────────────
-
-let provider: StorageProvider = placeholderProvider;
-
-export function setStorageProvider(p: StorageProvider) {
-  provider = p;
-}
-
-// ── Service API ────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 
 function mapRow(row: any): AttachmentMeta {
   return {
@@ -86,9 +36,16 @@ function mapRow(row: any): AttachmentMeta {
     storagePath: row.file_path,
     uploadedBy: row.uploaded_by,
     createdAt: row.created_at,
-    dataUrl: row.data_url ?? undefined,
   };
 }
+
+function uniqueName(file: File): string {
+  const ext = file.name.includes('.') ? '.' + file.name.split('.').pop() : '';
+  const base = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `${Date.now()}_${base}${ext}`;
+}
+
+// ── Service API ────────────────────────────────────────────────────────────
 
 export async function listAttachments(devisId: string): Promise<AttachmentMeta[]> {
   const { data } = await supabase
@@ -104,8 +61,20 @@ export async function uploadAttachment(
   file: File,
   userId: string,
 ): Promise<AttachmentMeta | null> {
-  const { storagePath, dataUrl } = await provider.upload(devisId, file);
+  const fileName = uniqueName(file);
+  const storagePath = `quotes/${devisId}/${fileName}`;
 
+  // 1. Upload to Supabase Storage
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET)
+    .upload(storagePath, file, { contentType: file.type, upsert: false });
+
+  if (uploadError) {
+    console.error('Storage upload error:', uploadError);
+    return null;
+  }
+
+  // 2. Save metadata
   const { data, error } = await supabase
     .from('devis_attachments')
     .insert({
@@ -115,22 +84,26 @@ export async function uploadAttachment(
       file_size: file.size,
       content_type: file.type,
       uploaded_by: userId,
-      data_url: dataUrl ?? null,
     } as any)
     .select()
     .single();
 
-  if (error || !data) return null;
+  if (error || !data) {
+    // Rollback storage if DB insert failed
+    await supabase.storage.from(BUCKET).remove([storagePath]);
+    return null;
+  }
   return mapRow(data);
 }
 
 export async function deleteAttachment(attachment: AttachmentMeta): Promise<void> {
-  await provider.delete(attachment.storagePath);
+  await supabase.storage.from(BUCKET).remove([attachment.storagePath]);
   await supabase.from('devis_attachments').delete().eq('id', attachment.id);
 }
 
 export function getAttachmentUrl(attachment: AttachmentMeta): string | null {
-  return provider.getUrl(attachment);
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(attachment.storagePath);
+  return data?.publicUrl || null;
 }
 
 export function formatFileSize(bytes: number | null): string {
