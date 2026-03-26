@@ -162,7 +162,7 @@ export default function DevisList() {
       ) : (
         <div className="rounded-lg border bg-card overflow-hidden">
           <table className="w-full text-sm">
-            <thead>
+             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Date</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Client</th>
@@ -170,6 +170,7 @@ export default function DevisList() {
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Véhicule</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Métiers</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Responsable(s)</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Assigné à</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Facturation</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Statut</th>
               </tr>
