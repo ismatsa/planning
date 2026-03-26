@@ -43,6 +43,7 @@ interface Props {
   defaultDate?: Date;
   defaultPosteId?: string;
   defaultTime?: string;
+  prefillFromDevis?: any;
 }
 
 interface ProfileOption {
@@ -56,7 +57,7 @@ interface IntervenantOption {
   name: string;
 }
 
-export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime }: Props) {
+export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime, prefillFromDevis }: Props) {
   const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
   const { user } = useAuth();
   const isEdit = !!rdv;
@@ -146,36 +147,63 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setSelectedIntervenants(appointmentIntervenants[rdv.id] || []);
       setBillingResponsible(rdv.billingResponsibleUserId || '');
     } else {
+      // Prefill from devis conversion if available
+      const devis = prefillFromDevis;
       const poste = defaultPosteId ? postes.find(p => p.id === defaultPosteId) : null;
-      setMetierId(poste?.metierId || 'lavage');
-      setPosteId(defaultPosteId || filteredPostes[0]?.id || '');
+      
+      if (devis) {
+        // If devis has a single metier, use it; otherwise default
+        const devisMetierIds = devis.metierIds || [];
+        if (devisMetierIds.length === 1) {
+          setMetierId(devisMetierIds[0]);
+          const firstPoste = postes.find(p => p.metierId === devisMetierIds[0] && p.actif);
+          setPosteId(firstPoste?.id || '');
+        } else {
+          setMetierId(poste?.metierId || (devisMetierIds[0] || 'lavage'));
+          setPosteId(defaultPosteId || '');
+        }
+        setClientNom(devis.clientNom || '');
+        const parsed = parsePhone(devis.clientTel || '');
+        setClientTelCode(parsed.countryCode);
+        setClientTelNum(parsed.number);
+        setMarque(devis.marque || '');
+        setModele(devis.modele || '');
+        setAnnee(devis.annee || '');
+        setVin(devis.vin || '');
+        setNotes(devis.notes || '');
+        setSelectedResponsibles(devis.responsibleIds || []);
+        setSelectedIntervenants(devis.intervenantIds || []);
+        setBillingResponsible(devis.billingResponsibleUserId || '');
+      } else {
+        setMetierId(poste?.metierId || 'lavage');
+        setPosteId(defaultPosteId || filteredPostes[0]?.id || '');
+        setClientNom('');
+        setClientTelCode('+212');
+        setClientTelNum('');
+        setMarque('');
+        setModele('');
+        setAnnee('');
+        setVin('');
+        setNotes('');
+        setBillingResponsible('');
+        // Auto-prefill current user as responsible
+        if (user) {
+          const currentProfile = profileOptions.find(p => p.id === user.id);
+          setSelectedResponsibles(currentProfile ? [currentProfile.id] : []);
+        } else {
+          setSelectedResponsibles([]);
+        }
+        setSelectedIntervenants([]);
+      }
       setDate(defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
       setDateFin(defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
       setHeureDebut(defaultTime || '09:00');
       setDuree(60);
-      setClientNom('');
-      setClientTelCode('+212');
-      setClientTelNum('');
-      setMarque('');
-      setModele('');
-      setAnnee('');
-      setVin('');
-      setNotes('');
       setStatut('prevu');
-      setBillingResponsible('');
-      // Auto-prefill current user as responsible if they have a company
-      // profileOptions may not be loaded yet, so we also handle it in a separate effect
-      if (user) {
-        const currentProfile = profileOptions.find(p => p.id === user.id);
-        setSelectedResponsibles(currentProfile ? [currentProfile.id] : []);
-      } else {
-        setSelectedResponsibles([]);
-      }
-      setSelectedIntervenants([]);
     }
     setConflict(null);
     setSaving(false);
-  }, [open, rdv, defaultDate, defaultPosteId, defaultTime, profileOptions, user]);
+  }, [open, rdv, defaultDate, defaultPosteId, defaultTime, profileOptions, user, prefillFromDevis]);
 
   // When profileOptions load after modal opens (for new RDV), auto-prefill if not yet set
   useEffect(() => {

@@ -17,7 +17,11 @@ import { useAuth } from '@/store/AuthContext';
 const SLOT_WIDTH = 80; // px per time slot
 const DAYS_SHOWN = 6;
 
-export default function WeeklyPlanning() {
+interface WeeklyPlanningProps {
+  convertFromDevis?: any;
+}
+
+export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps = {}) {
   const { rdvs, postes, settings, updateRdv, checkConflict, metiers, appointmentResponsibles } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const { collapsed } = useSidebarState();
@@ -25,7 +29,17 @@ export default function WeeklyPlanning() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
   const [newRdvDefaults, setNewRdvDefaults] = useState<{ date?: Date; posteId?: string; time?: string }>({});
+  const [devisConversion, setDevisConversion] = useState<any>(null);
   const [visibleMetiers, setVisibleMetiers] = useState<Set<string>>(new Set(metiers.map(m => m.id)));
+
+  // Open modal from devis conversion
+  useEffect(() => {
+    if (convertFromDevis) {
+      setDevisConversion(convertFromDevis);
+      setEditRdv(null);
+      setModalOpen(true);
+    }
+  }, [convertFromDevis]);
 
   // Resize state
   const [resizingRdvId, setResizingRdvId] = useState<string | null>(null);
@@ -393,12 +407,13 @@ export default function WeeklyPlanning() {
 
       <RdvModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => { setModalOpen(false); setDevisConversion(null); }}
         rdv={editRdv}
         readOnly={!!editRdv && (appointmentResponsibles[editRdv.id] || []).length > 0 && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
         defaultDate={newRdvDefaults.date}
         defaultPosteId={newRdvDefaults.posteId}
         defaultTime={newRdvDefaults.time}
+        prefillFromDevis={devisConversion}
       />
     </div>
   );
