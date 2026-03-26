@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { UserCheck, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -172,9 +173,22 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert }: Prop
         />
       </div>
 
-      {/* Assigné à */}
-      <div>
-        <Label className="text-xs font-medium text-muted-foreground mb-1.5">Assigné à</Label>
+      {/* Assigné à — bloc mis en évidence */}
+      <div className={`rounded-lg p-4 -mx-1 border-2 transition-colors ${
+        assignedUserId
+          ? 'bg-primary/5 border-primary/30'
+          : 'bg-destructive/5 border-destructive/40'
+      }`}>
+        <div className="flex items-center gap-2 mb-2">
+          <UserCheck className={`h-4 w-4 ${assignedUserId ? 'text-primary' : 'text-destructive'}`} />
+          <span className="text-sm font-semibold text-foreground">Responsable du traitement</span>
+        </div>
+        {!assignedUserId && (
+          <p className="text-xs text-destructive font-medium mb-2 flex items-center gap-1">
+            <AlertCircle className="h-3.5 w-3.5" />
+            Aucun utilisateur assigné — ce champ détermine qui doit traiter ce devis
+          </p>
+        )}
         <Select value={assignedUserId || '__none__'} onValueChange={v => setAssignedUserId(v === '__none__' ? '' : v)}>
           <SelectTrigger><SelectValue placeholder="Non assigné" /></SelectTrigger>
           <SelectContent>
