@@ -32,12 +32,12 @@ const statusBadgeClass: Record<StatutDevis, string> = {
 };
 
 export default function DevisList() {
-  const { metiers } = useStore();
-  const { user } = useAuth();
+  const { metiers, devis: devisStore } = useStore();
   const {
     devisList, devisResponsibles, devisIntervenants, devisMetiers,
     addDevis, updateDevis, deleteDevis,
-  } = useDevisStore();
+  } = devisStore;
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
