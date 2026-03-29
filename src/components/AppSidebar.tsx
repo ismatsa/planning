@@ -25,9 +25,12 @@ export default function AppSidebar() {
   const { collapsed, toggle } = useSidebarState();
   const { devis: devisStore } = useStore();
 
+  const TERMINAL_STATUTS = ['valide', 'refuse', 'annule'];
   const assignedCount = useMemo(() => {
     if (!user) return 0;
-    return devisStore.devisList.filter((d) => d.assignedUserId === user.id).length;
+    return devisStore.devisList.filter(
+      (d) => d.assignedUserId === user.id && !TERMINAL_STATUTS.includes(d.statut)
+    ).length;
   }, [devisStore.devisList, user]);
 
   const sections: {
