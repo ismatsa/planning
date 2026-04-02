@@ -126,7 +126,7 @@ export default function DevisList() {
     const isDevisEnvoye = d.statut === 'devis_envoye';
 
     if (isTerminal) return 'opacity-50';
-    if (isAssignedToMe && !isTerminal) return 'bg-accent/40 border-l-4 border-l-primary';
+    if (isAssignedToMe && !isTerminal) return 'bg-red-50 border-l-[5px] border-l-red-500';
     if (isDevisEnvoye) return 'bg-orange-50 border-l-4 border-l-orange-400';
     return '';
   }
