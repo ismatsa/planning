@@ -263,6 +263,59 @@ export type Database = {
           },
         ]
       }
+      devis_lines: {
+        Row: {
+          commande_user_id: string | null
+          created_at: string
+          devis_id: string
+          id: string
+          internal_reference: string | null
+          name: string
+          oem_reference: string | null
+          quantity: number
+          realisation_user_id: string | null
+          sort_order: number
+          type: string
+          unit_price: number
+        }
+        Insert: {
+          commande_user_id?: string | null
+          created_at?: string
+          devis_id: string
+          id?: string
+          internal_reference?: string | null
+          name?: string
+          oem_reference?: string | null
+          quantity?: number
+          realisation_user_id?: string | null
+          sort_order?: number
+          type?: string
+          unit_price?: number
+        }
+        Update: {
+          commande_user_id?: string | null
+          created_at?: string
+          devis_id?: string
+          id?: string
+          internal_reference?: string | null
+          name?: string
+          oem_reference?: string | null
+          quantity?: number
+          realisation_user_id?: string | null
+          sort_order?: number
+          type?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_lines_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devis_metiers: {
         Row: {
           created_at: string
