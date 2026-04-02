@@ -239,7 +239,6 @@ export default function DevisList() {
                 const isTerminal = TERMINAL_STATUSES.includes(d.statut);
                 const isAssignedToMe = d.assignedUserId === user?.id && !isTerminal;
                 const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
-                const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
 
                 return (
                   <tr
