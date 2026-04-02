@@ -19,8 +19,8 @@ import { MessageCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
+} from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 
 const TERMINAL_STATUSES: StatutDevis[] = ['valide', 'refuse', 'annule'];
@@ -198,14 +198,14 @@ export default function DevisList() {
         </Button>
       </div>
 
-      {/* Filters Dialog */}
-      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Filtres</DialogTitle>
-          </DialogHeader>
+      {/* Filters Sheet */}
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetContent side="right" className="w-[360px] sm:w-[400px] flex flex-col">
+          <SheetHeader>
+            <SheetTitle>Filtres</SheetTitle>
+          </SheetHeader>
 
-          <div className="space-y-5 py-2">
+          <div className="flex-1 space-y-5 py-4 overflow-y-auto">
             {/* Checkboxes */}
             <div className="space-y-3">
               <label className="flex items-center gap-3 cursor-pointer select-none">
@@ -267,16 +267,16 @@ export default function DevisList() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <SheetFooter className="flex-row gap-2 border-t pt-4">
             <Button variant="ghost" size="sm" onClick={resetFilters}>
               Réinitialiser
             </Button>
             <Button size="sm" onClick={applyFilters}>
               Appliquer
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Table */}
       {filtered.length === 0 ? (
