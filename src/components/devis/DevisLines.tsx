@@ -297,11 +297,25 @@ export default function DevisLines({ devisId }: { devisId: string }) {
                         onChange={e => updateLine(line.id, 'unit_price', parseFloat(e.target.value) || 0)} />
                     </TableCell>
                     <TableCell className="p-1.5 text-right whitespace-nowrap">
-                      <span className="text-xs font-medium">{net.toFixed(2)} Dhs</span>
-                      {hasDisc && (
-                        <span className="block text-[10px] text-muted-foreground line-through">
-                          {getLineGross(line).toFixed(2)}
-                        </span>
+                      {net === 0 && getLineGross(line) > 0 ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <Gift className="h-3.5 w-3.5 text-green-600" />
+                          <div>
+                            <span className="block text-[10px] text-muted-foreground line-through">
+                              {getLineGross(line).toFixed(2)}
+                            </span>
+                            <span className="text-xs font-medium text-green-600">Offert</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs font-medium">{net.toFixed(2)} Dhs</span>
+                          {hasDisc && (
+                            <span className="block text-[10px] text-muted-foreground line-through">
+                              {getLineGross(line).toFixed(2)}
+                            </span>
+                          )}
+                        </>
                       )}
                     </TableCell>
                     <TableCell className="p-1.5">
