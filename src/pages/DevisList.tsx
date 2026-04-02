@@ -78,7 +78,7 @@ export default function DevisList() {
   const filtered = useMemo(() => {
     return devisList
       .filter(d => {
-        if (hideTerminal && !onlyMine && filterStatut === 'all' && TERMINAL_STATUSES.includes(d.statut)) return false;
+        if (!showPast && !onlyMine && filterStatut === 'all' && TERMINAL_STATUSES.includes(d.statut)) return false;
         if (onlyMine) {
           if (d.assignedUserId !== user?.id) return false;
           if (TERMINAL_STATUSES.includes(d.statut)) return false;
