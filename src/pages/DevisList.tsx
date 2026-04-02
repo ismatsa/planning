@@ -306,12 +306,6 @@ export default function DevisList() {
                         <Badge variant="secondary" className={statusBadgeClass[d.statut]}>
                           {STATUT_DEVIS_LABELS[d.statut]}
                         </Badge>
-                        {isDevisEnvoye && !isTerminal && (
-                          <Badge variant="outline" className="border-orange-400 text-orange-600 text-[10px] px-1.5 py-0 gap-0.5 animate-pulse">
-                            <Bell className="h-3 w-3" />
-                            À relancer
-                          </Badge>
-                        )}
                         {linkedRdvId && (
                           <Tooltip>
                             <TooltipTrigger asChild>
