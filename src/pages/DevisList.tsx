@@ -158,6 +158,14 @@ export default function DevisList() {
             </span>
           )}
         </Button>
+        <Button
+          variant={hideTerminal ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setHideTerminal(!hideTerminal)}
+          className="gap-1.5"
+        >
+          Masquer les terminés
+        </Button>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-56" />
