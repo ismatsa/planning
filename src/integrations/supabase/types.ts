@@ -269,6 +269,8 @@ export type Database = {
           created_at: string
           description: string | null
           devis_id: string
+          discount_amount: number
+          discount_percent: number
           id: string
           internal_reference: string | null
           name: string
@@ -284,6 +286,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           devis_id: string
+          discount_amount?: number
+          discount_percent?: number
           id?: string
           internal_reference?: string | null
           name?: string
@@ -299,6 +303,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           devis_id?: string
+          discount_amount?: number
+          discount_percent?: number
           id?: string
           internal_reference?: string | null
           name?: string
