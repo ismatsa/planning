@@ -11,7 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, CalendarDays, Bell, Flame } from 'lucide-react';
+import { Search, Plus, CalendarDays, Flame } from 'lucide-react';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 import { supabase } from '@/integrations/supabase/client';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
