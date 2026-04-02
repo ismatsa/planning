@@ -238,7 +238,7 @@ export default function DevisList() {
                 const canSeeDetails = resps.includes(user?.id || '') || d.createdBy === user?.id;
                 const isTerminal = TERMINAL_STATUSES.includes(d.statut);
                 const isAssignedToMe = d.assignedUserId === user?.id && !isTerminal;
-                const isDevisEnvoye = d.statut === 'devis_envoye';
+                const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
                 const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
 
                 return (
