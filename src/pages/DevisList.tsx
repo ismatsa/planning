@@ -11,7 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, CalendarDays, Bell } from 'lucide-react';
+import { Search, Plus, CalendarDays, Bell, Flame } from 'lucide-react';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 import { supabase } from '@/integrations/supabase/client';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
@@ -126,7 +126,7 @@ export default function DevisList() {
     const isDevisEnvoye = d.statut === 'devis_envoye';
 
     if (isTerminal) return 'opacity-50';
-    if (isAssignedToMe && !isTerminal) return 'bg-accent/40 border-l-4 border-l-primary';
+    if (isAssignedToMe && !isTerminal) return 'bg-red-50 border-l-[5px] border-l-red-500';
     if (isDevisEnvoye) return 'bg-orange-50 border-l-4 border-l-orange-400';
     return '';
   }
@@ -240,7 +240,10 @@ export default function DevisList() {
                     onClick={() => navigate(`/devis/${d.id}`)}
                   >
                     <td className="px-4 py-3 font-medium">
-                      {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
+                      <span className="inline-flex items-center gap-1.5">
+                        {isAssignedToMe && <Flame className="h-4 w-4 text-red-500 shrink-0" />}
+                        {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
+                      </span>
                     </td>
                     <td className="px-4 py-3">{canSeeDetails ? (d.clientNom || '—') : '—'}</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
@@ -295,11 +298,6 @@ export default function DevisList() {
                         <Badge variant="secondary" className={statusBadgeClass[d.statut]}>
                           {STATUT_DEVIS_LABELS[d.statut]}
                         </Badge>
-                        {isAssignedToMe && (
-                          <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
-                            À traiter
-                          </Badge>
-                        )}
                         {isDevisEnvoye && !isTerminal && (
                           <Badge variant="outline" className="border-orange-400 text-orange-600 text-[10px] px-1.5 py-0 gap-0.5 animate-pulse">
                             <Bell className="h-3 w-3" />
