@@ -240,7 +240,10 @@ export default function DevisList() {
                     onClick={() => navigate(`/devis/${d.id}`)}
                   >
                     <td className="px-4 py-3 font-medium">
-                      {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
+                      <span className="inline-flex items-center gap-1.5">
+                        {isAssignedToMe && <Flame className="h-4 w-4 text-red-500 shrink-0" />}
+                        {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
+                      </span>
                     </td>
                     <td className="px-4 py-3">{canSeeDetails ? (d.clientNom || '—') : '—'}</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
