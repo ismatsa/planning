@@ -266,7 +266,7 @@ export default function DevisLines({ devisId }: { devisId: string }) {
                         placeholder="Réf. interne" />
                     </TableCell>
                     <TableCell className="p-1.5">
-                      <Input className="h-8 text-xs" type="number" min={1} value={line.quantity}
+                      <Input className="h-8 text-xs" type="number" min={1} value={String(line.quantity)}
                         onChange={e => updateLine(line.id, 'quantity', parseInt(e.target.value) || 1)} />
                     </TableCell>
                     <TableCell className="p-1.5">
