@@ -13,7 +13,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import { Plus, Trash2, FileText, Percent } from 'lucide-react';
+import { Plus, Trash2, FileText, Percent, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DevisLine {
