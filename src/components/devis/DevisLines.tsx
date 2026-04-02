@@ -364,7 +364,7 @@ export default function DevisLines({ devisId }: { devisId: string }) {
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">Pourcentage de remise (%)</Label>
-              <Input type="number" min={0} max={100} step={0.01} value={discPercent}
+              <Input type="number" min={0} max={100} step={0.01} value={String(discPercent)}
                 onChange={e => handleDiscPercentChange(parseFloat(e.target.value) || 0)} />
             </div>
           </div>
