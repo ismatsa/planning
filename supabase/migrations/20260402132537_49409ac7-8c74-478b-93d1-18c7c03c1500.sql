@@ -1,0 +1,1 @@
+ALTER TABLE public.devis_lines ADD COLUMN description TEXT;

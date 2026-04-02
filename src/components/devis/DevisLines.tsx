@@ -2,13 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Plus, Trash2 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Plus, Trash2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DevisLine {
@@ -23,6 +27,7 @@ interface DevisLine {
   commande_user_id: string | null;
   unit_price: number;
   sort_order: number;
+  description: string | null;
 }
 
 interface ProfileOption { id: string; company: string; }
@@ -35,6 +40,8 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
   const [lines, setLines] = useState<DevisLine[]>([]);
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const [saving, setSaving] = useState(false);
+  const [descLineId, setDescLineId] = useState<string | null>(null);
+  const [descDraft, setDescDraft] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -67,6 +74,7 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
       commande_user_id: null,
       unit_price: 0,
       sort_order: lines.length,
+      description: null,
     };
     setLines(prev => [...prev, newLine]);
   }
@@ -75,7 +83,6 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
     setLines(prev => prev.map(l => {
       if (l.id !== id) return l;
       const updated = { ...l, [field]: value };
-      // If switching to service, clear commande_user_id
       if (field === 'type' && value === 'service') {
         updated.commande_user_id = null;
       }
@@ -87,10 +94,22 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
     setLines(prev => prev.filter(l => l.id !== id));
   }
 
+  function openDescription(lineId: string) {
+    const line = lines.find(l => l.id === lineId);
+    setDescDraft(line?.description || '');
+    setDescLineId(lineId);
+  }
+
+  function saveDescription() {
+    if (descLineId) {
+      updateLine(descLineId, 'description', descDraft || null);
+    }
+    setDescLineId(null);
+  }
+
   const saveLines = useCallback(async () => {
     setSaving(true);
     try {
-      // Delete existing lines for this devis
       await supabase.from('devis_lines').delete().eq('devis_id', devisId);
 
       if (lines.length > 0) {
@@ -106,6 +125,7 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
           commande_user_id: l.type === 'service' ? null : (l.commande_user_id || null),
           unit_price: l.unit_price,
           sort_order: i,
+          description: l.description || null,
         }));
         const { error } = await supabase.from('devis_lines').insert(rows as any);
         if (error) throw error;
@@ -143,6 +163,7 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]"></TableHead>
                 <TableHead className="w-[110px]">Type</TableHead>
                 <TableHead>Nom</TableHead>
                 <TableHead>Réf. OEM</TableHead>
@@ -151,15 +172,28 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
                 <TableHead className="w-[150px]">Réalisation</TableHead>
                 <TableHead className="w-[150px]">Commande</TableHead>
                 <TableHead className="w-[110px]">Prix unit.</TableHead>
-                <TableHead className="w-[90px]">Total</TableHead>
+                <TableHead className="w-[100px]">Total</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {lines.map(line => {
                 const isService = line.type === 'service';
+                const hasDesc = !!line.description && line.description.trim().length > 0;
                 return (
                   <TableRow key={line.id}>
+                    {/* Description icon */}
+                    <TableCell className="p-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-7 w-7 ${hasDesc ? 'text-primary' : 'text-muted-foreground'}`}
+                        onClick={() => openDescription(line.id)}
+                        title="Description"
+                      >
+                        <FileText className={`h-3.5 w-3.5 ${hasDesc ? 'fill-primary/20' : ''}`} />
+                      </Button>
+                    </TableCell>
                     {/* Type */}
                     <TableCell className="p-1.5">
                       <Select value={line.type} onValueChange={v => updateLine(line.id, 'type', v)}>
@@ -258,8 +292,8 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
                       />
                     </TableCell>
                     {/* Total ligne */}
-                    <TableCell className="p-1.5 text-xs font-medium text-right">
-                      {(line.quantity * line.unit_price).toFixed(2)} €
+                    <TableCell className="p-1.5 text-xs font-medium text-right whitespace-nowrap">
+                      {(line.quantity * line.unit_price).toFixed(2)} Dhs
                     </TableCell>
                     {/* Supprimer */}
                     <TableCell className="p-1.5">
@@ -281,11 +315,30 @@ export default function DevisLines({ devisId }: DevisLinesProps) {
           {/* Total */}
           <div className="flex justify-end mt-3 pr-2">
             <span className="text-sm font-bold text-foreground">
-              Total : {total.toFixed(2)} €
+              Total : {total.toFixed(2)} Dhs
             </span>
           </div>
         </div>
       )}
+
+      {/* Description modal */}
+      <Dialog open={!!descLineId} onOpenChange={open => { if (!open) setDescLineId(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Description</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={descDraft}
+            onChange={e => setDescDraft(e.target.value)}
+            placeholder="Ajouter une description…"
+            rows={5}
+          />
+          <DialogFooter className="flex-row gap-2">
+            <Button variant="ghost" onClick={() => setDescLineId(null)}>Annuler</Button>
+            <Button onClick={saveDescription}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
