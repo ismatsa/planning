@@ -44,6 +44,7 @@ export default function DevisList() {
   const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
   const [filterIntervenants, setFilterIntervenants] = useState<string[]>([]);
   const [onlyMine, setOnlyMine] = useState(false);
+  const [hideTerminal, setHideTerminal] = useState(true);
 
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
