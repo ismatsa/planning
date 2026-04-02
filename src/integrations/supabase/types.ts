@@ -267,6 +267,7 @@ export type Database = {
         Row: {
           commande_user_id: string | null
           created_at: string
+          description: string | null
           devis_id: string
           id: string
           internal_reference: string | null
@@ -281,6 +282,7 @@ export type Database = {
         Insert: {
           commande_user_id?: string | null
           created_at?: string
+          description?: string | null
           devis_id: string
           id?: string
           internal_reference?: string | null
@@ -295,6 +297,7 @@ export type Database = {
         Update: {
           commande_user_id?: string | null
           created_at?: string
+          description?: string | null
           devis_id?: string
           id?: string
           internal_reference?: string | null
