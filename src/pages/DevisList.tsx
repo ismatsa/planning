@@ -86,6 +86,7 @@ export default function DevisList() {
   const filtered = useMemo(() => {
     return devisList
       .filter(d => {
+        if (hideTerminal && !onlyMine && filterStatut === 'all' && TERMINAL_STATUSES.includes(d.statut)) return false;
         if (onlyMine) {
           if (d.assignedUserId !== user?.id) return false;
           if (TERMINAL_STATUSES.includes(d.statut)) return false;
@@ -114,7 +115,7 @@ export default function DevisList() {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, user]);
+  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, hideTerminal, user]);
 
   const myActionCount = useMemo(() => {
     if (!user) return 0;
