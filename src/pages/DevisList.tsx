@@ -183,16 +183,6 @@ export default function DevisList() {
             getLabel={(id) => profileOptions.find(p => p.id === id)?.company || id}
           />
         </div>
-        <div className="w-48">
-          <SearchableMultiSelect
-            options={intervenantFilterOptions}
-            selected={filterIntervenants}
-            onChange={setFilterIntervenants}
-            placeholder="Intervenant…"
-            compact
-            getLabel={(id) => intervenantOptions.find(i => i.id === id)?.name || id}
-          />
-        </div>
       </div>
 
       {/* Table */}
