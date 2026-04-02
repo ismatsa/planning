@@ -13,7 +13,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import { Plus, Trash2, FileText, Percent } from 'lucide-react';
+import { Plus, Trash2, FileText, Percent, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DevisLine {
@@ -266,7 +266,7 @@ export default function DevisLines({ devisId }: { devisId: string }) {
                         placeholder="Réf. interne" />
                     </TableCell>
                     <TableCell className="p-1.5">
-                      <Input className="h-8 text-xs" type="number" min={1} value={line.quantity}
+                      <Input className="h-8 text-xs" type="number" min={1} value={String(line.quantity)}
                         onChange={e => updateLine(line.id, 'quantity', parseInt(e.target.value) || 1)} />
                     </TableCell>
                     <TableCell className="p-1.5">
@@ -293,15 +293,29 @@ export default function DevisLines({ devisId }: { devisId: string }) {
                     </TableCell>
                     <TableCell className="p-1.5">
                       <Input className="h-8 text-xs" type="number" min={0} step={0.01}
-                        value={line.unit_price}
+                        value={String(line.unit_price)}
                         onChange={e => updateLine(line.id, 'unit_price', parseFloat(e.target.value) || 0)} />
                     </TableCell>
                     <TableCell className="p-1.5 text-right whitespace-nowrap">
-                      <span className="text-xs font-medium">{net.toFixed(2)} Dhs</span>
-                      {hasDisc && (
-                        <span className="block text-[10px] text-muted-foreground line-through">
-                          {getLineGross(line).toFixed(2)}
-                        </span>
+                      {net === 0 && getLineGross(line) > 0 ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <Gift className="h-3.5 w-3.5 text-green-600" />
+                          <div>
+                            <span className="block text-[10px] text-muted-foreground line-through">
+                              {getLineGross(line).toFixed(2)}
+                            </span>
+                            <span className="text-xs font-medium text-green-600">Offert</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs font-medium">{net.toFixed(2)} Dhs</span>
+                          {hasDisc && (
+                            <span className="block text-[10px] text-muted-foreground line-through">
+                              {getLineGross(line).toFixed(2)}
+                            </span>
+                          )}
+                        </>
                       )}
                     </TableCell>
                     <TableCell className="p-1.5">
@@ -345,12 +359,12 @@ export default function DevisLines({ devisId }: { devisId: string }) {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-sm">Montant de la remise (Dhs)</Label>
-              <Input type="number" min={0} step={0.01} value={discAmount}
+              <Input type="number" min={0} step={0.01} value={String(discAmount)}
                 onChange={e => handleDiscAmountChange(parseFloat(e.target.value) || 0)} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">Pourcentage de remise (%)</Label>
-              <Input type="number" min={0} max={100} step={0.01} value={discPercent}
+              <Input type="number" min={0} max={100} step={0.01} value={String(discPercent)}
                 onChange={e => handleDiscPercentChange(parseFloat(e.target.value) || 0)} />
             </div>
           </div>
