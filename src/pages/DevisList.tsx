@@ -100,14 +100,10 @@ export default function DevisList() {
           const resps = devisResponsibles[d.id] || [];
           if (!filterResponsibles.some(fr => resps.includes(fr))) return false;
         }
-        if (filterIntervenants.length > 0) {
-          const ints = devisIntervenants[d.id] || [];
-          if (!filterIntervenants.some(fi => ints.includes(fi))) return false;
-        }
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, hideTerminal, user]);
+  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, showPast, user]);
 
   const myActionCount = useMemo(() => {
     if (!user) return 0;
