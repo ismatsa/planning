@@ -96,7 +96,7 @@ export default function DevisDetail() {
           <div className="rounded-lg border bg-card p-5">
             <DevisForm
               devis={devis}
-              onSaved={() => {}}
+              onSaved={() => navigate('/devis')}
               onDeleted={() => navigate('/devis')}
               onConvert={handleConvert}
               assignedUserId={assignedUserId}

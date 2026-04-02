@@ -42,19 +42,16 @@ export default function DevisList() {
   const [filterMetier, setFilterMetier] = useState('all');
   const [filterStatut, setFilterStatut] = useState('all');
   const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
-  const [filterIntervenants, setFilterIntervenants] = useState<string[]>([]);
   const [onlyMine, setOnlyMine] = useState(false);
-  const [hideTerminal, setHideTerminal] = useState(true);
+  const [showPast, setShowPast] = useState(false);
 
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
-  const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
   const [linkedRdvMap, setLinkedRdvMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function loadOptions() {
-      const [profilesRes, intervenantsRes, rdvRes] = await Promise.all([
+      const [profilesRes, rdvRes] = await Promise.all([
         supabase.from('profiles').select('id, company'),
-        supabase.from('intervenants').select('id, name').order('name'),
         supabase.from('rendez_vous').select('id, source_devis_id').not('source_devis_id', 'is', null),
       ]);
       if (profilesRes.data) {
@@ -63,9 +60,6 @@ export default function DevisList() {
             .filter(p => p.company && p.company.trim() !== '')
             .map(p => ({ id: p.id, company: p.company }))
         );
-      }
-      if (intervenantsRes.data) {
-        setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
       }
       if (rdvRes.data) {
         const map: Record<string, string> = {};
@@ -80,13 +74,11 @@ export default function DevisList() {
 
   const responsibleFilterOptions = useMemo(() =>
     profileOptions.map(p => ({ id: p.id, label: p.company })), [profileOptions]);
-  const intervenantFilterOptions = useMemo(() =>
-    intervenantOptions.map(i => ({ id: i.id, label: i.name })), [intervenantOptions]);
 
   const filtered = useMemo(() => {
     return devisList
       .filter(d => {
-        if (hideTerminal && !onlyMine && filterStatut === 'all' && TERMINAL_STATUSES.includes(d.statut)) return false;
+        if (!showPast && !onlyMine && filterStatut === 'all' && TERMINAL_STATUSES.includes(d.statut)) return false;
         if (onlyMine) {
           if (d.assignedUserId !== user?.id) return false;
           if (TERMINAL_STATUSES.includes(d.statut)) return false;
@@ -108,14 +100,10 @@ export default function DevisList() {
           const resps = devisResponsibles[d.id] || [];
           if (!filterResponsibles.some(fr => resps.includes(fr))) return false;
         }
-        if (filterIntervenants.length > 0) {
-          const ints = devisIntervenants[d.id] || [];
-          if (!filterIntervenants.some(fi => ints.includes(fi))) return false;
-        }
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, hideTerminal, user]);
+  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, showPast, user]);
 
   const myActionCount = useMemo(() => {
     if (!user) return 0;
@@ -158,14 +146,15 @@ export default function DevisList() {
             </span>
           )}
         </Button>
-        <Button
-          variant={hideTerminal ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setHideTerminal(!hideTerminal)}
-          className="gap-1.5"
-        >
-          Masquer les terminés
-        </Button>
+        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showPast}
+            onChange={e => setShowPast(e.target.checked)}
+            className="rounded border-input h-4 w-4"
+          />
+          Afficher les devis passés
+        </label>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-56" />
@@ -192,16 +181,6 @@ export default function DevisList() {
             placeholder="Responsable…"
             compact
             getLabel={(id) => profileOptions.find(p => p.id === id)?.company || id}
-          />
-        </div>
-        <div className="w-48">
-          <SearchableMultiSelect
-            options={intervenantFilterOptions}
-            selected={filterIntervenants}
-            onChange={setFilterIntervenants}
-            placeholder="Intervenant…"
-            compact
-            getLabel={(id) => intervenantOptions.find(i => i.id === id)?.name || id}
           />
         </div>
       </div>
