@@ -46,7 +46,6 @@ export default function DevisList() {
   const [showPast, setShowPast] = useState(false);
 
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
-  const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
   const [linkedRdvMap, setLinkedRdvMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
