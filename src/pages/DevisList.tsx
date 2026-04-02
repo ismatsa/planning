@@ -125,11 +125,9 @@ export default function DevisList() {
   function getRowStyle(d: { statut: StatutDevis; assignedUserId?: string }) {
     const isTerminal = TERMINAL_STATUSES.includes(d.statut);
     const isAssignedToMe = d.assignedUserId === user?.id;
-    const isDevisEnvoye = d.statut === 'devis_envoye';
 
     if (isTerminal) return 'opacity-50';
-    if (isAssignedToMe && !isTerminal) return 'bg-red-50 border-l-[5px] border-l-red-500';
-    if (isDevisEnvoye) return 'bg-orange-50 border-l-4 border-l-orange-400';
+    if (isAssignedToMe) return 'bg-red-100 border-l-[6px] border-l-red-600 font-semibold';
     return '';
   }
 
