@@ -11,12 +11,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, CalendarDays, Flame } from 'lucide-react';
+import { Search, Plus, CalendarDays, Flame, SlidersHorizontal } from 'lucide-react';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 import { supabase } from '@/integrations/supabase/client';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import { MessageCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 const TERMINAL_STATUSES: StatutDevis[] = ['valide', 'refuse', 'annule'];
 
@@ -44,6 +49,14 @@ export default function DevisList() {
   const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
   const [onlyMine, setOnlyMine] = useState(false);
   const [showPast, setShowPast] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Temp state for dialog (apply on confirm)
+  const [tmpMetier, setTmpMetier] = useState('all');
+  const [tmpStatut, setTmpStatut] = useState('all');
+  const [tmpResponsibles, setTmpResponsibles] = useState<string[]>([]);
+  const [tmpOnlyMine, setTmpOnlyMine] = useState(false);
+  const [tmpShowPast, setTmpShowPast] = useState(false);
 
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
   const [linkedRdvMap, setLinkedRdvMap] = useState<Record<string, string>>({});
@@ -110,6 +123,43 @@ export default function DevisList() {
     return devisList.filter(d => d.assignedUserId === user.id && !TERMINAL_STATUSES.includes(d.statut)).length;
   }, [devisList, user]);
 
+  // Count active filters (excluding defaults)
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (onlyMine) count++;
+    if (showPast) count++;
+    if (filterMetier !== 'all') count++;
+    if (filterStatut !== 'all') count++;
+    if (filterResponsibles.length > 0) count++;
+    return count;
+  }, [onlyMine, showPast, filterMetier, filterStatut, filterResponsibles]);
+
+  function openFilters() {
+    setTmpMetier(filterMetier);
+    setTmpStatut(filterStatut);
+    setTmpResponsibles([...filterResponsibles]);
+    setTmpOnlyMine(onlyMine);
+    setTmpShowPast(showPast);
+    setFiltersOpen(true);
+  }
+
+  function applyFilters() {
+    setFilterMetier(tmpMetier);
+    setFilterStatut(tmpStatut);
+    setFilterResponsibles(tmpResponsibles);
+    setOnlyMine(tmpOnlyMine);
+    setShowPast(tmpShowPast);
+    setFiltersOpen(false);
+  }
+
+  function resetFilters() {
+    setTmpMetier('all');
+    setTmpStatut('all');
+    setTmpResponsibles([]);
+    setTmpOnlyMine(false);
+    setTmpShowPast(false);
+  }
+
   function getRowStyle(d: { statut: StatutDevis; assignedUserId?: string }) {
     const isTerminal = TERMINAL_STATUSES.includes(d.statut);
     const isAssignedToMe = d.assignedUserId === user?.id;
@@ -131,59 +181,102 @@ export default function DevisList() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <Button
-          variant={onlyMine ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setOnlyMine(!onlyMine)}
-          className="gap-1.5"
-        >
-          🔥 Mes devis à traiter
-          {myActionCount > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
-              {myActionCount}
+      {/* Search + Filters button */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-64" />
+        </div>
+        <Button variant="outline" size="sm" onClick={openFilters} className="gap-2">
+          <SlidersHorizontal className="h-4 w-4" />
+          Filtres
+          {(activeFilterCount > 0 || myActionCount > 0) && (
+            <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
+              {myActionCount > 0 ? myActionCount : activeFilterCount}
             </span>
           )}
         </Button>
-        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={showPast}
-            onChange={e => setShowPast(e.target.checked)}
-            className="rounded border-input h-4 w-4"
-          />
-          Afficher les devis passés
-        </label>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-56" />
-        </div>
-        <Select value={filterMetier} onValueChange={setFilterMetier}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Métier" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les métiers</SelectItem>
-            {metiers.map(m => <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filterStatut} onValueChange={setFilterStatut}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Statut" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
-            {Object.entries(STATUT_DEVIS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <div className="w-48">
-          <SearchableMultiSelect
-            options={responsibleFilterOptions}
-            selected={filterResponsibles}
-            onChange={setFilterResponsibles}
-            placeholder="Responsable…"
-            compact
-            getLabel={(id) => profileOptions.find(p => p.id === id)?.company || id}
-          />
-        </div>
       </div>
+
+      {/* Filters Dialog */}
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filtres</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {/* Checkboxes */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <Checkbox
+                  checked={tmpOnlyMine}
+                  onCheckedChange={(v) => setTmpOnlyMine(v === true)}
+                />
+                <span className="text-sm font-medium">Mes devis à traiter</span>
+                {myActionCount > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
+                    {myActionCount}
+                  </span>
+                )}
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <Checkbox
+                  checked={tmpShowPast}
+                  onCheckedChange={(v) => setTmpShowPast(v === true)}
+                />
+                <span className="text-sm font-medium">Afficher les devis passés</span>
+              </label>
+            </div>
+
+            <Separator />
+
+            {/* Selectors */}
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Métier</label>
+                <Select value={tmpMetier} onValueChange={setTmpMetier}>
+                  <SelectTrigger><SelectValue placeholder="Métier" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les métiers</SelectItem>
+                    {metiers.map(m => <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Statut</label>
+                <Select value={tmpStatut} onValueChange={setTmpStatut}>
+                  <SelectTrigger><SelectValue placeholder="Statut" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous statuts</SelectItem>
+                    {Object.entries(STATUT_DEVIS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Responsable</label>
+                <SearchableMultiSelect
+                  options={responsibleFilterOptions}
+                  selected={tmpResponsibles}
+                  onChange={setTmpResponsibles}
+                  placeholder="Responsable…"
+                  compact
+                  getLabel={(id) => profileOptions.find(p => p.id === id)?.company || id}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" size="sm" onClick={resetFilters}>
+              Réinitialiser
+            </Button>
+            <Button size="sm" onClick={applyFilters}>
+              Appliquer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Table */}
       {filtered.length === 0 ? (
