@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/StoreContext';
 import DevisForm from '@/components/devis/DevisForm';
 import DevisCommentFeed from '@/components/devis/DevisCommentFeed';
 import DevisAttachments from '@/components/devis/DevisAttachments';
+import DevisLines from '@/components/devis/DevisLines';
 import { Button } from '@/components/ui/button';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -25,7 +26,6 @@ export default function DevisDetail() {
   const [assignedUserId, setAssignedUserId] = useState('');
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
 
-  // Load profiles for the assignment selector
   useEffect(() => {
     supabase.from('profiles').select('id, email, company').then(({ data }) => {
       if (data) {
@@ -38,7 +38,6 @@ export default function DevisDetail() {
     });
   }, []);
 
-  // Sync assignment from devis
   useEffect(() => {
     if (devis) setAssignedUserId(devis.assignedUserId || '');
   }, [devis]);
@@ -79,8 +78,9 @@ export default function DevisDetail() {
   }
 
   return (
-    <div className="p-6 max-w-7xl">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="p-6 max-w-7xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/devis')}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Retour
         </Button>
@@ -90,9 +90,10 @@ export default function DevisDetail() {
         </Button>
       </div>
 
+      {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left column: form + attachments */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* Left column: form only */}
+        <div className="lg:col-span-3">
           <div className="rounded-lg border bg-card p-5">
             <DevisForm
               devis={devis}
@@ -103,13 +104,9 @@ export default function DevisDetail() {
               onAssignedUserIdChange={setAssignedUserId}
             />
           </div>
-
-          <div className="rounded-lg border bg-card p-5">
-            <DevisAttachments devisId={devis.id} />
-          </div>
         </div>
 
-        {/* Right column: assignment + comment feed */}
+        {/* Right column: assignment + discussion + attachments */}
         <div className="lg:col-span-2 space-y-4">
           {/* Assignment block */}
           <div className={`rounded-lg border-2 p-4 transition-colors ${
@@ -138,11 +135,19 @@ export default function DevisDetail() {
           </div>
 
           {/* Discussion */}
-          <div className="rounded-lg border bg-card p-5 h-[calc(100vh-16rem)] flex flex-col">
+          <div className="rounded-lg border bg-card p-5 h-[calc(100vh-24rem)] flex flex-col">
             <DevisCommentFeed devisId={devis.id} />
+          </div>
+
+          {/* Attachments */}
+          <div className="rounded-lg border bg-card p-5">
+            <DevisAttachments devisId={devis.id} />
           </div>
         </div>
       </div>
+
+      {/* Full-width lines table below */}
+      <DevisLines devisId={devis.id} />
     </div>
   );
 }
