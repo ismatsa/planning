@@ -15,7 +15,7 @@ export const STATUT_DEVIS_LABELS: Record<StatutDevis, string> = {
   en_cours_de_devis: 'En cours de devis',
   en_attente_infos: 'En attente d\'informations',
   devis_pret: 'Devis prêt',
-  devis_envoye: 'Devis envoyé',
+  devis_envoye: 'À relancer',
   valide: 'Validé',
   refuse: 'Refusé',
   annule: 'Annulé',

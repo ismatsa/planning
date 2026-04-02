@@ -11,7 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, CalendarDays, Bell, Flame } from 'lucide-react';
+import { Search, Plus, CalendarDays, Flame } from 'lucide-react';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 import { supabase } from '@/integrations/supabase/client';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
@@ -26,7 +26,7 @@ const statusBadgeClass: Record<StatutDevis, string> = {
   en_cours_de_devis: 'bg-indigo-100 text-indigo-700',
   en_attente_infos: 'bg-orange-100 text-orange-700',
   devis_pret: 'bg-teal-100 text-teal-700',
-  devis_envoye: 'bg-purple-100 text-purple-700',
+  devis_envoye: 'bg-orange-100 text-orange-700',
   valide: 'bg-green-100 text-green-700',
   refuse: 'bg-destructive/10 text-destructive',
   annule: 'bg-muted text-muted-foreground',
@@ -44,6 +44,7 @@ export default function DevisList() {
   const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
   const [filterIntervenants, setFilterIntervenants] = useState<string[]>([]);
   const [onlyMine, setOnlyMine] = useState(false);
+  const [hideTerminal, setHideTerminal] = useState(true);
 
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<{ id: string; name: string }[]>([]);
@@ -85,6 +86,7 @@ export default function DevisList() {
   const filtered = useMemo(() => {
     return devisList
       .filter(d => {
+        if (hideTerminal && !onlyMine && filterStatut === 'all' && TERMINAL_STATUSES.includes(d.statut)) return false;
         if (onlyMine) {
           if (d.assignedUserId !== user?.id) return false;
           if (TERMINAL_STATUSES.includes(d.statut)) return false;
@@ -113,7 +115,7 @@ export default function DevisList() {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, user]);
+  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, filterIntervenants, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, hideTerminal, user]);
 
   const myActionCount = useMemo(() => {
     if (!user) return 0;
@@ -123,11 +125,9 @@ export default function DevisList() {
   function getRowStyle(d: { statut: StatutDevis; assignedUserId?: string }) {
     const isTerminal = TERMINAL_STATUSES.includes(d.statut);
     const isAssignedToMe = d.assignedUserId === user?.id;
-    const isDevisEnvoye = d.statut === 'devis_envoye';
 
     if (isTerminal) return 'opacity-50';
-    if (isAssignedToMe && !isTerminal) return 'bg-red-50 border-l-[5px] border-l-red-500';
-    if (isDevisEnvoye) return 'bg-orange-50 border-l-4 border-l-orange-400';
+    if (isAssignedToMe) return 'bg-red-100 border-l-[6px] border-l-red-600 font-semibold';
     return '';
   }
 
@@ -157,6 +157,14 @@ export default function DevisList() {
               {myActionCount}
             </span>
           )}
+        </Button>
+        <Button
+          variant={hideTerminal ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setHideTerminal(!hideTerminal)}
+          className="gap-1.5"
+        >
+          Masquer les terminés
         </Button>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -230,7 +238,6 @@ export default function DevisList() {
                 const canSeeDetails = resps.includes(user?.id || '') || d.createdBy === user?.id;
                 const isTerminal = TERMINAL_STATUSES.includes(d.statut);
                 const isAssignedToMe = d.assignedUserId === user?.id && !isTerminal;
-                const isDevisEnvoye = d.statut === 'devis_envoye';
                 const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
 
                 return (
@@ -298,12 +305,6 @@ export default function DevisList() {
                         <Badge variant="secondary" className={statusBadgeClass[d.statut]}>
                           {STATUT_DEVIS_LABELS[d.statut]}
                         </Badge>
-                        {isDevisEnvoye && !isTerminal && (
-                          <Badge variant="outline" className="border-orange-400 text-orange-600 text-[10px] px-1.5 py-0 gap-0.5 animate-pulse">
-                            <Bell className="h-3 w-3" />
-                            À relancer
-                          </Badge>
-                        )}
                         {linkedRdvId && (
                           <Tooltip>
                             <TooltipTrigger asChild>
