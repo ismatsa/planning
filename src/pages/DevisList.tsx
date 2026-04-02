@@ -50,9 +50,8 @@ export default function DevisList() {
 
   useEffect(() => {
     async function loadOptions() {
-      const [profilesRes, intervenantsRes, rdvRes] = await Promise.all([
+      const [profilesRes, rdvRes] = await Promise.all([
         supabase.from('profiles').select('id, company'),
-        supabase.from('intervenants').select('id, name').order('name'),
         supabase.from('rendez_vous').select('id, source_devis_id').not('source_devis_id', 'is', null),
       ]);
       if (profilesRes.data) {
@@ -61,9 +60,6 @@ export default function DevisList() {
             .filter(p => p.company && p.company.trim() !== '')
             .map(p => ({ id: p.id, company: p.company }))
         );
-      }
-      if (intervenantsRes.data) {
-        setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
       }
       if (rdvRes.data) {
         const map: Record<string, string> = {};
