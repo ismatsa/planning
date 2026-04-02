@@ -74,8 +74,6 @@ export default function DevisList() {
 
   const responsibleFilterOptions = useMemo(() =>
     profileOptions.map(p => ({ id: p.id, label: p.company })), [profileOptions]);
-  const intervenantFilterOptions = useMemo(() =>
-    intervenantOptions.map(i => ({ id: i.id, label: i.name })), [intervenantOptions]);
 
   const filtered = useMemo(() => {
     return devisList
