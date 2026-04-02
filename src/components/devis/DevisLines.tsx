@@ -293,7 +293,7 @@ export default function DevisLines({ devisId }: { devisId: string }) {
                     </TableCell>
                     <TableCell className="p-1.5">
                       <Input className="h-8 text-xs" type="number" min={0} step={0.01}
-                        value={line.unit_price}
+                        value={String(line.unit_price)}
                         onChange={e => updateLine(line.id, 'unit_price', parseFloat(e.target.value) || 0)} />
                     </TableCell>
                     <TableCell className="p-1.5 text-right whitespace-nowrap">
