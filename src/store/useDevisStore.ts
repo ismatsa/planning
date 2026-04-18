@@ -131,7 +131,9 @@ export function useDevisStore() {
     intervenantIds?: string[],
     metierIds?: string[],
   ) => {
-    const { data, error } = await supabase.from('devis').update({
+    const previous = devisList.find(d => d.id === devis.id);
+    const justSent = devis.statut === 'envoye' && previous?.statut !== 'envoye';
+    const updatePayload: any = {
       client_nom: devis.clientNom || null,
       client_tel: devis.clientTel || null,
       marque: devis.marque || null,
@@ -142,7 +144,12 @@ export function useDevisStore() {
       statut: devis.statut,
       billing_responsible_user_id: devis.billingResponsibleUserId || null,
       assigned_user_id: devis.assignedUserId || null,
-    }).eq('id', devis.id).select().single();
+    };
+    if (justSent && !previous?.sentAt) {
+      updatePayload.sent_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase.from('devis').update(updatePayload).eq('id', devis.id).select().single();
 
     if (data && !error) {
       setDevisList(prev => prev.map(d => d.id === devis.id ? mapDevis(data) : d));
@@ -177,7 +184,30 @@ export function useDevisStore() {
         setDevisMetiers(prev => ({ ...prev, [devis.id]: metierIds }));
       }
     }
-  }, []);
+  }, [devisList]);
+
+  const recordFollowUp = useCallback(async (devisId: string, comment: string) => {
+    const target = devisList.find(d => d.id === devisId);
+    if (!target) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    const newCount = (target.followUpCount || 0) + 1;
+    const now = new Date().toISOString();
+    const { data, error } = await supabase.from('devis').update({
+      follow_up_count: newCount,
+      last_follow_up_at: now,
+    } as any).eq('id', devisId).select().single();
+    if (data && !error) {
+      setDevisList(prev => prev.map(d => d.id === devisId ? mapDevis(data) : d));
+      if (comment.trim() && userId) {
+        await supabase.from('devis_comments').insert({
+          devis_id: devisId,
+          user_id: userId,
+          content: `🔔 Relance #${newCount} : ${comment.trim()}`,
+        } as any);
+      }
+    }
+  }, [devisList]);
 
   const deleteDevis = useCallback(async (id: string) => {
     const { error } = await supabase.from('devis').delete().eq('id', id);
