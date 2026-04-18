@@ -109,10 +109,13 @@ export type Database = {
           client_tel: string | null
           created_at: string
           created_by: string | null
+          follow_up_count: number
           id: string
+          last_follow_up_at: string | null
           marque: string | null
           modele: string | null
           notes: string | null
+          sent_at: string | null
           statut: string
           updated_at: string
           vin: string | null
@@ -125,10 +128,13 @@ export type Database = {
           client_tel?: string | null
           created_at?: string
           created_by?: string | null
+          follow_up_count?: number
           id?: string
+          last_follow_up_at?: string | null
           marque?: string | null
           modele?: string | null
           notes?: string | null
+          sent_at?: string | null
           statut?: string
           updated_at?: string
           vin?: string | null
@@ -141,10 +147,13 @@ export type Database = {
           client_tel?: string | null
           created_at?: string
           created_by?: string | null
+          follow_up_count?: number
           id?: string
+          last_follow_up_at?: string | null
           marque?: string | null
           modele?: string | null
           notes?: string | null
+          sent_at?: string | null
           statut?: string
           updated_at?: string
           vin?: string | null
