@@ -16,6 +16,9 @@ function mapDevis(row: any): Devis {
     billingResponsibleUserId: row.billing_responsible_user_id || undefined,
     assignedUserId: row.assigned_user_id || undefined,
     createdBy: row.created_by || undefined,
+    sentAt: row.sent_at || undefined,
+    followUpCount: row.follow_up_count ?? 0,
+    lastFollowUpAt: row.last_follow_up_at || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
