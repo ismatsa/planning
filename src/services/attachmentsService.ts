@@ -101,9 +101,9 @@ export async function deleteAttachment(attachment: AttachmentMeta): Promise<void
   await supabase.from('devis_attachments').delete().eq('id', attachment.id);
 }
 
-export function getAttachmentUrl(attachment: AttachmentMeta): string | null {
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(attachment.storagePath);
-  return data?.publicUrl || null;
+export async function getAttachmentUrl(attachment: AttachmentMeta): Promise<string | null> {
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(attachment.storagePath, 3600);
+  return data?.signedUrl || null;
 }
 
 export function formatFileSize(bytes: number | null): string {

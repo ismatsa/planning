@@ -105,10 +105,10 @@ export default function RdvAttachments({ rdvId, readOnly }: Props) {
     toast.success('Fichier supprimé.');
   }
 
-  function handleOpen(att: RdvAttachmentMeta) {
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(att.filePath);
-    if (data?.publicUrl) {
-      window.open(data.publicUrl, '_blank');
+  async function handleOpen(att: RdvAttachmentMeta) {
+    const { data } = await supabase.storage.from(BUCKET).createSignedUrl(att.filePath, 3600);
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, '_blank');
     }
   }
 
