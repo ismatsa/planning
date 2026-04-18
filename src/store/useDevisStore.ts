@@ -225,5 +225,6 @@ export function useDevisStore() {
     addDevis,
     updateDevis,
     deleteDevis,
+    recordFollowUp,
   };
 }
