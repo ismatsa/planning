@@ -30,9 +30,14 @@ export default function AppSidebar() {
   const assignedCount = useMemo(() => {
     if (!user) return 0;
     return devisStore.devisList.filter(
-      (d) => d.assignedUserId === user.id && !TERMINAL_STATUTS.includes(d.statut)
+      (d) => d.assignedUserId === user.id && d.statut !== 'envoye' && !TERMINAL_STATUTS.includes(d.statut)
     ).length;
   }, [devisStore.devisList, user]);
+
+  const sentCount = useMemo(
+    () => devisStore.devisList.filter((d) => d.statut === 'envoye').length,
+    [devisStore.devisList],
+  );
 
   const sections: {
     title: string;
@@ -55,6 +60,12 @@ export default function AppSidebar() {
           icon: FileText,
           label: "Demandes de devis",
           badge: assignedCount > 0 ? assignedCount : undefined,
+        },
+        {
+          to: "/devis/envoyes",
+          icon: Send,
+          label: "Devis envoyés",
+          badge: sentCount > 0 ? sentCount : undefined,
         },
       ],
     },
