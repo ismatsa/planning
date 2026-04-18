@@ -4,6 +4,7 @@ export type StatutDevis =
   | 'en_cours_de_devis'
   | 'en_attente_infos'
   | 'devis_pret'
+  | 'envoye'
   | 'devis_envoye'
   | 'valide'
   | 'refuse'
@@ -15,6 +16,7 @@ export const STATUT_DEVIS_LABELS: Record<StatutDevis, string> = {
   en_cours_de_devis: 'En cours de devis',
   en_attente_infos: 'En attente d\'informations',
   devis_pret: 'Devis prêt',
+  envoye: 'Devis envoyé',
   devis_envoye: 'À relancer',
   valide: 'Validé',
   refuse: 'Refusé',
@@ -34,6 +36,9 @@ export interface Devis {
   billingResponsibleUserId?: string;
   assignedUserId?: string;
   createdBy?: string;
+  sentAt?: string;
+  followUpCount: number;
+  lastFollowUpAt?: string;
   createdAt: string;
   updatedAt: string;
 }
