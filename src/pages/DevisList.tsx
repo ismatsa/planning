@@ -31,6 +31,7 @@ const statusBadgeClass: Record<StatutDevis, string> = {
   en_cours_de_devis: 'bg-indigo-100 text-indigo-700',
   en_attente_infos: 'bg-orange-100 text-orange-700',
   devis_pret: 'bg-teal-100 text-teal-700',
+  envoye: 'bg-purple-100 text-purple-700',
   devis_envoye: 'bg-orange-100 text-orange-700',
   valide: 'bg-green-100 text-green-700',
   refuse: 'bg-destructive/10 text-destructive',
