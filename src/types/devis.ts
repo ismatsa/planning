@@ -5,7 +5,6 @@ export type StatutDevis =
   | 'en_attente_infos'
   | 'devis_pret'
   | 'envoye'
-  | 'devis_envoye'
   | 'valide'
   | 'refuse'
   | 'annule';
@@ -17,7 +16,6 @@ export const STATUT_DEVIS_LABELS: Record<StatutDevis, string> = {
   en_attente_infos: 'En attente d\'informations',
   devis_pret: 'Devis prêt',
   envoye: 'Devis envoyé',
-  devis_envoye: 'À relancer',
   valide: 'Validé',
   refuse: 'Refusé',
   annule: 'Annulé',
