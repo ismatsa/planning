@@ -52,8 +52,8 @@ export default function DevisAttachments({ devisId, readOnly }: Props) {
     toast.success('Fichier supprimé.');
   }
 
-  function handleOpen(att: AttachmentMeta) {
-    const url = getAttachmentUrl(att);
+  async function handleOpen(att: AttachmentMeta) {
+    const url = await getAttachmentUrl(att);
     if (url) {
       window.open(url, '_blank');
     } else {
