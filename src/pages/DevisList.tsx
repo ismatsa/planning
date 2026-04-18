@@ -92,6 +92,8 @@ export default function DevisList() {
   const filtered = useMemo(() => {
     return devisList
       .filter(d => {
+        // Always exclude "envoye" from main demands list — it has its own dedicated page
+        if (d.statut === 'envoye') return false;
         if (!showPast && !onlyMine && filterStatut === 'all' && TERMINAL_STATUSES.includes(d.statut)) return false;
         if (onlyMine) {
           if (d.assignedUserId !== user?.id) return false;
