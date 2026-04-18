@@ -34,11 +34,6 @@ export default function AppSidebar() {
     ).length;
   }, [devisStore.devisList, user]);
 
-  const sentCount = useMemo(
-    () => devisStore.devisList.filter((d) => d.statut === 'envoye').length,
-    [devisStore.devisList],
-  );
-
   const sections: {
     title: string;
     items: { to: string; icon: any; label: string; adminOnly?: boolean; badge?: number }[];
@@ -65,7 +60,6 @@ export default function AppSidebar() {
           to: "/devis/envoyes",
           icon: Send,
           label: "Devis envoyés",
-          badge: sentCount > 0 ? sentCount : undefined,
         },
       ],
     },
