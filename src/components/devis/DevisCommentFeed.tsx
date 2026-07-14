@@ -217,15 +217,62 @@ export default function DevisCommentFeed({ devisId }: Props) {
           {comments.map(c => {
             const isMe = c.user_id === user?.id;
             const att = c.attachment_id ? attachments[c.attachment_id] : null;
+            const isEditing = editingId === c.id;
             return (
-              <div key={c.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+              <div key={c.id} className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                 <div className={`rounded-lg px-3 py-2 max-w-[85%] text-sm ${isMe ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                  {c.content && <p className="whitespace-pre-wrap break-words">{c.content}</p>}
-                  {att && <AttachmentPreview att={att} isMe={isMe} />}
+                  {isEditing ? (
+                    <div className="flex flex-col gap-1.5 min-w-[220px]">
+                      <Textarea
+                        value={editingContent}
+                        onChange={e => setEditingContent(e.target.value)}
+                        rows={2}
+                        className="resize-none text-sm text-foreground bg-background"
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelEdit}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveEdit(c)}>
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {c.content && <p className="whitespace-pre-wrap break-words">{c.content}</p>}
+                      {att && <AttachmentPreview att={att} isMe={isMe} />}
+                    </>
+                  )}
                 </div>
-                <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
-                  {profiles[c.user_id] || 'Utilisateur'} · {format(new Date(c.created_at), 'd MMM HH:mm', { locale: fr })}
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5 px-1">
+                  <span className="text-[10px] text-muted-foreground">
+                    {profiles[c.user_id] || 'Utilisateur'} · {format(new Date(c.created_at), 'd MMM HH:mm', { locale: fr })}
+                  </span>
+                  {isMe && !isEditing && (
+                    <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {c.content && (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(c)}
+                          className="text-muted-foreground hover:text-foreground p-0.5"
+                          title="Modifier"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(c)}
+                        className="text-muted-foreground hover:text-destructive p-0.5"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}
