@@ -106,8 +106,42 @@ export default function DevisCommentFeed({ devisId }: Props) {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function startEdit(c: Comment) {
+    setEditingId(c.id);
+    setEditingContent(c.content || '');
+  }
+  function cancelEdit() {
+    setEditingId(null);
+    setEditingContent('');
+  }
+  async function saveEdit(c: Comment) {
+    const next = editingContent.trim();
+    if (!next) { cancelEdit(); return; }
+    const { error } = await supabase.from('devis_comments').update({ content: next } as any).eq('id', c.id);
+    if (error) { toast.error('Erreur lors de la modification.'); return; }
+    setComments(prev => prev.map(x => x.id === c.id ? { ...x, content: next } : x));
+    cancelEdit();
+  }
+  async function handleDelete(c: Comment) {
+    if (!confirm('Supprimer ce message ?')) return;
+    const att = c.attachment_id ? attachments[c.attachment_id] : null;
+    const { error } = await supabase.from('devis_comments').delete().eq('id', c.id);
+    if (error) { toast.error('Erreur lors de la suppression.'); return; }
+    if (att) {
+      await deleteAttachment({
+        id: att.id, devisId, fileName: att.file_name, originalName: att.file_name,
+        mimeType: att.content_type, fileSize: att.file_size, storagePath: att.file_path,
+        uploadedBy: null, createdAt: '',
+      });
+      setAttachments(prev => { const n = { ...prev }; delete n[att.id]; return n; });
+    }
+    setComments(prev => prev.filter(x => x.id !== c.id));
+  }
 
   async function loadAll() {
     const [commentsRes, profilesRes, attsRes] = await Promise.all([
