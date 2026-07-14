@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Send, Paperclip, X, Download, FileText, Loader2 } from 'lucide-react';
+import { Send, Paperclip, X, Download, FileText, Loader2, Pencil, Trash2, Check } from 'lucide-react';
+import { deleteAttachment } from '@/services/attachmentsService';
 import { toast } from 'sonner';
 import {
   uploadAttachment,
