@@ -206,27 +206,37 @@ export type Database = {
       }
       devis_comments: {
         Row: {
-          content: string
+          attachment_id: string | null
+          content: string | null
           created_at: string
           devis_id: string
           id: string
           user_id: string
         }
         Insert: {
-          content: string
+          attachment_id?: string | null
+          content?: string | null
           created_at?: string
           devis_id: string
           id?: string
           user_id: string
         }
         Update: {
-          content?: string
+          attachment_id?: string | null
+          content?: string | null
           created_at?: string
           devis_id?: string
           id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "devis_comments_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "devis_attachments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "devis_comments_devis_id_fkey"
             columns: ["devis_id"]
