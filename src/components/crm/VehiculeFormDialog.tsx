@@ -34,10 +34,11 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   vehicule?: Vehicule | null;
   defaultClientId?: string;
+  defaultVin?: string;
   onSaved?: (v: Vehicule) => void;
 }
 
-export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defaultClientId, onSaved }: Props) {
+export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defaultClientId, defaultVin, onSaved }: Props) {
   const { crm } = useStore();
   const isEdit = !!vehicule;
 
@@ -57,7 +58,7 @@ export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defau
 
   useEffect(() => {
     if (!open) return;
-    setVin(vehicule?.vin || '');
+    setVin(vehicule?.vin || defaultVin || '');
     setImmatriculation(vehicule?.immatriculation || '');
     setMarque(vehicule?.marque || '');
     setModele(vehicule?.modele || '');
@@ -69,7 +70,7 @@ export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defau
     setStatut(vehicule?.statut || 'actif');
     setClientId(vehicule?.clientId || defaultClientId || NONE);
     setNotes(vehicule?.notes || '');
-  }, [open, vehicule, defaultClientId]);
+  }, [open, vehicule, defaultClientId, defaultVin]);
 
   const clientOptions = useMemo(
     () => crm.clients.filter(c => c.statut === 'actif' || c.id === vehicule?.clientId),
