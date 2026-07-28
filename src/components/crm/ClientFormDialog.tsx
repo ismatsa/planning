@@ -105,6 +105,7 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved }
       nom: nom.trim() || undefined,
       prenom: prenom.trim() || undefined,
       raisonSociale: raisonSociale.trim() || undefined,
+      ice: ice.trim() || undefined,
       telephone: telNum.trim(),
       telephoneSecondaire: tel2Num.trim() || undefined,
       email: email.trim(),
@@ -123,6 +124,7 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved }
         nom: typeClient === 'particulier' ? nom.trim() : (nom.trim() || undefined),
         prenom: prenom.trim() || undefined,
         raisonSociale: typeClient === 'societe' ? raisonSociale.trim() : (raisonSociale.trim() || undefined),
+        ice: typeClient === 'societe' ? (ice.trim() || undefined) : undefined,
         telephone: serializePhone(telCode, telNum.trim()),
         telephoneSecondaire: tel2Num.trim() ? serializePhone(tel2Code, tel2Num.trim()) : undefined,
         email: email.trim() || undefined,
@@ -165,10 +167,16 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved }
           </div>
 
           {typeClient === 'societe' ? (
-            <div>
-              <Label>Raison sociale *</Label>
-              <Input className="mt-1" value={raisonSociale} onChange={e => setRaisonSociale(e.target.value)} />
-            </div>
+            <>
+              <div>
+                <Label>Raison sociale *</Label>
+                <Input className="mt-1" value={raisonSociale} onChange={e => setRaisonSociale(e.target.value)} />
+              </div>
+              <div>
+                <Label>Numéro ICE</Label>
+                <Input className="mt-1" value={ice} onChange={e => setIce(e.target.value)} placeholder="000000000000000" />
+              </div>
+            </>
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div>
