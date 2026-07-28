@@ -479,16 +479,80 @@ async function handleVehicles(ctx: Ctx, segments: string[]): Promise<Response> {
     return ok(201, data);
   }
 
+  // POST /vehicles/{id}/transfer — changement de propriétaire (historique préservé)
+  if (method === 'POST' && segments[1] && segments[2] === 'transfer') {
+    requireScope(ctx, 'vehicles:write');
+    const id = segments[1];
+    const allowed = ['client_id', 'motif', 'date_debut'];
+    assertAllowedFields(body, allowed, ['updated_at', 'etag']);
+    const newClientId = body.client_id as string | undefined;
+    if (!newClientId) {
+      throw new ApiError(400, 'CLIENT_REQUIS', 'Le champ client_id (nouveau propriétaire) est obligatoire.');
+    }
+    const motif = (body.motif as string) ?? 'transfert';
+    if (!['achat', 'vente', 'transfert', 'autre'].includes(motif)) {
+      throw new ApiError(400, 'MOTIF_INVALIDE', 'Motif invalide (achat, vente, transfert, autre).');
+    }
+    const dateDebut = (body.date_debut as string) ?? new Date().toISOString();
+    if (Number.isNaN(Date.parse(dateDebut))) {
+      throw new ApiError(400, 'DATE_INVALIDE', 'La date_debut doit être une date ISO valide.');
+    }
+
+    const { data: vehicule } = await db.from('vehicules').select('*').eq('id', id).maybeSingle();
+    if (!vehicule) throw new ApiError(404, 'VEHICULE_INTROUVABLE', 'Véhicule introuvable.');
+    requireEtag(ctx, vehicule);
+
+    const { data: newClient } = await db.from('clients').select('id, statut').eq('id', newClientId).maybeSingle();
+    if (!newClient) throw new ApiError(404, 'CLIENT_INTROUVABLE', 'Client introuvable.');
+    if (newClient.statut !== 'actif') {
+      throw new ApiError(422, 'CLIENT_ARCHIVE', 'Impossible de transférer un véhicule vers un client archivé.');
+    }
+    if (vehicule.client_id === newClientId) {
+      throw new ApiError(422, 'AUCUNE_MODIFICATION', 'Ce client est déjà le propriétaire actuel du véhicule.');
+    }
+
+    if (ctx.dryRun) {
+      return ok(200, {
+        dry_run: true,
+        avant: { proprietaire_actuel_id: vehicule.client_id },
+        apercu: { proprietaire_actuel_id: newClientId, motif, date_debut: dateDebut },
+      });
+    }
+
+    await db.from('vehicule_proprietaires')
+      .update({ date_fin: dateDebut })
+      .eq('vehicule_id', id)
+      .is('date_fin', null);
+
+    const { error: pErr } = await db.from('vehicule_proprietaires').insert({
+      vehicule_id: id, client_id: newClientId, date_debut: dateDebut, motif,
+    });
+    if (pErr) throw new ApiError(422, 'TRANSFERT_IMPOSSIBLE', 'Impossible d\'enregistrer le nouveau propriétaire.');
+
+    const { data: updated, error } = await db.from('vehicules')
+      .update({ client_id: newClientId }).eq('id', id).select(VEHICULE_FIELDS).single();
+    if (error) throw new ApiError(422, 'TRANSFERT_IMPOSSIBLE', 'Impossible de mettre à jour le véhicule.');
+
+    await audit(ctx, {
+      resource: 'vehicules', record_id: id, operation: 'update',
+      old_value: { client_id: vehicule.client_id },
+      new_value: { client_id: newClientId, motif, date_debut: dateDebut },
+      result: 'success',
+    });
+    return ok(200, { vehicule: updated, proprietaire_actuel_id: newClientId, motif, date_debut: dateDebut });
+  }
+
   // PATCH /vehicles/{id}
   if (method === 'PATCH' && segments[1]) {
     requireScope(ctx, 'vehicles:write');
     const id = segments[1];
     if ('client_id' in body || 'proprietaire_id' in body) {
       await audit(ctx, { resource: 'vehicules', record_id: id, operation: 'blocked', result: 'denied',
-        denial_reason: 'Changement de propriétaire interdit via API v1' });
+        denial_reason: 'Changement de propriétaire via PATCH interdit' });
       throw new ApiError(403, 'CHANGEMENT_PROPRIETAIRE_INTERDIT',
-        'Le changement de propriétaire d\'un véhicule est interdit via cette API. Utilisez l\'interface PowerTech.');
+        'Le changement de propriétaire doit passer par POST /vehicles/{id}/transfer.');
     }
+
     const allowed = ['immatriculation', 'marque', 'modele', 'annee', 'motorisation',
       'carburant', 'boite_vitesses', 'kilometrage_actuel', 'notes'];
     assertAllowedFields(body, allowed, ['updated_at', 'etag']);

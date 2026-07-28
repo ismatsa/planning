@@ -24,7 +24,9 @@ info:
     ## Opérations interdites (403)
     - Toute suppression (`DELETE`) de données.
     - Annulation d'un rendez-vous (`statut: "annule"`).
-    - Changement de propriétaire d'un véhicule (`client_id` en `PATCH /vehicles/{id}`).
+    - Changement de propriétaire d'un véhicule via `PATCH /vehicles/{id}` (`client_id`) :
+      utiliser `POST /vehicles/{id}/transfer`, qui préserve l'historique.
+
     - Envoi / validation / refus / annulation d'un devis, et modification d'un devis
       déjà envoyé, validé, refusé ou annulé.
   contact:
@@ -389,6 +391,64 @@ paths:
                   data: { $ref: "#/components/schemas/Vehicule" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
+
+  /vehicles/{id}/transfer:
+    parameters:
+      - { $ref: "#/components/parameters/Id" }
+    post:
+      tags: [Véhicules]
+      summary: Transférer un véhicule à un nouveau propriétaire
+      description: |
+        Scope requis : `vehicles:write`. `updated_at` (ou `etag`) du véhicule obligatoire.
+        La période de propriété en cours est clôturée à `date_debut` et une nouvelle période
+        est ouverte : l'historique n'est jamais supprimé. Le VIN, les rendez-vous, devis et
+        entretiens restent attachés au véhicule.
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client_id, updated_at]
+              properties:
+                client_id:
+                  type: string
+                  format: uuid
+                  description: Nouveau propriétaire (client actif).
+                motif:
+                  type: string
+                  enum: [achat, vente, transfert, autre]
+                  default: transfert
+                date_debut:
+                  type: string
+                  format: date-time
+                  description: Date d'effet du transfert (par défaut maintenant).
+                updated_at:
+                  type: string
+                  format: date-time
+                  description: Valeur lue précédemment sur le véhicule (concurrence optimiste).
+      responses:
+        "200":
+          description: Transfert effectué (ou aperçu si `dry_run`)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      vehicule: { $ref: "#/components/schemas/Vehicule" }
+                      proprietaire_actuel_id: { type: string, format: uuid }
+                      motif: { type: string }
+                      date_debut: { type: string, format: date-time }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
 
   /availability:
     get:
