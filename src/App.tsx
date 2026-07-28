@@ -18,6 +18,10 @@ import DevisList from "./pages/DevisList";
 import CreerDevis from "./pages/CreerDevis";
 import DevisDetail from "./pages/DevisDetail";
 import DevisEnvoyes from "./pages/DevisEnvoyes";
+import ClientsList from "./pages/ClientsList";
+import ClientDetail from "./pages/ClientDetail";
+import VehiculesList from "./pages/VehiculesList";
+import VehiculeDetail from "./pages/VehiculeDetail";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +58,10 @@ function AppRoutes() {
           <Route path="/devis/envoyes" element={<DevisEnvoyes />} />
           <Route path="/devis/creer" element={<CreerDevis />} />
           <Route path="/devis/:id" element={<DevisDetail />} />
+          <Route path="/clients" element={<ClientsList />} />
+          <Route path="/clients/:id" element={<ClientDetail />} />
+          <Route path="/vehicules" element={<VehiculesList />} />
+          <Route path="/vehicules/:id" element={<VehiculeDetail />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -11,6 +11,8 @@ import {
   FileText,
   FilePlus,
   Send,
+  Contact,
+  Car,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/store/AuthContext";
@@ -61,6 +63,13 @@ export default function AppSidebar() {
           icon: Send,
           label: "Devis envoyés",
         },
+      ],
+    },
+    {
+      title: "Clients",
+      items: [
+        { to: "/clients", icon: Contact, label: "Clients" },
+        { to: "/vehicules", icon: Car, label: "Véhicules" },
       ],
     },
     {
