@@ -31,6 +31,7 @@ import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
 import { AlertCircle, Eye, X } from 'lucide-react';
 import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
+import ClientVehiculeSelector, { ClientVehiculeValue } from '@/components/crm/ClientVehiculeSelector';
 import {
   Popover,
   PopoverContent,
@@ -81,6 +82,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   const [modele, setModele] = useState('');
   const [annee, setAnnee] = useState('');
   const [vin, setVin] = useState('');
+  const [linkedClientId, setLinkedClientId] = useState<string | undefined>(undefined);
+  const [linkedVehiculeId, setLinkedVehiculeId] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState('');
   const [statut, setStatut] = useState<StatutRdv>('prevu');
   const [conflict, setConflict] = useState<string | null>(null);
@@ -92,6 +95,30 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   const [billingResponsible, setBillingResponsible] = useState<string>('');
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   const [intervenantOptions, setIntervenantOptions] = useState<IntervenantOption[]>([]);
+
+  const cvValue = useMemo<ClientVehiculeValue>(() => ({
+    clientId: linkedClientId,
+    vehiculeId: linkedVehiculeId,
+    clientNom: clientNom || undefined,
+    clientTel: serializePhone(clientTelCode, clientTelNum) || undefined,
+    marque: marque || undefined,
+    modele: modele || undefined,
+    annee: annee || undefined,
+    vin: vin || undefined,
+  }), [linkedClientId, linkedVehiculeId, clientNom, clientTelCode, clientTelNum, marque, modele, annee, vin]);
+
+  const applyCv = useCallback((v: ClientVehiculeValue) => {
+    setLinkedClientId(v.clientId);
+    setLinkedVehiculeId(v.vehiculeId);
+    setClientNom(v.clientNom || '');
+    const p = parsePhone(v.clientTel || '');
+    setClientTelCode(p.countryCode);
+    setClientTelNum(p.number);
+    setMarque(v.marque || '');
+    setModele(v.modele || '');
+    setAnnee(v.annee || '');
+    setVin(v.vin || '');
+  }, []);
 
   const filteredPostes = useMemo(() => postes.filter(p => p.metierId === metierId && p.actif), [postes, metierId]);
 
@@ -142,6 +169,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setModele(rdv.modele || '');
       setAnnee(rdv.annee || '');
       setVin(rdv.vin || '');
+      setLinkedClientId(rdv.clientId);
+      setLinkedVehiculeId(rdv.vehiculeId);
       setNotes(rdv.notes || '');
       setStatut(rdv.statut);
       // Load pivot data
@@ -172,6 +201,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         setModele(devis.modele || '');
         setAnnee(devis.annee || '');
         setVin(devis.vin || '');
+        setLinkedClientId((devis as any).clientId);
+        setLinkedVehiculeId((devis as any).vehiculeId);
         setNotes(devis.notes || '');
         setSelectedResponsibles(devis.responsibleIds || []);
         setSelectedIntervenants(devis.intervenantIds || []);
@@ -186,6 +217,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         setModele('');
         setAnnee('');
         setVin('');
+        setLinkedClientId(undefined);
+        setLinkedVehiculeId(undefined);
         setNotes('');
         setBillingResponsible('');
         // Auto-prefill current user as responsible
@@ -363,6 +396,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         modele: modele || undefined,
         annee: annee || undefined,
         vin: vin || undefined,
+        clientId: linkedClientId,
+        vehiculeId: linkedVehiculeId,
         notes: notes || undefined,
         statut,
         billingResponsibleUserId: effectiveBilling,
@@ -380,6 +415,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         modele: modele || undefined,
         annee: annee || undefined,
         vin: vin || undefined,
+        clientId: linkedClientId,
+        vehiculeId: linkedVehiculeId,
         notes: notes || undefined,
         statut,
         billingResponsibleUserId: effectiveBilling,
@@ -578,44 +615,12 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
           )}
 
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Client (nom)</Label>
-              <Input placeholder="Nom du client" value={clientNom} onChange={e => setClientNom(e.target.value)} disabled={readOnly} />
-            </div>
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Téléphone</Label>
-              <PhoneInput
-                countryCode={clientTelCode}
-                number={clientTelNum}
-                onCountryCodeChange={setClientTelCode}
-                onNumberChange={setClientTelNum}
-                disabled={readOnly}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Marque</Label>
-              <Input placeholder="Ex: BMW" value={marque} onChange={e => setMarque(e.target.value)} disabled={readOnly} />
-            </div>
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Modèle</Label>
-              <Input placeholder="Ex: Série 3" value={modele} onChange={e => setModele(e.target.value)} disabled={readOnly} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Année</Label>
-              <Input placeholder="Ex: 2020" value={annee} onChange={e => setAnnee(e.target.value)} disabled={readOnly} />
-            </div>
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">VIN</Label>
-              <Input placeholder="N° de châssis" value={vin} onChange={e => setVin(e.target.value)} disabled={readOnly} />
-            </div>
-          </div>
+          <ClientVehiculeSelector
+            key={`${rdv?.id || 'new'}-${open}`}
+            value={cvValue}
+            onChange={applyCv}
+            readOnly={readOnly}
+          />
 
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1.5">Notes internes</Label>
