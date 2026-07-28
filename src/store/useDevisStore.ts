@@ -148,7 +148,10 @@ export function useDevisStore() {
       statut: devis.statut,
       billing_responsible_user_id: devis.billingResponsibleUserId || null,
       assigned_user_id: devis.assignedUserId || null,
+      client_id: devis.clientId || null,
+      vehicule_id: devis.vehiculeId || null,
     };
+
     if (justSent && !previous?.sentAt) {
       updatePayload.sent_at = new Date().toISOString();
     }
