@@ -308,7 +308,78 @@ export default function ApiIntegrations() {
             </table>
           </div>
         </TabsContent>
+
+        <TabsContent value="doc" className="mt-4 space-y-4">
+          <div className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <FileJson className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold">Spécification OpenAPI 3.1</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Fournissez ce fichier à l'assistant externe : il décrit toutes les routes, les
+              scopes requis, les schémas, le mode simulation (<code>dry_run</code>),
+              l'idempotence, le contrôle de concurrence et les opérations interdites.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" className="gap-2">
+                <a href="/openapi/powertech-api-v1.yaml" download>
+                  <Download className="h-4 w-4" /> Télécharger (YAML)
+                </a>
+              </Button>
+              <Button asChild variant="outline" className="gap-2">
+                <a href="/openapi/powertech-api-v1.json" download>
+                  <Download className="h-4 w-4" /> Télécharger (JSON)
+                </a>
+              </Button>
+              <Button asChild variant="ghost" className="gap-2">
+                <a href={SPEC_YAML_URL} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4" /> Ouvrir dans le navigateur
+                </a>
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4 space-y-3">
+            <h2 className="font-semibold">URLs d'accès</h2>
+            {[
+              { label: "URL de base de l'API", value: API_BASE_URL },
+              { label: 'Test de disponibilité (public)', value: `${API_BASE_URL}/health` },
+              { label: 'Spécification OpenAPI (YAML)', value: SPEC_YAML_URL },
+              { label: 'Spécification OpenAPI (JSON)', value: SPEC_JSON_URL },
+            ].map((row) => (
+              <div key={row.label} className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{row.label}</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded bg-muted px-2 py-1.5 text-xs break-all">
+                    {row.value}
+                  </code>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      navigator.clipboard.writeText(row.value);
+                      toast.success('Copié');
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-lg border bg-card p-4 space-y-2">
+            <h2 className="font-semibold">Exemple d'appel</h2>
+            <pre className="rounded bg-muted p-3 text-xs overflow-x-auto">{`curl -H "Authorization: Bearer VOTRE_CLE_API" \\
+  "${API_BASE_URL}/availability?date=2026-08-03&duree=60"`}</pre>
+            <p className="text-xs text-muted-foreground">
+              Toutes les routes (sauf <code>/health</code>) exigent l'en-tête
+              <code> Authorization: Bearer</code>. Limite : 120 requêtes par minute.
+            </p>
+          </div>
+        </TabsContent>
       </Tabs>
+
 
       {/* Création */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
