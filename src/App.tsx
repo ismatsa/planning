@@ -22,6 +22,7 @@ import ClientsList from "./pages/ClientsList";
 import ClientDetail from "./pages/ClientDetail";
 import VehiculesList from "./pages/VehiculesList";
 import VehiculeDetail from "./pages/VehiculeDetail";
+import ApiIntegrations from "./pages/ApiIntegrations";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ function AppRoutes() {
           <Route path="/creneaux" element={<Creneaux />} />
           <Route path="/parametres" element={<Parametres />} />
           <Route path="/utilisateurs" element={<UserManagement />} />
+          <Route path="/integrations-api" element={<ApiIntegrations />} />
           <Route path="/profil" element={<Profil />} />
           <Route path="/devis" element={<DevisList />} />
           <Route path="/devis/envoyes" element={<DevisEnvoyes />} />
