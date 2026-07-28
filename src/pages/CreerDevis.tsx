@@ -1,10 +1,12 @@
-import { useNavigate } from 'react-router-dom';
-import DevisForm from '@/components/devis/DevisForm';
+import { useNavigate, useLocation } from 'react-router-dom';
+import DevisForm, { DevisPrefill } from '@/components/devis/DevisForm';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
 export default function CreerDevis() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefill = (location.state as { prefill?: DevisPrefill } | null)?.prefill;
 
   return (
     <div className="p-6 max-w-2xl">
@@ -16,7 +18,7 @@ export default function CreerDevis() {
       </div>
 
       <div className="rounded-lg border bg-card p-5">
-        <DevisForm onSaved={() => navigate('/devis')} />
+        <DevisForm prefill={prefill} onSaved={() => navigate('/devis')} />
       </div>
     </div>
   );
