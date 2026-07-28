@@ -24,7 +24,9 @@ info:
     ## Opérations interdites (403)
     - Toute suppression (`DELETE`) de données.
     - Annulation d'un rendez-vous (`statut: "annule"`).
-    - Changement de propriétaire d'un véhicule (`client_id` en `PATCH /vehicles/{id}`).
+    - Changement de propriétaire d'un véhicule via `PATCH /vehicles/{id}` (`client_id`) :
+      utiliser `POST /vehicles/{id}/transfer`, qui préserve l'historique.
+
     - Envoi / validation / refus / annulation d'un devis, et modification d'un devis
       déjà envoyé, validé, refusé ou annulé.
   contact:
