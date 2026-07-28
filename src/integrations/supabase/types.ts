@@ -100,11 +100,66 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          adresse: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          nom: string | null
+          notes_internes: string | null
+          prenom: string | null
+          raison_sociale: string | null
+          statut: Database["public"]["Enums"]["client_statut"]
+          telephone: string
+          telephone_secondaire: string | null
+          type_client: Database["public"]["Enums"]["client_type"]
+          updated_at: string
+          ville: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nom?: string | null
+          notes_internes?: string | null
+          prenom?: string | null
+          raison_sociale?: string | null
+          statut?: Database["public"]["Enums"]["client_statut"]
+          telephone: string
+          telephone_secondaire?: string | null
+          type_client?: Database["public"]["Enums"]["client_type"]
+          updated_at?: string
+          ville?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nom?: string | null
+          notes_internes?: string | null
+          prenom?: string | null
+          raison_sociale?: string | null
+          statut?: Database["public"]["Enums"]["client_statut"]
+          telephone?: string
+          telephone_secondaire?: string | null
+          type_client?: Database["public"]["Enums"]["client_type"]
+          updated_at?: string
+          ville?: string | null
+        }
+        Relationships: []
+      }
       devis: {
         Row: {
           annee: string | null
           assigned_user_id: string | null
           billing_responsible_user_id: string | null
+          client_id: string | null
           client_nom: string | null
           client_tel: string | null
           created_at: string
@@ -118,12 +173,14 @@ export type Database = {
           sent_at: string | null
           statut: string
           updated_at: string
+          vehicule_id: string | null
           vin: string | null
         }
         Insert: {
           annee?: string | null
           assigned_user_id?: string | null
           billing_responsible_user_id?: string | null
+          client_id?: string | null
           client_nom?: string | null
           client_tel?: string | null
           created_at?: string
@@ -137,12 +194,14 @@ export type Database = {
           sent_at?: string | null
           statut?: string
           updated_at?: string
+          vehicule_id?: string | null
           vin?: string | null
         }
         Update: {
           annee?: string | null
           assigned_user_id?: string | null
           billing_responsible_user_id?: string | null
+          client_id?: string | null
           client_nom?: string | null
           client_tel?: string | null
           created_at?: string
@@ -156,9 +215,25 @@ export type Database = {
           sent_at?: string | null
           statut?: string
           updated_at?: string
+          vehicule_id?: string | null
           vin?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "devis_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_vehicule_id_fkey"
+            columns: ["vehicule_id"]
+            isOneToOne: false
+            referencedRelation: "vehicules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       devis_attachments: {
         Row: {
@@ -440,6 +515,79 @@ export type Database = {
           },
         ]
       }
+      entretiens: {
+        Row: {
+          cout: number | null
+          created_at: string
+          created_by: string | null
+          date_entretien: string
+          description: string | null
+          devis_id: string | null
+          id: string
+          kilometrage: number | null
+          pieces_utilisees: string | null
+          rdv_id: string | null
+          realise_par: string | null
+          type_entretien: Database["public"]["Enums"]["entretien_type"]
+          updated_at: string
+          vehicule_id: string
+        }
+        Insert: {
+          cout?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_entretien?: string
+          description?: string | null
+          devis_id?: string | null
+          id?: string
+          kilometrage?: number | null
+          pieces_utilisees?: string | null
+          rdv_id?: string | null
+          realise_par?: string | null
+          type_entretien?: Database["public"]["Enums"]["entretien_type"]
+          updated_at?: string
+          vehicule_id: string
+        }
+        Update: {
+          cout?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_entretien?: string
+          description?: string | null
+          devis_id?: string | null
+          id?: string
+          kilometrage?: number | null
+          pieces_utilisees?: string | null
+          rdv_id?: string | null
+          realise_par?: string | null
+          type_entretien?: Database["public"]["Enums"]["entretien_type"]
+          updated_at?: string
+          vehicule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entretiens_rdv_id_fkey"
+            columns: ["rdv_id"]
+            isOneToOne: false
+            referencedRelation: "rendez_vous"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entretiens_vehicule_id_fkey"
+            columns: ["vehicule_id"]
+            isOneToOne: false
+            referencedRelation: "vehicules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exception_disponibilites: {
         Row: {
           date: string
@@ -615,6 +763,7 @@ export type Database = {
         Row: {
           annee: string | null
           billing_responsible_user_id: string | null
+          client_id: string | null
           client_nom: string | null
           client_tel: string | null
           created_at: string
@@ -629,11 +778,13 @@ export type Database = {
           source_devis_id: string | null
           statut: string
           updated_at: string
+          vehicule_id: string | null
           vin: string | null
         }
         Insert: {
           annee?: string | null
           billing_responsible_user_id?: string | null
+          client_id?: string | null
           client_nom?: string | null
           client_tel?: string | null
           created_at?: string
@@ -648,11 +799,13 @@ export type Database = {
           source_devis_id?: string | null
           statut?: string
           updated_at?: string
+          vehicule_id?: string | null
           vin?: string | null
         }
         Update: {
           annee?: string | null
           billing_responsible_user_id?: string | null
+          client_id?: string | null
           client_nom?: string | null
           client_tel?: string | null
           created_at?: string
@@ -667,9 +820,17 @@ export type Database = {
           source_devis_id?: string | null
           statut?: string
           updated_at?: string
+          vehicule_id?: string | null
           vin?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "rendez_vous_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rendez_vous_poste_id_fkey"
             columns: ["poste_id"]
@@ -682,6 +843,13 @@ export type Database = {
             columns: ["source_devis_id"]
             isOneToOne: false
             referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rendez_vous_vehicule_id_fkey"
+            columns: ["vehicule_id"]
+            isOneToOne: false
+            referencedRelation: "vehicules"
             referencedColumns: ["id"]
           },
         ]
@@ -733,6 +901,125 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicule_proprietaires: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_debut: string
+          date_fin: string | null
+          id: string
+          motif: Database["public"]["Enums"]["proprietaire_motif"]
+          vehicule_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_debut?: string
+          date_fin?: string | null
+          id?: string
+          motif?: Database["public"]["Enums"]["proprietaire_motif"]
+          vehicule_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_debut?: string
+          date_fin?: string | null
+          id?: string
+          motif?: Database["public"]["Enums"]["proprietaire_motif"]
+          vehicule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicule_proprietaires_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicule_proprietaires_vehicule_id_fkey"
+            columns: ["vehicule_id"]
+            isOneToOne: false
+            referencedRelation: "vehicules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicules: {
+        Row: {
+          annee: number | null
+          boite_vitesses:
+            | Database["public"]["Enums"]["boite_vitesses_type"]
+            | null
+          carburant: Database["public"]["Enums"]["carburant_type"] | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          immatriculation: string | null
+          kilometrage_actuel: number | null
+          marque: string
+          modele: string
+          motorisation: string | null
+          notes: string | null
+          statut: Database["public"]["Enums"]["vehicule_statut"]
+          updated_at: string
+          vin: string
+        }
+        Insert: {
+          annee?: number | null
+          boite_vitesses?:
+            | Database["public"]["Enums"]["boite_vitesses_type"]
+            | null
+          carburant?: Database["public"]["Enums"]["carburant_type"] | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          immatriculation?: string | null
+          kilometrage_actuel?: number | null
+          marque: string
+          modele: string
+          motorisation?: string | null
+          notes?: string | null
+          statut?: Database["public"]["Enums"]["vehicule_statut"]
+          updated_at?: string
+          vin: string
+        }
+        Update: {
+          annee?: number | null
+          boite_vitesses?:
+            | Database["public"]["Enums"]["boite_vitesses_type"]
+            | null
+          carburant?: Database["public"]["Enums"]["carburant_type"] | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          immatriculation?: string | null
+          kilometrage_actuel?: number | null
+          marque?: string
+          modele?: string
+          motorisation?: string | null
+          notes?: string | null
+          statut?: Database["public"]["Enums"]["vehicule_statut"]
+          updated_at?: string
+          vin?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -748,6 +1035,25 @@ export type Database = {
     }
     Enums: {
       app_role: "administrateur" | "contributeur"
+      boite_vitesses_type: "manuelle" | "automatique" | "autre"
+      carburant_type:
+        | "essence"
+        | "diesel"
+        | "hybride"
+        | "electrique"
+        | "gpl"
+        | "autre"
+      client_statut: "actif" | "archive"
+      client_type: "particulier" | "societe"
+      entretien_type:
+        | "revision"
+        | "vidange"
+        | "reprogrammation"
+        | "lavage"
+        | "reparation"
+        | "autre"
+      proprietaire_motif: "achat" | "vente" | "transfert" | "autre"
+      vehicule_statut: "actif" | "vendu" | "archive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -876,6 +1182,27 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["administrateur", "contributeur"],
+      boite_vitesses_type: ["manuelle", "automatique", "autre"],
+      carburant_type: [
+        "essence",
+        "diesel",
+        "hybride",
+        "electrique",
+        "gpl",
+        "autre",
+      ],
+      client_statut: ["actif", "archive"],
+      client_type: ["particulier", "societe"],
+      entretien_type: [
+        "revision",
+        "vidange",
+        "reprogrammation",
+        "lavage",
+        "reparation",
+        "autre",
+      ],
+      proprietaire_motif: ["achat", "vente", "transfert", "autre"],
+      vehicule_statut: ["actif", "vendu", "archive"],
     },
   },
 } as const

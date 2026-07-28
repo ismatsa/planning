@@ -18,8 +18,21 @@ import { toast } from 'sonner';
 interface ProfileOption { id: string; email: string; company: string; }
 interface IntervenantOption { id: string; name: string; }
 
+export interface DevisPrefill {
+  clientNom?: string;
+  clientTel?: string;
+  marque?: string;
+  modele?: string;
+  annee?: string;
+  vin?: string;
+  clientId?: string;
+  vehiculeId?: string;
+}
+
 interface Props {
   devis?: Devis | null;
+  /** Pré-remplissage lors d'une création depuis une fiche client ou véhicule */
+  prefill?: DevisPrefill;
   onSaved?: (devis: Devis) => void;
   onDeleted?: () => void;
   onConvert?: (devis: Devis) => void;
@@ -28,7 +41,7 @@ interface Props {
   onAssignedUserIdChange?: (id: string) => void;
 }
 
-export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assignedUserId: externalAssignedUserId, onAssignedUserIdChange }: Props) {
+export default function DevisForm({ devis, prefill, onSaved, onDeleted, onConvert, assignedUserId: externalAssignedUserId, onAssignedUserIdChange }: Props) {
   const { user } = useAuth();
   const { metiers, devis: devisStore } = useStore();
   const { addDevis, updateDevis, deleteDevis, devisResponsibles, devisIntervenants, devisMetiers } = devisStore;
@@ -44,6 +57,8 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assign
   const [notes, setNotes] = useState('');
   const [statut, setStatut] = useState<StatutDevis>('demande_recue');
   const [saving, setSaving] = useState(false);
+  const [linkedClientId, setLinkedClientId] = useState<string | undefined>(undefined);
+  const [linkedVehiculeId, setLinkedVehiculeId] = useState<string | undefined>(undefined);
 
   const [selectedResponsibles, setSelectedResponsibles] = useState<string[]>([]);
   const [selectedIntervenants, setSelectedIntervenants] = useState<string[]>([]);
@@ -92,8 +107,27 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assign
       setSelectedMetiers(devisMetiers[devis.id] || []);
       setBillingResponsible(devis.billingResponsibleUserId || '');
       if (externalAssignedUserId === undefined) setInternalAssignedUserId(devis.assignedUserId || '');
+      setLinkedClientId(devis.clientId);
+      setLinkedVehiculeId(devis.vehiculeId);
     }
   }, [devis, devisResponsibles, devisIntervenants, devisMetiers]);
+
+  // Pré-remplissage depuis une fiche client / véhicule (création uniquement)
+  useEffect(() => {
+    if (devis || !prefill) return;
+    if (prefill.clientNom) setClientNom(prefill.clientNom);
+    if (prefill.clientTel) {
+      const p = parsePhone(prefill.clientTel);
+      setClientTelCode(p.countryCode);
+      setClientTelNum(p.number);
+    }
+    if (prefill.marque) setMarque(prefill.marque);
+    if (prefill.modele) setModele(prefill.modele);
+    if (prefill.annee) setAnnee(prefill.annee);
+    if (prefill.vin) setVin(prefill.vin);
+    setLinkedClientId(prefill.clientId);
+    setLinkedVehiculeId(prefill.vehiculeId);
+  }, [devis, prefill]);
 
   // Auto-prefill current user for new devis
   useEffect(() => {
@@ -136,6 +170,8 @@ export default function DevisForm({ devis, onSaved, onDeleted, onConvert, assign
       vin: vin || undefined,
       notes: notes || undefined,
       statut,
+      clientId: linkedClientId,
+      vehiculeId: linkedVehiculeId,
       billingResponsibleUserId: effectiveBilling,
       assignedUserId: assignedUserId || undefined,
     };

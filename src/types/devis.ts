@@ -34,6 +34,8 @@ export interface Devis {
   billingResponsibleUserId?: string;
   assignedUserId?: string;
   createdBy?: string;
+  clientId?: string;
+  vehiculeId?: string;
   sentAt?: string;
   followUpCount: number;
   lastFollowUpAt?: string;
