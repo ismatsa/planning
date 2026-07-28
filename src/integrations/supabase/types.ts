@@ -106,6 +106,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           email: string | null
+          ice: string | null
           id: string
           nom: string | null
           notes_internes: string | null
@@ -123,6 +124,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          ice?: string | null
           id?: string
           nom?: string | null
           notes_internes?: string | null
@@ -140,6 +142,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          ice?: string | null
           id?: string
           nom?: string | null
           notes_internes?: string | null
