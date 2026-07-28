@@ -14,7 +14,11 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Ban, Copy, KeyRound, ShieldAlert } from 'lucide-react';
+import { Plus, Ban, Copy, KeyRound, ShieldAlert, FileJson, Download, ExternalLink } from 'lucide-react';
+
+const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-v1/api/v1`;
+const SPEC_YAML_URL = `${window.location.origin}/openapi/powertech-api-v1.yaml`;
+const SPEC_JSON_URL = `${window.location.origin}/openapi/powertech-api-v1.json`;
 
 const SCOPES = [
   'clients:read', 'clients:write',
