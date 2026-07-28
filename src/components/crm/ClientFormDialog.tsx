@@ -23,6 +23,7 @@ const schema = z.object({
   nom: z.string().trim().max(100).optional(),
   prenom: z.string().trim().max(100).optional(),
   raisonSociale: z.string().trim().max(150).optional(),
+  ice: z.string().trim().max(30).optional(),
   telephone: z.string().trim().min(1, 'Le téléphone est obligatoire'),
   telephoneSecondaire: z.string().trim().optional(),
   email: z.string().trim().max(255).email('Adresse e-mail invalide').optional().or(z.literal('')),
@@ -52,6 +53,7 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved }
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
   const [raisonSociale, setRaisonSociale] = useState('');
+  const [ice, setIce] = useState('');
   const [telCode, setTelCode] = useState('+212');
   const [telNum, setTelNum] = useState('');
   const [tel2Code, setTel2Code] = useState('+212');
@@ -68,6 +70,7 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved }
     setNom(client?.nom || '');
     setPrenom(client?.prenom || '');
     setRaisonSociale(client?.raisonSociale || '');
+    setIce(client?.ice || '');
     const p = client?.telephone ? parsePhone(client.telephone) : { countryCode: '+212', number: '' };
     setTelCode(p.countryCode); setTelNum(p.number);
     const p2 = client?.telephoneSecondaire ? parsePhone(client.telephoneSecondaire) : { countryCode: '+212', number: '' };
