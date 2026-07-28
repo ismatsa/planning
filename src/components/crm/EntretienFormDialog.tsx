@@ -14,7 +14,6 @@ import {
 import { useStore } from '@/store/StoreContext';
 import { Entretien, EntretienType, ENTRETIEN_TYPE_LABELS } from '@/types/crm';
 import ClientVehiculeSelector, { ClientVehiculeValue } from '@/components/crm/ClientVehiculeSelector';
-import { toast as _toast } from 'sonner';
 
 const schema = z.object({
   dateEntretien: z.string().min(1, 'La date est obligatoire'),

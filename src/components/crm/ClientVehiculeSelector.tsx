@@ -448,7 +448,7 @@ export default function ClientVehiculeSelector({ value, onChange, readOnly, hide
               <Label className="text-xs font-medium text-muted-foreground mb-1.5">
                 Véhicules de ce client
               </Label>
-              <Select value="" onValueChange={(id) => {
+              <Select value={undefined} onValueChange={(id) => {
                 const v = crm.vehicules.find(x => x.id === id);
                 if (v) selectVehicule(v);
               }}>
