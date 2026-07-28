@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.cleanup-attachments]
 verify_jwt = false
+
+[functions.api-v1]
+verify_jwt = false

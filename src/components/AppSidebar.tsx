@@ -10,6 +10,7 @@ import {
   PanelLeft,
   FileText,
   FilePlus,
+  KeyRound,
   Send,
   Contact,
   Car,
@@ -77,6 +78,7 @@ export default function AppSidebar() {
       items: [
         { to: "/parametres", icon: Settings, label: "Paramètres", adminOnly: true },
         { to: "/utilisateurs", icon: Users, label: "Utilisateurs", adminOnly: true },
+        { to: "/integrations-api", icon: KeyRound, label: "Intégrations API", adminOnly: true },
       ],
     },
   ];

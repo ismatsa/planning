@@ -14,6 +14,169 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_audit_log: {
+        Row: {
+          created_at: string
+          denial_reason: string | null
+          id: string
+          integration_id: string | null
+          integration_name: string | null
+          ip_address: string | null
+          new_value: Json | null
+          old_value: Json | null
+          operation: string
+          record_id: string | null
+          request_id: string
+          resource: string
+          result: string
+        }
+        Insert: {
+          created_at?: string
+          denial_reason?: string | null
+          id?: string
+          integration_id?: string | null
+          integration_name?: string | null
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          operation: string
+          record_id?: string | null
+          request_id: string
+          resource: string
+          result: string
+        }
+        Update: {
+          created_at?: string
+          denial_reason?: string | null
+          id?: string
+          integration_id?: string | null
+          integration_name?: string | null
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          operation?: string
+          record_id?: string | null
+          request_id?: string
+          resource?: string
+          result?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_audit_log_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "api_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_idempotency_keys: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          idempotency_key: string
+          integration_id: string
+          request_hash: string
+          response: Json
+          status_code: number
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          idempotency_key: string
+          integration_id: string
+          request_hash: string
+          response: Json
+          status_code: number
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          idempotency_key?: string
+          integration_id?: string
+          request_hash?: string
+          response?: Json
+          status_code?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_idempotency_keys_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "api_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_integrations: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          revoked_at: string | null
+          scopes: string[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          revoked_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_rate_limits: {
+        Row: {
+          bucket: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          bucket?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           heure_max: string
