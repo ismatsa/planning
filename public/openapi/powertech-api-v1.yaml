@@ -1,0 +1,1148 @@
+openapi: 3.1.0
+info:
+  title: PowerTech API v1
+  version: "1.0.0"
+  description: |
+    API sécurisée et auditée permettant à un assistant opérationnel externe autorisé de
+    consulter, créer et modifier les demandes de devis, rendez-vous, clients et véhicules PowerTech.
+
+    ## Authentification
+    Toutes les routes (sauf `/health`) exigent une clé API :
+    `Authorization: Bearer pt_xxx`. La clé n'est jamais journalisée.
+    Chaque clé porte des **scopes** ; un scope manquant renvoie `403 SCOPE_INSUFFISANT`.
+
+    ## Conventions
+    - Réponses : `{ "data": ... }` (+ `{ "meta": { count, limit, offset } }` pour les listes).
+    - Erreurs : `{ "error": { code, message, details, request_id } }`.
+    - **Simulation** : ajoutez `?dry_run=true` (ou `"dry_run": true` dans le corps) sur toute
+      écriture pour obtenir un aperçu sans persistance.
+    - **Idempotence** : en-tête `Idempotency-Key` sur les `POST` ; la réponse initiale est rejouée.
+    - **Concurrence optimiste** : tout `PATCH` doit inclure le `updated_at` (ou `etag`) lu
+      précédemment, sinon `400 CONTROLE_CONCURRENCE_REQUIS` / `409 MODIFICATION_CONCURRENTE`.
+    - **Débit** : 120 requêtes / minute par clé et par IP (`429 LIMITE_DEBIT_DEPASSEE`).
+
+    ## Opérations interdites (403)
+    - Toute suppression (`DELETE`) de données.
+    - Annulation d'un rendez-vous (`statut: "annule"`).
+    - Changement de propriétaire d'un véhicule (`client_id` en `PATCH /vehicles/{id}`).
+    - Envoi / validation / refus / annulation d'un devis, et modification d'un devis
+      déjà envoyé, validé, refusé ou annulé.
+  contact:
+    name: PowerTech
+servers:
+  - url: https://iueeeaoptvmxlxgcrmck.supabase.co/functions/v1/api-v1/api/v1
+    description: Production
+
+security:
+  - BearerApiKey: []
+
+tags:
+  - name: Système
+  - name: Clients
+  - name: Véhicules
+  - name: Disponibilités
+  - name: Rendez-vous
+  - name: Demandes de devis
+  - name: Entretiens
+
+paths:
+  /health:
+    get:
+      tags: [Système]
+      summary: État de l'API (public, sans authentification)
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      status: { type: string, example: ok }
+                      version: { type: string, example: v1 }
+
+  /me:
+    get:
+      tags: [Système]
+      summary: Informations sur la clé API utilisée
+      responses:
+        "200":
+          description: Intégration courante
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      integration: { type: string }
+                      scopes:
+                        type: array
+                        items: { $ref: "#/components/schemas/Scope" }
+                      expires_at: { type: string, format: date-time, nullable: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /resources:
+    get:
+      tags: [Système]
+      summary: Référentiel (métiers, postes, intervenants, horaires)
+      description: "Scope requis : `availability:read`."
+      responses:
+        "200":
+          description: Référentiel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      metiers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            nom: { type: string }
+                            couleur: { type: string }
+                      postes:
+                        type: array
+                        items: { $ref: "#/components/schemas/Poste" }
+                      intervenants:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            name: { type: string }
+                      horaires:
+                        type: object
+                        nullable: true
+                        properties:
+                          jours_ouvres: { type: array, items: { type: integer } }
+                          heure_min: { type: string }
+                          heure_max: { type: string }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /clients:
+    get:
+      tags: [Clients]
+      summary: Rechercher / lister les clients
+      description: "Scope requis : `clients:read`."
+      parameters:
+        - { name: query, in: query, schema: { type: string }, description: Recherche libre (nom, prénom, société, téléphone, e-mail) }
+        - { name: telephone, in: query, schema: { type: string } }
+        - { name: email, in: query, schema: { type: string } }
+        - { name: type_client, in: query, schema: { type: string, enum: [particulier, societe] } }
+        - { name: status, in: query, schema: { type: string, enum: [actif, archive] } }
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Offset" }
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ListMeta"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Client" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Clients]
+      summary: Créer un client
+      description: |
+        Scope requis : `clients:write`. Un doublon probable (téléphone, e-mail, nom+prénom,
+        raison sociale) renvoie `409 DOUBLON_POTENTIEL` avec les candidats ;
+        forcez avec `"force": true` après validation humaine.
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClientCreate" }
+      responses:
+        "200": { $ref: "#/components/responses/DryRunPreview" }
+        "201":
+          description: Client créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Client" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /clients/duplicates:
+    get:
+      tags: [Clients]
+      summary: Détecter des doublons avant création
+      description: "Scope requis : `clients:read`."
+      parameters:
+        - { name: nom, in: query, schema: { type: string } }
+        - { name: prenom, in: query, schema: { type: string } }
+        - { name: raison_sociale, in: query, schema: { type: string } }
+        - { name: telephone, in: query, schema: { type: string } }
+        - { name: email, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Candidats trouvés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Client" }
+
+  /clients/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/Id" }
+    get:
+      tags: [Clients]
+      summary: Fiche client (véhicules, rendez-vous, devis liés)
+      description: "Scope requis : `clients:read`."
+      responses:
+        "200":
+          description: Fiche complète
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/Client"
+                      - type: object
+                        properties:
+                          vehicules: { type: array, items: { $ref: "#/components/schemas/Vehicule" } }
+                          rendez_vous: { type: array, items: { $ref: "#/components/schemas/RendezVous" } }
+                          devis: { type: array, items: { $ref: "#/components/schemas/DemandeDevis" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Clients]
+      summary: Modifier un client
+      description: "Scope requis : `clients:write`. `updated_at` obligatoire."
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClientPatch" }
+      responses:
+        "200":
+          description: Client modifié (ou aperçu en dry_run)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Client" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /vehicles:
+    get:
+      tags: [Véhicules]
+      summary: Lister / rechercher les véhicules
+      description: "Scope requis : `vehicles:read`."
+      parameters:
+        - { name: vin, in: query, schema: { type: string } }
+        - { name: immatriculation, in: query, schema: { type: string } }
+        - { name: marque, in: query, schema: { type: string } }
+        - { name: modele, in: query, schema: { type: string } }
+        - { name: client_id, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string, enum: [actif, archive] } }
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Offset" }
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ListMeta"
+                  - type: object
+                    properties:
+                      data: { type: array, items: { $ref: "#/components/schemas/Vehicule" } }
+    post:
+      tags: [Véhicules]
+      summary: Créer un véhicule
+      description: |
+        Scope requis : `vehicles:write`. Le `VIN` est l'identifiant unique :
+        un VIN existant renvoie `409 VIN_ALREADY_EXISTS`. `client_id` est obligatoire :
+        la période de propriété initiale est créée automatiquement.
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VehiculeCreate" }
+      responses:
+        "200": { $ref: "#/components/responses/DryRunPreview" }
+        "201":
+          description: Véhicule créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Vehicule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /vehicles/by-vin/{vin}:
+    get:
+      tags: [Véhicules]
+      summary: Rechercher un véhicule par VIN exact
+      description: "Scope requis : `vehicles:read`."
+      parameters:
+        - { name: vin, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Véhicule et propriétaire actuel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      vehicule: { $ref: "#/components/schemas/Vehicule" }
+                      proprietaire_actuel:
+                        oneOf:
+                          - $ref: "#/components/schemas/Client"
+                          - type: "null"
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /vehicles/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/Id" }
+    get:
+      tags: [Véhicules]
+      summary: Fiche véhicule (historique propriétaires, entretiens, RDV, devis)
+      description: "Scope requis : `vehicles:read` (les blocs liés dépendent des autres scopes)."
+      responses:
+        "200":
+          description: Fiche complète
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      vehicule: { $ref: "#/components/schemas/Vehicule" }
+                      proprietaire_actuel:
+                        oneOf:
+                          - $ref: "#/components/schemas/Client"
+                          - type: "null"
+                      historique_proprietaires:
+                        type: array
+                        items: { $ref: "#/components/schemas/PeriodeProprietaire" }
+                      entretiens: { type: array, items: { $ref: "#/components/schemas/Entretien" } }
+                      rendez_vous: { type: array, items: { $ref: "#/components/schemas/RendezVous" } }
+                      devis: { type: array, items: { $ref: "#/components/schemas/DemandeDevis" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Véhicules]
+      summary: Modifier un véhicule (hors propriétaire)
+      description: |
+        Scope requis : `vehicles:write`. `updated_at` obligatoire.
+        Fournir `client_id` déclenche `403 CHANGEMENT_PROPRIETAIRE_INTERDIT`.
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VehiculePatch" }
+      responses:
+        "200":
+          description: Véhicule modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Vehicule" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /availability:
+    get:
+      tags: [Disponibilités]
+      summary: Créneaux disponibles par poste pour une date
+      description: "Scope requis : `availability:read`. Pas de dépassement des heures d'ouverture ni des RDV existants (tampon inclus)."
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date }, description: "AAAA-MM-JJ" }
+        - { name: duree, in: query, schema: { type: integer, default: 60 }, description: Durée souhaitée en minutes }
+        - { name: metier, in: query, schema: { type: string, format: uuid } }
+        - { name: poste, in: query, schema: { type: string, format: uuid } }
+        - { name: heure_debut, in: query, schema: { type: string, example: "14:00" }, description: Ne renvoyer que les créneaux à partir de cette heure }
+      responses:
+        "200":
+          description: Créneaux
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      date: { type: string, format: date }
+                      ferme: { type: boolean }
+                      motif: { type: string }
+                      duree_minutes: { type: integer }
+                      postes:
+                        type: array
+                        items: { $ref: "#/components/schemas/DisponibilitePoste" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /appointments:
+    get:
+      tags: [Rendez-vous]
+      summary: Lister les rendez-vous
+      description: "Scope requis : `appointments:read`."
+      parameters:
+        - { name: date, in: query, schema: { type: string, format: date } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: client_id, in: query, schema: { type: string, format: uuid } }
+        - { name: vehicule_id, in: query, schema: { type: string, format: uuid } }
+        - { name: statut, in: query, schema: { $ref: "#/components/schemas/StatutRdv" } }
+        - { name: poste, in: query, schema: { type: string, format: uuid } }
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Offset" }
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ListMeta"
+                  - type: object
+                    properties:
+                      data: { type: array, items: { $ref: "#/components/schemas/RendezVous" } }
+    post:
+      tags: [Rendez-vous]
+      summary: Créer un rendez-vous
+      description: |
+        Scope requis : `appointments:write`. Statut initial `prevu`.
+        Un chevauchement sur le même poste renvoie `409 CONFLIT_PLANNING` avec les conflits.
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RendezVousCreate" }
+      responses:
+        "200": { $ref: "#/components/responses/DryRunPreview" }
+        "201":
+          description: Rendez-vous créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/RendezVous" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [Rendez-vous]
+      summary: Interdit
+      responses:
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /appointments/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/Id" }
+    get:
+      tags: [Rendez-vous]
+      summary: Détail d'un rendez-vous (responsables, intervenants)
+      description: "Scope requis : `appointments:read`."
+      responses:
+        "200":
+          description: Détail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/RendezVous"
+                      - type: object
+                        properties:
+                          responsables:
+                            type: array
+                            items:
+                              type: object
+                              properties: { user_id: { type: string, format: uuid } }
+                          intervenants:
+                            type: array
+                            items:
+                              type: object
+                              properties: { intervenant_id: { type: string, format: uuid } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Rendez-vous]
+      summary: Modifier / replanifier un rendez-vous
+      description: |
+        Scope requis : `appointments:write`. `updated_at` obligatoire.
+        Statuts autorisés : `prevu`, `confirme`, `termine`.
+        `statut: "annule"` → `403 ANNULATION_INTERDITE`.
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RendezVousPatch" }
+      responses:
+        "200":
+          description: Rendez-vous modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/RendezVous" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /quote-requests:
+    get:
+      tags: [Demandes de devis]
+      summary: Lister les demandes de devis
+      description: "Scope requis : `quotes:read`."
+      parameters:
+        - { name: statut, in: query, schema: { $ref: "#/components/schemas/StatutDevis" } }
+        - { name: client_id, in: query, schema: { type: string, format: uuid } }
+        - { name: vehicule_id, in: query, schema: { type: string, format: uuid } }
+        - { name: responsable, in: query, schema: { type: string, format: uuid } }
+        - { name: date, in: query, schema: { type: string, format: date } }
+        - { name: metier, in: query, schema: { type: string, format: uuid } }
+        - { name: intervenant, in: query, schema: { type: string, format: uuid } }
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Offset" }
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ListMeta"
+                  - type: object
+                    properties:
+                      data: { type: array, items: { $ref: "#/components/schemas/DemandeDevis" } }
+    post:
+      tags: [Demandes de devis]
+      summary: Créer une demande de devis
+      description: "Scope requis : `quotes:write`. Statut initial `demande_recue`."
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DemandeDevisCreate" }
+      responses:
+        "200": { $ref: "#/components/responses/DryRunPreview" }
+        "201":
+          description: Demande créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/DemandeDevis" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /quote-requests/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/Id" }
+    get:
+      tags: [Demandes de devis]
+      summary: Détail d'une demande (lignes, métiers, pièces jointes)
+      description: "Scope requis : `quotes:read`."
+      responses:
+        "200":
+          description: Détail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/DemandeDevis"
+                      - type: object
+                        properties:
+                          lignes: { type: array, items: { $ref: "#/components/schemas/LigneDevis" } }
+                          metiers: { type: array, items: { type: string, format: uuid } }
+                          pieces_jointes: { type: array, items: { $ref: "#/components/schemas/PieceJointe" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Demandes de devis]
+      summary: Modifier une demande de devis
+      description: |
+        Scope requis : `quotes:write`. `updated_at` obligatoire.
+        Statuts modifiables : `demande_recue`, `a_chiffrer`, `en_cours_de_devis`,
+        `en_attente_infos`, `devis_pret`.
+        Un devis `envoye`, `valide`, `refuse` ou `annule` est verrouillé (`403 DEVIS_VERROUILLE`).
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DemandeDevisPatch" }
+      responses:
+        "200":
+          description: Demande modifiée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/DemandeDevis" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /maintenance:
+    get:
+      tags: [Entretiens]
+      summary: Lister les entretiens (carnet PowerTech)
+      description: "Scope requis : `maintenance:read`."
+      parameters:
+        - { name: vehicule_id, in: query, schema: { type: string, format: uuid } }
+        - { $ref: "#/components/parameters/Limit" }
+        - { $ref: "#/components/parameters/Offset" }
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ListMeta"
+                  - type: object
+                    properties:
+                      data: { type: array, items: { $ref: "#/components/schemas/Entretien" } }
+    post:
+      tags: [Entretiens]
+      summary: Enregistrer un entretien / une intervention
+      description: "Scope requis : `maintenance:write`."
+      parameters:
+        - { $ref: "#/components/parameters/DryRun" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EntretienCreate" }
+      responses:
+        "200": { $ref: "#/components/responses/DryRunPreview" }
+        "201":
+          description: Entretien créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Entretien" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /maintenance/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/Id" }
+    get:
+      tags: [Entretiens]
+      summary: Détail d'un entretien
+      description: "Scope requis : `maintenance:read`."
+      responses:
+        "200":
+          description: Détail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Entretien" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    BearerApiKey:
+      type: http
+      scheme: bearer
+      description: "Clé API PowerTech (`Authorization: Bearer pt_...`). Générée dans Administration › Intégrations API."
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, default: 25, maximum: 100 }
+    Offset:
+      name: offset
+      in: query
+      schema: { type: integer, default: 0 }
+    DryRun:
+      name: dry_run
+      in: query
+      schema: { type: boolean }
+      description: Simule l'opération sans rien enregistrer.
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      schema: { type: string }
+      description: Rejoue la réponse initiale si la même clé est réutilisée avec le même corps.
+
+  responses:
+    DryRunPreview:
+      description: Aperçu en simulation (`dry_run=true`), rien n'est enregistré.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  dry_run: { type: boolean, const: true }
+                  apercu: { type: object, additionalProperties: true }
+                  avant: { type: object, additionalProperties: true }
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Clé API manquante, invalide, révoquée ou expirée
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Scope insuffisant ou opération interdite
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Conflit (doublon, VIN existant, créneau occupé, modification concurrente, idempotence)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unprocessable:
+      description: Données non traitables
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    TooManyRequests:
+      description: Limite de débit dépassée (120 req/min)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Scope:
+      type: string
+      enum:
+        - clients:read
+        - clients:write
+        - vehicles:read
+        - vehicles:write
+        - appointments:read
+        - appointments:write
+        - quotes:read
+        - quotes:write
+        - availability:read
+        - maintenance:read
+        - maintenance:write
+        - audit:read
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: |
+                Codes usuels : CLE_API_MANQUANTE, CLE_API_INVALIDE, SCOPE_INSUFFISANT,
+                CHAMPS_NON_AUTORISES, DONNEES_MANQUANTES, JSON_INVALIDE, VIN_REQUIS,
+                VIN_ALREADY_EXISTS, DOUBLON_POTENTIEL, CONFLIT_PLANNING,
+                CONTROLE_CONCURRENCE_REQUIS, MODIFICATION_CONCURRENTE,
+                IDEMPOTENCY_KEY_REUTILISEE, SUPPRESSION_INTERDITE, ANNULATION_INTERDITE,
+                CHANGEMENT_PROPRIETAIRE_INTERDIT, DEVIS_VERROUILLE, STATUT_INTERDIT,
+                LIMITE_DEBIT_DEPASSEE, ROUTE_INTROUVABLE, ERREUR_INTERNE
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+            request_id: { type: string, format: uuid }
+
+    ListMeta:
+      type: object
+      properties:
+        meta:
+          type: object
+          properties:
+            count: { type: integer }
+            limit: { type: integer }
+            offset: { type: integer }
+
+    Client:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type_client: { type: string, enum: [particulier, societe] }
+        nom: { type: string, nullable: true }
+        prenom: { type: string, nullable: true }
+        raison_sociale: { type: string, nullable: true }
+        ice: { type: string, nullable: true, description: Identifiant Commun de l'Entreprise (sociétés) }
+        telephone: { type: string, nullable: true }
+        telephone_secondaire: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        adresse: { type: string, nullable: true }
+        ville: { type: string, nullable: true }
+        statut: { type: string, enum: [actif, archive] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ClientCreate:
+      type: object
+      properties:
+        type_client: { type: string, enum: [particulier, societe], default: particulier }
+        nom: { type: string }
+        prenom: { type: string }
+        raison_sociale: { type: string }
+        ice: { type: string }
+        telephone: { type: string }
+        telephone_secondaire: { type: string }
+        email: { type: string }
+        adresse: { type: string }
+        ville: { type: string }
+        notes: { type: string }
+        force: { type: boolean, description: Forcer la création malgré un doublon potentiel }
+      examples:
+        - { type_client: particulier, nom: Alaoui, prenom: Youssef, telephone: "+212600000000" }
+
+    ClientPatch:
+      allOf:
+        - $ref: "#/components/schemas/ClientCreate"
+        - type: object
+          required: [updated_at]
+          properties:
+            statut: { type: string, enum: [actif, archive] }
+            updated_at:
+              type: string
+              format: date-time
+              description: Valeur lue précédemment (contrôle de concurrence).
+
+    Vehicule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        vin: { type: string }
+        immatriculation: { type: string, nullable: true }
+        marque: { type: string }
+        modele: { type: string }
+        annee: { type: integer, nullable: true }
+        motorisation: { type: string, nullable: true }
+        carburant: { type: string, nullable: true }
+        boite_vitesses: { type: string, nullable: true }
+        kilometrage_actuel: { type: integer, nullable: true }
+        statut: { type: string, enum: [actif, archive] }
+        client_id: { type: string, format: uuid, nullable: true }
+        notes: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    VehiculeCreate:
+      type: object
+      required: [vin, marque, modele, client_id]
+      properties:
+        vin: { type: string }
+        immatriculation: { type: string }
+        marque: { type: string }
+        modele: { type: string }
+        annee: { type: integer }
+        motorisation: { type: string }
+        carburant: { type: string }
+        boite_vitesses: { type: string }
+        kilometrage_actuel: { type: integer }
+        notes: { type: string }
+        client_id: { type: string, format: uuid, description: Propriétaire initial (obligatoire) }
+
+    VehiculePatch:
+      type: object
+      required: [updated_at]
+      properties:
+        immatriculation: { type: string }
+        marque: { type: string }
+        modele: { type: string }
+        annee: { type: integer }
+        motorisation: { type: string }
+        carburant: { type: string }
+        boite_vitesses: { type: string }
+        kilometrage_actuel: { type: integer }
+        notes: { type: string }
+        statut: { type: string, enum: [actif, archive] }
+        updated_at: { type: string, format: date-time }
+
+    PeriodeProprietaire:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        client_id: { type: string, format: uuid }
+        date_debut: { type: string, format: date-time }
+        date_fin: { type: string, format: date-time, nullable: true }
+        motif: { type: string, nullable: true }
+
+    Poste:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        metier_id: { type: string, format: uuid }
+        nom: { type: string }
+        actif: { type: boolean }
+
+    Creneau:
+      type: object
+      properties:
+        debut: { type: string, format: date-time }
+        fin: { type: string, format: date-time }
+
+    DisponibilitePoste:
+      type: object
+      properties:
+        poste_id: { type: string, format: uuid }
+        poste: { type: string }
+        metier_id: { type: string, format: uuid }
+        ferme: { type: boolean }
+        duree_defaut: { type: integer, nullable: true }
+        durees_autorisees: { type: array, nullable: true, items: { type: integer } }
+        creneaux: { type: array, items: { $ref: "#/components/schemas/Creneau" } }
+        occupes:
+          type: array
+          items:
+            type: object
+            properties:
+              debut: { type: string, format: date-time }
+              fin: { type: string, format: date-time }
+              statut: { $ref: "#/components/schemas/StatutRdv" }
+
+    StatutRdv:
+      type: string
+      enum: [prevu, confirme, termine, annule]
+
+    RendezVous:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        poste_id: { type: string, format: uuid }
+        debut: { type: string, format: date-time }
+        fin: { type: string, format: date-time }
+        client_nom: { type: string, nullable: true }
+        client_tel: { type: string, nullable: true }
+        marque: { type: string, nullable: true }
+        modele: { type: string, nullable: true }
+        annee: { type: integer, nullable: true }
+        vin: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        statut: { $ref: "#/components/schemas/StatutRdv" }
+        client_id: { type: string, format: uuid, nullable: true }
+        vehicule_id: { type: string, format: uuid, nullable: true }
+        source_devis_id: { type: string, format: uuid, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    RendezVousCreate:
+      type: object
+      required: [poste_id, debut, fin]
+      properties:
+        poste_id: { type: string, format: uuid }
+        debut: { type: string, format: date-time }
+        fin: { type: string, format: date-time }
+        client_id: { type: string, format: uuid }
+        vehicule_id: { type: string, format: uuid }
+        client_nom: { type: string }
+        client_tel: { type: string }
+        marque: { type: string }
+        modele: { type: string }
+        annee: { type: integer }
+        vin: { type: string }
+        notes: { type: string }
+
+    RendezVousPatch:
+      type: object
+      required: [updated_at]
+      properties:
+        poste_id: { type: string, format: uuid }
+        debut: { type: string, format: date-time }
+        fin: { type: string, format: date-time }
+        statut: { type: string, enum: [prevu, confirme, termine] }
+        client_id: { type: string, format: uuid }
+        vehicule_id: { type: string, format: uuid }
+        client_nom: { type: string }
+        client_tel: { type: string }
+        marque: { type: string }
+        modele: { type: string }
+        annee: { type: integer }
+        vin: { type: string }
+        notes: { type: string }
+        updated_at: { type: string, format: date-time }
+
+    StatutDevis:
+      type: string
+      enum:
+        - demande_recue
+        - a_chiffrer
+        - en_cours_de_devis
+        - en_attente_infos
+        - devis_pret
+        - envoye
+        - valide
+        - refuse
+        - annule
+
+    DemandeDevis:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        client_nom: { type: string, nullable: true }
+        client_tel: { type: string, nullable: true }
+        marque: { type: string, nullable: true }
+        modele: { type: string, nullable: true }
+        annee: { type: integer, nullable: true }
+        vin: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        statut: { $ref: "#/components/schemas/StatutDevis" }
+        client_id: { type: string, format: uuid, nullable: true }
+        vehicule_id: { type: string, format: uuid, nullable: true }
+        assigned_user_id: { type: string, format: uuid, nullable: true }
+        sent_at: { type: string, format: date-time, nullable: true }
+        follow_up_count: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    DemandeDevisCreate:
+      type: object
+      properties:
+        client_id: { type: string, format: uuid }
+        vehicule_id: { type: string, format: uuid }
+        client_nom: { type: string }
+        client_tel: { type: string }
+        marque: { type: string }
+        modele: { type: string }
+        annee: { type: integer }
+        vin: { type: string }
+        notes: { type: string }
+        metiers: { type: array, items: { type: string, format: uuid } }
+
+    DemandeDevisPatch:
+      type: object
+      required: [updated_at]
+      properties:
+        client_id: { type: string, format: uuid }
+        vehicule_id: { type: string, format: uuid }
+        client_nom: { type: string }
+        client_tel: { type: string }
+        marque: { type: string }
+        modele: { type: string }
+        annee: { type: integer }
+        vin: { type: string }
+        notes: { type: string }
+        statut:
+          type: string
+          enum: [demande_recue, a_chiffrer, en_cours_de_devis, en_attente_infos, devis_pret]
+        updated_at: { type: string, format: date-time }
+
+    LigneDevis:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        name: { type: string }
+        quantity: { type: number }
+        unit_price: { type: number, description: Montant en Dirhams (Dhs) }
+        description: { type: string, nullable: true }
+        sort_order: { type: integer }
+
+    PieceJointe:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        file_name: { type: string }
+        content_type: { type: string }
+        file_size: { type: integer }
+        created_at: { type: string, format: date-time }
+
+    Entretien:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        vehicule_id: { type: string, format: uuid }
+        date_entretien: { type: string, format: date }
+        type_entretien: { type: string }
+        kilometrage: { type: integer, nullable: true }
+        description: { type: string, nullable: true }
+        pieces_utilisees: { type: string, nullable: true }
+        cout: { type: number, nullable: true, description: Montant en Dirhams (Dhs) }
+        rdv_id: { type: string, format: uuid, nullable: true }
+        devis_id: { type: string, format: uuid, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    EntretienCreate:
+      type: object
+      required: [vehicule_id, date_entretien, type_entretien]
+      properties:
+        vehicule_id: { type: string, format: uuid }
+        date_entretien: { type: string, format: date }
+        type_entretien: { type: string }
+        kilometrage: { type: integer }
+        description: { type: string }
+        pieces_utilisees: { type: string }
+        cout: { type: number }
+        rdv_id: { type: string, format: uuid }
+        devis_id: { type: string, format: uuid }
