@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/select';
 import { useStore } from '@/store/StoreContext';
 import { Entretien, EntretienType, ENTRETIEN_TYPE_LABELS } from '@/types/crm';
+import ClientVehiculeSelector, { ClientVehiculeValue } from '@/components/crm/ClientVehiculeSelector';
+import { toast as _toast } from 'sonner';
 
 const schema = z.object({
   dateEntretien: z.string().min(1, 'La date est obligatoire'),
@@ -25,7 +27,8 @@ const schema = z.object({
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vehiculeId: string;
+  /** Si absent, un sélecteur client/véhicule est affiché */
+  vehiculeId?: string;
   entretien?: Entretien | null;
 }
 
@@ -40,9 +43,12 @@ export default function EntretienFormDialog({ open, onOpenChange, vehiculeId, en
   const [pieces, setPieces] = useState('');
   const [cout, setCout] = useState('');
   const [saving, setSaving] = useState(false);
+  const [cv, setCv] = useState<ClientVehiculeValue>({});
+  const effectiveVehiculeId = vehiculeId || cv.vehiculeId;
 
   useEffect(() => {
     if (!open) return;
+    setCv({ vehiculeId: entretien?.vehiculeId });
     setDate(entretien?.dateEntretien || new Date().toISOString().slice(0, 10));
     setType(entretien?.typeEntretien || 'revision');
     setKm(entretien?.kilometrage != null ? String(entretien.kilometrage) : '');
@@ -63,10 +69,14 @@ export default function EntretienFormDialog({ open, onOpenChange, vehiculeId, en
       toast.error(parsed.error.issues[0].message);
       return;
     }
+    if (!effectiveVehiculeId) {
+      toast.error('Veuillez sélectionner un véhicule');
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
-        vehiculeId,
+        vehiculeId: effectiveVehiculeId,
         dateEntretien: date,
         typeEntretien: type,
         kilometrage: km ? Number(km) : undefined,
@@ -93,6 +103,9 @@ export default function EntretienFormDialog({ open, onOpenChange, vehiculeId, en
         </DialogHeader>
 
         <div className="space-y-4">
+          {!vehiculeId && (
+            <ClientVehiculeSelector key={String(open)} value={cv} onChange={setCv} />
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Date *</Label>
