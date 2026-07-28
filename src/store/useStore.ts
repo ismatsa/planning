@@ -59,6 +59,8 @@ function mapRdv(row: any): RendezVous {
     statut: row.statut,
     billingResponsibleUserId: row.billing_responsible_user_id || undefined,
     sourceDevisId: row.source_devis_id || undefined,
+    clientId: row.client_id || undefined,
+    vehiculeId: row.vehicule_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdBy: row.created_by || undefined,
@@ -148,6 +150,8 @@ export function useAppStore() {
       statut: rdv.statut,
       billing_responsible_user_id: rdv.billingResponsibleUserId || null,
       source_devis_id: (rdv as any).sourceDevisId || null,
+      client_id: rdv.clientId || null,
+      vehicule_id: rdv.vehiculeId || null,
       created_by: session?.user?.id || null,
     } as any).select().single();
 
@@ -187,7 +191,9 @@ export function useAppStore() {
       notes: rdv.notes || null,
       statut: rdv.statut,
       billing_responsible_user_id: rdv.billingResponsibleUserId || null,
-    }).eq('id', rdv.id).select().single();
+      client_id: rdv.clientId || null,
+      vehicule_id: rdv.vehiculeId || null,
+    } as any).eq('id', rdv.id).select().single();
 
     if (data && !error) {
       setRdvs(prev => prev.map(r => r.id === rdv.id ? mapRdv(data) : r));

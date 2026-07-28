@@ -43,9 +43,18 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   client?: Client | null;
   onSaved?: (client: Client) => void;
+  /** Pré-remplissage lors d'une création rapide depuis un formulaire opérationnel */
+  defaultValues?: {
+    nom?: string;
+    prenom?: string;
+    raisonSociale?: string;
+    telephone?: string;
+    email?: string;
+  };
 }
 
-export default function ClientFormDialog({ open, onOpenChange, client, onSaved }: Props) {
+
+export default function ClientFormDialog({ open, onOpenChange, client, onSaved, defaultValues }: Props) {
   const { crm } = useStore();
   const isEdit = !!client;
 
@@ -66,20 +75,21 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved }
 
   useEffect(() => {
     if (!open) return;
-    setTypeClient(client?.typeClient || 'particulier');
-    setNom(client?.nom || '');
-    setPrenom(client?.prenom || '');
-    setRaisonSociale(client?.raisonSociale || '');
+    setTypeClient(client?.typeClient || (defaultValues?.raisonSociale ? 'societe' : 'particulier'));
+    setNom(client?.nom || defaultValues?.nom || '');
+    setPrenom(client?.prenom || defaultValues?.prenom || '');
+    setRaisonSociale(client?.raisonSociale || defaultValues?.raisonSociale || '');
     setIce(client?.ice || '');
-    const p = client?.telephone ? parsePhone(client.telephone) : { countryCode: '+212', number: '' };
+    const rawTel = client?.telephone || defaultValues?.telephone || '';
+    const p = rawTel ? parsePhone(rawTel) : { countryCode: '+212', number: '' };
     setTelCode(p.countryCode); setTelNum(p.number);
     const p2 = client?.telephoneSecondaire ? parsePhone(client.telephoneSecondaire) : { countryCode: '+212', number: '' };
     setTel2Code(p2.countryCode); setTel2Num(p2.number);
-    setEmail(client?.email || '');
+    setEmail(client?.email || defaultValues?.email || '');
     setAdresse(client?.adresse || '');
     setVille(client?.ville || '');
     setNotesInternes(client?.notesInternes || '');
-  }, [open, client]);
+  }, [open, client, defaultValues]);
 
   const duplicates = useMemo(() => {
     const tel = telNum.replace(/\D/g, '');

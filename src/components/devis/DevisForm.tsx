@@ -13,6 +13,7 @@ import { useAuth } from '@/store/AuthContext';
 import { useStore } from '@/store/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Devis, StatutDevis, STATUT_DEVIS_LABELS } from '@/types/devis';
+import ClientVehiculeSelector, { ClientVehiculeValue } from '@/components/crm/ClientVehiculeSelector';
 import { toast } from 'sonner';
 
 interface ProfileOption { id: string; email: string; company: string; }
@@ -145,6 +146,30 @@ export default function DevisForm({ devis, prefill, onSaved, onDeleted, onConver
   const metierOpts = useMemo(() =>
     metiers.map(m => ({ id: m.id, label: m.nom })), [metiers]);
 
+  const cvValue = useMemo<ClientVehiculeValue>(() => ({
+    clientId: linkedClientId,
+    vehiculeId: linkedVehiculeId,
+    clientNom: clientNom || undefined,
+    clientTel: serializePhone(clientTelCode, clientTelNum) || undefined,
+    marque: marque || undefined,
+    modele: modele || undefined,
+    annee: annee || undefined,
+    vin: vin || undefined,
+  }), [linkedClientId, linkedVehiculeId, clientNom, clientTelCode, clientTelNum, marque, modele, annee, vin]);
+
+  const applyCv = (v: ClientVehiculeValue) => {
+    setLinkedClientId(v.clientId);
+    setLinkedVehiculeId(v.vehiculeId);
+    setClientNom(v.clientNom || '');
+    const p = parsePhone(v.clientTel || '');
+    setClientTelCode(p.countryCode);
+    setClientTelNum(p.number);
+    setMarque(v.marque || '');
+    setModele(v.modele || '');
+    setAnnee(v.annee || '');
+    setVin(v.vin || '');
+  };
+
   async function handleSubmit() {
     if (selectedResponsibles.length === 0) {
       toast.error('Veuillez sélectionner au moins un responsable.');
@@ -273,44 +298,8 @@ export default function DevisForm({ devis, prefill, onSaved, onDeleted, onConver
         getLabel={(id) => metiers.find(m => m.id === id)?.nom || id}
       />
 
-      {/* Client info */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground mb-1.5">Client (nom)</Label>
-          <Input placeholder="Nom du client" value={clientNom} onChange={e => setClientNom(e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground mb-1.5">Téléphone</Label>
-          <PhoneInput
-            countryCode={clientTelCode}
-            number={clientTelNum}
-            onCountryCodeChange={setClientTelCode}
-            onNumberChange={setClientTelNum}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground mb-1.5">Marque</Label>
-          <Input placeholder="Ex: BMW" value={marque} onChange={e => setMarque(e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground mb-1.5">Modèle</Label>
-          <Input placeholder="Ex: Série 3" value={modele} onChange={e => setModele(e.target.value)} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground mb-1.5">Année</Label>
-          <Input placeholder="Ex: 2020" value={annee} onChange={e => setAnnee(e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground mb-1.5">VIN</Label>
-          <Input placeholder="N° de châssis" value={vin} onChange={e => setVin(e.target.value)} />
-        </div>
-      </div>
+      {/* Client & véhicule (sélecteur intelligent CRM) */}
+      <ClientVehiculeSelector value={cvValue} onChange={applyCv} />
 
       <div>
         <Label className="text-xs font-medium text-muted-foreground mb-1.5">Notes du devis</Label>
