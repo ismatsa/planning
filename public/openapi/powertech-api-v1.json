@@ -3,7 +3,7 @@
   "info": {
     "title": "PowerTech API v1",
     "version": "1.0.0",
-    "description": "API sécurisée et auditée permettant à un assistant opérationnel externe autorisé de\nconsulter, créer et modifier les demandes de devis, rendez-vous, clients et véhicules PowerTech.\n\n## Authentification\nToutes les routes (sauf `/health`) exigent une clé API :\n`Authorization: Bearer pt_xxx`. La clé n'est jamais journalisée.\nChaque clé porte des **scopes** ; un scope manquant renvoie `403 SCOPE_INSUFFISANT`.\n\n## Conventions\n- Réponses : `{ \"data\": ... }` (+ `{ \"meta\": { count, limit, offset } }` pour les listes).\n- Erreurs : `{ \"error\": { code, message, details, request_id } }`.\n- **Simulation** : ajoutez `?dry_run=true` (ou `\"dry_run\": true` dans le corps) sur toute\n  écriture pour obtenir un aperçu sans persistance.\n- **Idempotence** : en-tête `Idempotency-Key` sur les `POST` ; la réponse initiale est rejouée.\n- **Concurrence optimiste** : tout `PATCH` doit inclure le `updated_at` (ou `etag`) lu\n  précédemment, sinon `400 CONTROLE_CONCURRENCE_REQUIS` / `409 MODIFICATION_CONCURRENTE`.\n- **Débit** : 120 requêtes / minute par clé et par IP (`429 LIMITE_DEBIT_DEPASSEE`).\n\n## Opérations interdites (403)\n- Toute suppression (`DELETE`) de données.\n- Annulation d'un rendez-vous (`statut: \"annule\"`).\n- Changement de propriétaire d'un véhicule (`client_id` en `PATCH /vehicles/{id}`).\n- Envoi / validation / refus / annulation d'un devis, et modification d'un devis\n  déjà envoyé, validé, refusé ou annulé.\n",
+    "description": "API sécurisée et auditée permettant à un assistant opérationnel externe autorisé de\nconsulter, créer et modifier les demandes de devis, rendez-vous, clients et véhicules PowerTech.\n\n## Authentification\nToutes les routes (sauf `/health`) exigent une clé API :\n`Authorization: Bearer pt_xxx`. La clé n'est jamais journalisée.\nChaque clé porte des **scopes** ; un scope manquant renvoie `403 SCOPE_INSUFFISANT`.\n\n## Conventions\n- Réponses : `{ \"data\": ... }` (+ `{ \"meta\": { count, limit, offset } }` pour les listes).\n- Erreurs : `{ \"error\": { code, message, details, request_id } }`.\n- **Simulation** : ajoutez `?dry_run=true` (ou `\"dry_run\": true` dans le corps) sur toute\n  écriture pour obtenir un aperçu sans persistance.\n- **Idempotence** : en-tête `Idempotency-Key` sur les `POST` ; la réponse initiale est rejouée.\n- **Concurrence optimiste** : tout `PATCH` doit inclure le `updated_at` (ou `etag`) lu\n  précédemment, sinon `400 CONTROLE_CONCURRENCE_REQUIS` / `409 MODIFICATION_CONCURRENTE`.\n- **Débit** : 120 requêtes / minute par clé et par IP (`429 LIMITE_DEBIT_DEPASSEE`).\n\n## Opérations interdites (403)\n- Toute suppression (`DELETE`) de données.\n- Annulation d'un rendez-vous (`statut: \"annule\"`).\n- Changement de propriétaire d'un véhicule via `PATCH /vehicles/{id}` (`client_id`) :\n  utiliser `POST /vehicles/{id}/transfer`, qui préserve l'historique.\n\n- Envoi / validation / refus / annulation d'un devis, et modification d'un devis\n  déjà envoyé, validé, refusé ou annulé.\n",
     "contact": {
       "name": "PowerTech"
     }
@@ -845,6 +845,111 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/transfer": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Véhicules"
+        ],
+        "summary": "Transférer un véhicule à un nouveau propriétaire",
+        "description": "Scope requis : `vehicles:write`. `updated_at` (ou `etag`) du véhicule obligatoire.\nLa période de propriété en cours est clôturée à `date_debut` et une nouvelle période\nest ouverte : l'historique n'est jamais supprimé. Le VIN, les rendez-vous, devis et\nentretiens restent attachés au véhicule.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DryRun"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "client_id",
+                  "updated_at"
+                ],
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Nouveau propriétaire (client actif)."
+                  },
+                  "motif": {
+                    "type": "string",
+                    "enum": [
+                      "achat",
+                      "vente",
+                      "transfert",
+                      "autre"
+                    ],
+                    "default": "transfert"
+                  },
+                  "date_debut": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Date d'effet du transfert (par défaut maintenant)."
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Valeur lue précédemment sur le véhicule (concurrence optimiste)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfert effectué (ou aperçu si `dry_run`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "vehicule": {
+                          "$ref": "#/components/schemas/Vehicule"
+                        },
+                        "proprietaire_actuel_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "motif": {
+                          "type": "string"
+                        },
+                        "date_debut": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
           }
         }
       }
