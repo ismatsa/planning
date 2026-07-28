@@ -43,7 +43,16 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   client?: Client | null;
   onSaved?: (client: Client) => void;
+  /** Pré-remplissage lors d'une création rapide depuis un formulaire opérationnel */
+  defaultValues?: {
+    nom?: string;
+    prenom?: string;
+    raisonSociale?: string;
+    telephone?: string;
+    email?: string;
+  };
 }
+
 
 export default function ClientFormDialog({ open, onOpenChange, client, onSaved }: Props) {
   const { crm } = useStore();
