@@ -190,6 +190,7 @@ export default function ApiIntegrations() {
         <TabsList>
           <TabsTrigger value="cles">Clés API</TabsTrigger>
           <TabsTrigger value="audit">Journal d'audit</TabsTrigger>
+          <TabsTrigger value="doc">Documentation API</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cles" className="mt-4">
