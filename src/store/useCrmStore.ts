@@ -12,6 +12,7 @@ function mapClient(row: any): Client {
     nom: row.nom || undefined,
     prenom: row.prenom || undefined,
     raisonSociale: row.raison_sociale || undefined,
+    ice: row.ice || undefined,
     telephone: row.telephone,
     telephoneSecondaire: row.telephone_secondaire || undefined,
     email: row.email || undefined,
@@ -31,6 +32,7 @@ function clientToRow(c: Partial<Client>) {
   if (c.nom !== undefined) row.nom = c.nom || null;
   if (c.prenom !== undefined) row.prenom = c.prenom || null;
   if (c.raisonSociale !== undefined) row.raison_sociale = c.raisonSociale || null;
+  if (c.ice !== undefined) row.ice = c.ice || null;
   if (c.telephone !== undefined) row.telephone = c.telephone;
   if (c.telephoneSecondaire !== undefined) row.telephone_secondaire = c.telephoneSecondaire || null;
   if (c.email !== undefined) row.email = c.email || null;

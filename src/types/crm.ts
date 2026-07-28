@@ -59,6 +59,7 @@ export interface Client {
   nom?: string;
   prenom?: string;
   raisonSociale?: string;
+  ice?: string;
   telephone: string;
   telephoneSecondaire?: string;
   email?: string;

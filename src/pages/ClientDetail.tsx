@@ -136,6 +136,7 @@ export default function ClientDetail() {
                   )}
                 </div>
                 {client.telephoneSecondaire && <div>{parsePhone(client.telephoneSecondaire).number}</div>}
+                {client.typeClient === 'societe' && client.ice && <div>ICE : {client.ice}</div>}
                 {client.email && <div>{client.email}</div>}
                 {(client.adresse || client.ville) && (
                   <div>{[client.adresse, client.ville].filter(Boolean).join(', ')}</div>
