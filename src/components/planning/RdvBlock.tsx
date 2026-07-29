@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { RendezVous, StatutRdv, STATUT_LABELS } from '@/types';
 import { format } from 'date-fns';
-import { parsePhone } from '@/components/ui/phone-input';
 import { useStore } from '@/store/StoreContext';
 import { CheckSquare } from 'lucide-react';
 import { isUnresolved } from '@/lib/planning';
@@ -25,15 +24,34 @@ const statusDot: Record<StatutRdv, string> = {
 };
 
 export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConflict, isResizing }: Props) {
-  const { postes, metiers } = useStore();
+  const { postes, metiers, crm } = useStore();
   const { user } = useAuth();
   const poste = postes.find(p => p.id === rdv.posteId);
   const metier = metiers.find(m => m.id === poste?.metierId);
   const isOwner = rdv.createdBy === user?.id;
 
+  // Résolution via relations CRM, fallback sur les champs historiques
+  const client = rdv.clientId ? crm.clients.find(c => c.id === rdv.clientId) : undefined;
+  const vehicule = rdv.vehiculeId ? crm.vehicules.find(v => v.id === rdv.vehiculeId) : undefined;
+
+  const clientLabel =
+    (client
+      ? (client.typeClient === 'societe'
+          ? client.raisonSociale
+          : [client.prenom, client.nom].filter(Boolean).join(' '))
+      : rdv.clientNom) || 'Non renseigné';
+
+  const vehiculeLabel =
+    (vehicule
+      ? [vehicule.marque, vehicule.modele].filter(Boolean).join(' ')
+      : [rdv.marque, rdv.modele].filter(Boolean).join(' ')) || 'Non renseigné';
+
+  const prestation = (rdv.notes || '').split('\n')[0].trim();
+
   const isNoShow = rdv.statut === 'noshow';
   const isTermine = rdv.statut === 'termine';
   const unresolved = isUnresolved(rdv.debut, rdv.fin, rdv.statut);
+
 
   const bgColor = hasConflict
     ? 'hsl(var(--destructive))'
@@ -104,22 +122,26 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
         style={{ ...visualStyle, backgroundColor: bgColor, color: textColor }}
-        className="rounded-md px-3 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer h-full
+        className="rounded-md px-2 py-0.5 text-left text-[10px] leading-[1.15] overflow-hidden cursor-pointer h-full
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
-          flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in w-full"
+          flex flex-col justify-center gap-px whitespace-nowrap shadow-sm animate-fade-in w-full"
       >
-        {isTermine && <CheckSquare className="h-3 w-3 shrink-0" />}
-        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
-        <span className="font-bold">
-          {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
+        <span className="flex items-center gap-1 shrink-0">
+          {isTermine && <CheckSquare className="h-2.5 w-2.5 shrink-0" />}
+          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
+          <span className="font-bold truncate">
+            {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
+          </span>
         </span>
-        {isOwner && rdv.clientNom && (
-          <span className="font-semibold truncate opacity-90">{rdv.clientNom}</span>
+        {isOwner && (
+          <span className="font-semibold truncate opacity-95">{clientLabel}</span>
         )}
-        {(rdv.marque || rdv.modele) && (
-          <span className="opacity-75 truncate">{[rdv.marque, rdv.modele].filter(Boolean).join(' ')}</span>
+        <span className="truncate opacity-80">{vehiculeLabel}</span>
+        {isOwner && prestation && (
+          <span className="truncate opacity-70 italic">{prestation}</span>
         )}
       </button>
+
 
       {/* Resize handles - visible on hover */}
       {onResizeStart && hovered && !isResizing && (
@@ -174,25 +196,23 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
             <div className="text-muted-foreground">{metier.nom} · {poste.nom}</div>
           )}
 
-          {isOwner && rdv.clientNom && (
+          {isOwner && (
             <div className="pt-1 border-t border-border">
-              <span className="font-semibold">{rdv.clientNom}</span>
-              {rdv.clientTel && <span className="ml-2 text-muted-foreground">{parsePhone(rdv.clientTel).number || rdv.clientTel}</span>}
+              <span className="font-semibold">Client : </span>
+              <span>{clientLabel}</span>
             </div>
           )}
 
-          {(rdv.marque || rdv.modele || rdv.annee) && (
-            <div className="text-muted-foreground">
-              {[rdv.marque, rdv.modele, rdv.annee].filter(Boolean).join(' · ')}
-            </div>
-          )}
+          <div className="text-muted-foreground">
+            <span className="font-semibold text-foreground">Véhicule : </span>
+            {[vehiculeLabel, vehicule?.annee ?? rdv.annee, vehicule?.immatriculation].filter(Boolean).join(' · ')}
+          </div>
 
-          {rdv.vin && (
-            <div className="text-muted-foreground font-mono text-[10px]">VIN : {rdv.vin}</div>
-          )}
 
           {isOwner && rdv.notes && (
-            <div className="pt-1 border-t border-border text-muted-foreground italic">{rdv.notes}</div>
+            <div className="pt-1 border-t border-border text-muted-foreground italic">
+              <span className="font-semibold not-italic text-foreground">Prestation : </span>{rdv.notes}
+            </div>
           )}
         </div>
       )}
