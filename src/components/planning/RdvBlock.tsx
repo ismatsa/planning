@@ -37,16 +37,17 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const clientLabel =
     (client
       ? (client.typeClient === 'societe'
-          ? client.raisonSociale
+          ? (client.raisonSociale || [client.prenom, client.nom].filter(Boolean).join(' '))
           : [client.prenom, client.nom].filter(Boolean).join(' '))
-      : rdv.clientNom) || 'Non renseigné';
+      : rdv.clientNom) || 'Client non renseigné';
 
   const vehiculeLabel =
     (vehicule
       ? [vehicule.marque, vehicule.modele].filter(Boolean).join(' ')
-      : [rdv.marque, rdv.modele].filter(Boolean).join(' ')) || 'Non renseigné';
+      : [rdv.marque, rdv.modele].filter(Boolean).join(' ')) || 'Véhicule non renseigné';
 
-  const prestation = (rdv.notes || '').split('\n')[0].trim();
+  const prestation = (rdv.notes || '').split('\n')[0].trim() || 'Prestation non renseignée';
+
 
   const isNoShow = rdv.statut === 'noshow';
   const isTermine = rdv.statut === 'termine';
