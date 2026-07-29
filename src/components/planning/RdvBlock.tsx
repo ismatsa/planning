@@ -123,22 +123,26 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
         style={{ ...visualStyle, backgroundColor: bgColor, color: textColor }}
-        className="rounded-md px-3 py-0.5 text-left text-[11px] overflow-hidden cursor-pointer h-full
+        className="rounded-md px-2 py-0.5 text-left text-[10px] leading-[1.15] overflow-hidden cursor-pointer h-full
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
-          flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in w-full"
+          flex flex-col justify-center gap-px whitespace-nowrap shadow-sm animate-fade-in w-full"
       >
-        {isTermine && <CheckSquare className="h-3 w-3 shrink-0" />}
-        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
-        <span className="font-bold">
-          {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
+        <span className="flex items-center gap-1 shrink-0">
+          {isTermine && <CheckSquare className="h-2.5 w-2.5 shrink-0" />}
+          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
+          <span className="font-bold truncate">
+            {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
+          </span>
         </span>
-        {isOwner && rdv.clientNom && (
-          <span className="font-semibold truncate opacity-90">{rdv.clientNom}</span>
+        {isOwner && (
+          <span className="font-semibold truncate opacity-95">{clientLabel}</span>
         )}
-        {(rdv.marque || rdv.modele) && (
-          <span className="opacity-75 truncate">{[rdv.marque, rdv.modele].filter(Boolean).join(' ')}</span>
+        <span className="truncate opacity-80">{vehiculeLabel}</span>
+        {isOwner && prestation && (
+          <span className="truncate opacity-70 italic">{prestation}</span>
         )}
       </button>
+
 
       {/* Resize handles - visible on hover */}
       {onResizeStart && hovered && !isResizing && (
