@@ -209,24 +209,20 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
             <div className="text-muted-foreground">{metier.nom} · {poste.nom}</div>
           )}
 
-          {isOwner && (
-            <div className="pt-1 border-t border-border">
-              <span className="font-semibold">Client : </span>
-              <span>{clientLabel}</span>
-            </div>
-          )}
+          <div className="pt-1 border-t border-border">
+            <span className="font-semibold">Client : </span>
+            <span>{clientLabel}</span>
+          </div>
 
           <div className="text-muted-foreground">
             <span className="font-semibold text-foreground">Véhicule : </span>
             {[vehiculeLabel, vehicule?.annee ?? rdv.annee, vehicule?.immatriculation].filter(Boolean).join(' · ')}
           </div>
 
+          <div className="pt-1 border-t border-border text-muted-foreground italic">
+            <span className="font-semibold not-italic text-foreground">Prestation : </span>{rdv.notes || 'Prestation non renseignée'}
+          </div>
 
-          {isOwner && rdv.notes && (
-            <div className="pt-1 border-t border-border text-muted-foreground italic">
-              <span className="font-semibold not-italic text-foreground">Prestation : </span>{rdv.notes}
-            </div>
-          )}
         </div>
       )}
     </div>
