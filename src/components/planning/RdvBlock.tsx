@@ -210,7 +210,9 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
 
 
           {isOwner && rdv.notes && (
-            <div className="pt-1 border-t border-border text-muted-foreground italic">{rdv.notes}</div>
+            <div className="pt-1 border-t border-border text-muted-foreground italic">
+              <span className="font-semibold not-italic text-foreground">Prestation : </span>{rdv.notes}
+            </div>
           )}
         </div>
       )}
