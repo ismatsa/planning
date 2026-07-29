@@ -104,6 +104,8 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const debutDate = new Date(rdv.debut);
   const finDate = new Date(rdv.fin);
   const isMultiDay = format(debutDate, 'yyyy-MM-dd') !== format(finDate, 'yyyy-MM-dd');
+  const isLong = durationMin >= 120;
+
 
   const { position: pos, top, bottom, left, right, width, height, ...visualStyle } = style || {} as any;
   const wrapperStyle: React.CSSProperties = { position: pos, top, bottom, left, right, width, height };
@@ -122,25 +124,36 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); onClick(rdv); }}
         style={{ ...visualStyle, backgroundColor: bgColor, color: textColor }}
-        className="rounded-md px-2 py-0.5 text-left text-[10px] leading-[1.15] overflow-hidden cursor-pointer h-full
+        title={[
+          `${format(debutDate, 'HH:mm')} – ${format(finDate, 'HH:mm')} · ${STATUT_LABELS[rdv.statut]}`,
+          isOwner ? clientLabel : null,
+          vehiculeLabel,
+          isOwner && prestation ? prestation : null,
+        ].filter(Boolean).join('\n')}
+        className={`rounded-md px-2 py-1 text-left leading-[1.2] overflow-hidden cursor-pointer h-full
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
-          flex flex-col justify-center gap-px whitespace-nowrap shadow-sm animate-fade-in w-full"
+          flex flex-col justify-center whitespace-nowrap shadow-sm animate-fade-in w-full
+          ${isLong ? 'gap-0.5 text-[12px]' : 'gap-px text-[11px]'}`}
       >
-        <span className="flex items-center gap-1 shrink-0">
-          {isTermine && <CheckSquare className="h-2.5 w-2.5 shrink-0" />}
-          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
-          <span className="font-bold truncate">
-            {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
+        {isLong && (
+          <span className="flex items-center gap-1 shrink-0">
+            {isTermine && <CheckSquare className="h-3 w-3 shrink-0" />}
+            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
+            <span className="font-semibold truncate">
+              {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
+            </span>
+            <span className="truncate opacity-80">{STATUT_LABELS[rdv.statut]}</span>
           </span>
-        </span>
-        {isOwner && (
-          <span className="font-semibold truncate opacity-95">{clientLabel}</span>
         )}
-        <span className="truncate opacity-80">{vehiculeLabel}</span>
-        {isOwner && prestation && (
-          <span className="truncate opacity-70 italic">{prestation}</span>
+        {isOwner && (
+          <span className={`truncate ${isLong ? 'text-[13px] font-bold' : 'font-bold'}`}>{clientLabel}</span>
+        )}
+        <span className="truncate font-medium opacity-95">{vehiculeLabel}</span>
+        {isLong && isOwner && prestation && (
+          <span className="truncate opacity-90">{prestation}</span>
         )}
       </button>
+
 
 
       {/* Resize handles - visible on hover */}
