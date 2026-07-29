@@ -28,7 +28,6 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const { user } = useAuth();
   const poste = postes.find(p => p.id === rdv.posteId);
   const metier = metiers.find(m => m.id === poste?.metierId);
-  const isOwner = rdv.createdBy === user?.id;
 
   // Résolution via relations CRM, fallback sur les champs historiques
   const client = rdv.clientId ? crm.clients.find(c => c.id === rdv.clientId) : undefined;
@@ -37,16 +36,17 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const clientLabel =
     (client
       ? (client.typeClient === 'societe'
-          ? client.raisonSociale
+          ? (client.raisonSociale || [client.prenom, client.nom].filter(Boolean).join(' '))
           : [client.prenom, client.nom].filter(Boolean).join(' '))
-      : rdv.clientNom) || 'Non renseigné';
+      : rdv.clientNom) || 'Client non renseigné';
 
   const vehiculeLabel =
     (vehicule
       ? [vehicule.marque, vehicule.modele].filter(Boolean).join(' ')
-      : [rdv.marque, rdv.modele].filter(Boolean).join(' ')) || 'Non renseigné';
+      : [rdv.marque, rdv.modele].filter(Boolean).join(' ')) || 'Véhicule non renseigné';
 
-  const prestation = (rdv.notes || '').split('\n')[0].trim();
+  const prestation = (rdv.notes || '').split('\n')[0].trim() || 'Prestation non renseignée';
+
 
   const isNoShow = rdv.statut === 'noshow';
   const isTermine = rdv.statut === 'termine';
@@ -126,10 +126,10 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
         style={{ ...visualStyle, backgroundColor: bgColor, color: textColor }}
         title={[
           `${format(debutDate, 'HH:mm')} – ${format(finDate, 'HH:mm')} · ${STATUT_LABELS[rdv.statut]}`,
-          isOwner ? clientLabel : null,
+          clientLabel,
           vehiculeLabel,
-          isOwner && prestation ? prestation : null,
-        ].filter(Boolean).join('\n')}
+          prestation,
+        ].join('\n')}
         className={`rounded-md px-2 py-1 text-left leading-[1.2] overflow-hidden cursor-pointer h-full
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
           flex flex-col justify-center whitespace-nowrap shadow-sm animate-fade-in w-full
@@ -145,13 +145,12 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
             <span className="truncate opacity-80">{STATUT_LABELS[rdv.statut]}</span>
           </span>
         )}
-        {isOwner && (
-          <span className={`truncate ${isLong ? 'text-[13px] font-bold' : 'font-bold'}`}>{clientLabel}</span>
-        )}
+        <span className={`truncate ${isLong ? 'text-[13px] font-bold' : 'font-bold'}`}>{clientLabel}</span>
         <span className="truncate font-medium opacity-95">{vehiculeLabel}</span>
-        {isLong && isOwner && prestation && (
+        {isLong && (
           <span className="truncate opacity-90">{prestation}</span>
         )}
+
       </button>
 
 
@@ -209,24 +208,20 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
             <div className="text-muted-foreground">{metier.nom} · {poste.nom}</div>
           )}
 
-          {isOwner && (
-            <div className="pt-1 border-t border-border">
-              <span className="font-semibold">Client : </span>
-              <span>{clientLabel}</span>
-            </div>
-          )}
+          <div className="pt-1 border-t border-border">
+            <span className="font-semibold">Client : </span>
+            <span>{clientLabel}</span>
+          </div>
 
           <div className="text-muted-foreground">
             <span className="font-semibold text-foreground">Véhicule : </span>
             {[vehiculeLabel, vehicule?.annee ?? rdv.annee, vehicule?.immatriculation].filter(Boolean).join(' · ')}
           </div>
 
+          <div className="pt-1 border-t border-border text-muted-foreground italic">
+            <span className="font-semibold not-italic text-foreground">Prestation : </span>{rdv.notes || 'Prestation non renseignée'}
+          </div>
 
-          {isOwner && rdv.notes && (
-            <div className="pt-1 border-t border-border text-muted-foreground italic">
-              <span className="font-semibold not-italic text-foreground">Prestation : </span>{rdv.notes}
-            </div>
-          )}
         </div>
       )}
     </div>
