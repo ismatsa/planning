@@ -25,15 +25,34 @@ const statusDot: Record<StatutRdv, string> = {
 };
 
 export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConflict, isResizing }: Props) {
-  const { postes, metiers } = useStore();
+  const { postes, metiers, crm } = useStore();
   const { user } = useAuth();
   const poste = postes.find(p => p.id === rdv.posteId);
   const metier = metiers.find(m => m.id === poste?.metierId);
   const isOwner = rdv.createdBy === user?.id;
 
+  // Résolution via relations CRM, fallback sur les champs historiques
+  const client = rdv.clientId ? crm.clients.find(c => c.id === rdv.clientId) : undefined;
+  const vehicule = rdv.vehiculeId ? crm.vehicules.find(v => v.id === rdv.vehiculeId) : undefined;
+
+  const clientLabel =
+    (client
+      ? (client.typeClient === 'societe'
+          ? client.raisonSociale
+          : [client.prenom, client.nom].filter(Boolean).join(' '))
+      : rdv.clientNom) || 'Non renseigné';
+
+  const vehiculeLabel =
+    (vehicule
+      ? [vehicule.marque, vehicule.modele].filter(Boolean).join(' ')
+      : [rdv.marque, rdv.modele].filter(Boolean).join(' ')) || 'Non renseigné';
+
+  const prestation = (rdv.notes || '').split('\n')[0].trim();
+
   const isNoShow = rdv.statut === 'noshow';
   const isTermine = rdv.statut === 'termine';
   const unresolved = isUnresolved(rdv.debut, rdv.fin, rdv.statut);
+
 
   const bgColor = hasConflict
     ? 'hsl(var(--destructive))'
