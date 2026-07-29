@@ -77,6 +77,24 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState<'above' | 'below'>('above');
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [blockWidth, setBlockWidth] = useState(0);
+
+  // Mesure réelle du bloc (aucune largeur déduite de la durée)
+  useEffect(() => {
+    const el = buttonRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setBlockWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    setBlockWidth(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
+  // Priorité d'affichage : client > véhicule > prestation
+  const showVehicule = blockWidth === 0 || blockWidth >= 150;
+  const showPrestation = blockWidth >= 260;
+  const showTime = blockWidth >= 200;
 
   const computePosition = useCallback(() => {
     if (!buttonRef.current) return;
