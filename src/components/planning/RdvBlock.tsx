@@ -148,28 +148,39 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
           vehiculeLabel,
           prestation,
         ].join('\n')}
-        className={`rounded-md px-2 py-1 text-left leading-[1.2] overflow-hidden cursor-pointer h-full
+        className="rounded-md px-2 py-1 text-left leading-[1.2] overflow-hidden cursor-pointer h-full
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
-          flex flex-col justify-center whitespace-nowrap shadow-sm animate-fade-in w-full
-          ${isLong ? 'gap-0.5 text-[12px]' : 'gap-px text-[11px]'}`}
+          flex items-center gap-1.5 whitespace-nowrap shadow-sm animate-fade-in w-full text-[11px]"
       >
-        {isLong && (
-          <span className="flex items-center gap-1 shrink-0">
-            {isTermine && <CheckSquare className="h-3 w-3 shrink-0" />}
-            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
-            <span className="font-semibold truncate">
+        {/* Zone compacte horaire + statut */}
+        <span className="flex items-center gap-1 shrink-0">
+          {isTermine && <CheckSquare className="h-3 w-3 shrink-0" />}
+          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot[rdv.statut]}`} />
+          {showTime && (
+            <span className="font-semibold">
               {format(debutDate, 'HH:mm')}–{format(finDate, 'HH:mm')}
             </span>
-            <span className="truncate opacity-80">{STATUT_LABELS[rdv.statut]}</span>
-          </span>
-        )}
-        <span className={`truncate ${isLong ? 'text-[13px] font-bold' : 'font-bold'}`}>{clientLabel}</span>
-        <span className="truncate font-medium opacity-95">{vehiculeLabel}</span>
-        {isLong && (
-          <span className="truncate opacity-90">{prestation}</span>
-        )}
+          )}
+        </span>
 
+        {/* Ligne unique : prénom nom — voiture — prestation */}
+        <span className="flex-1 min-w-0 flex items-baseline gap-1 overflow-hidden whitespace-nowrap">
+          <span className="font-bold truncate shrink-[1]">{clientLabel}</span>
+          {showVehicule && (
+            <>
+              <span className="opacity-60 shrink-0">—</span>
+              <span className="font-medium opacity-95 truncate shrink-[2]">{vehiculeLabel}</span>
+            </>
+          )}
+          {showPrestation && (
+            <>
+              <span className="opacity-60 shrink-0">—</span>
+              <span className="opacity-90 truncate shrink-[3]">{prestation}</span>
+            </>
+          )}
+        </span>
       </button>
+
 
 
 
