@@ -197,22 +197,18 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
             <div className="text-muted-foreground">{metier.nom} · {poste.nom}</div>
           )}
 
-          {isOwner && rdv.clientNom && (
+          {isOwner && (
             <div className="pt-1 border-t border-border">
-              <span className="font-semibold">{rdv.clientNom}</span>
-              {rdv.clientTel && <span className="ml-2 text-muted-foreground">{parsePhone(rdv.clientTel).number || rdv.clientTel}</span>}
+              <span className="font-semibold">Client : </span>
+              <span>{clientLabel}</span>
             </div>
           )}
 
-          {(rdv.marque || rdv.modele || rdv.annee) && (
-            <div className="text-muted-foreground">
-              {[rdv.marque, rdv.modele, rdv.annee].filter(Boolean).join(' · ')}
-            </div>
-          )}
+          <div className="text-muted-foreground">
+            <span className="font-semibold text-foreground">Véhicule : </span>
+            {[vehiculeLabel, vehicule?.annee ?? rdv.annee, vehicule?.immatriculation].filter(Boolean).join(' · ')}
+          </div>
 
-          {rdv.vin && (
-            <div className="text-muted-foreground font-mono text-[10px]">VIN : {rdv.vin}</div>
-          )}
 
           {isOwner && rdv.notes && (
             <div className="pt-1 border-t border-border text-muted-foreground italic">{rdv.notes}</div>
