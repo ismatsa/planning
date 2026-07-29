@@ -127,10 +127,10 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
         style={{ ...visualStyle, backgroundColor: bgColor, color: textColor }}
         title={[
           `${format(debutDate, 'HH:mm')} – ${format(finDate, 'HH:mm')} · ${STATUT_LABELS[rdv.statut]}`,
-          isOwner ? clientLabel : null,
+          clientLabel,
           vehiculeLabel,
-          isOwner && prestation ? prestation : null,
-        ].filter(Boolean).join('\n')}
+          prestation,
+        ].join('\n')}
         className={`rounded-md px-2 py-1 text-left leading-[1.2] overflow-hidden cursor-pointer h-full
           transition-shadow hover:shadow-lg hover:z-10 border border-transparent
           flex flex-col justify-center whitespace-nowrap shadow-sm animate-fade-in w-full
@@ -146,13 +146,12 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
             <span className="truncate opacity-80">{STATUT_LABELS[rdv.statut]}</span>
           </span>
         )}
-        {isOwner && (
-          <span className={`truncate ${isLong ? 'text-[13px] font-bold' : 'font-bold'}`}>{clientLabel}</span>
-        )}
+        <span className={`truncate ${isLong ? 'text-[13px] font-bold' : 'font-bold'}`}>{clientLabel}</span>
         <span className="truncate font-medium opacity-95">{vehiculeLabel}</span>
-        {isLong && isOwner && prestation && (
+        {isLong && (
           <span className="truncate opacity-90">{prestation}</span>
         )}
+
       </button>
 
 
