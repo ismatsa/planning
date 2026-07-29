@@ -104,6 +104,8 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const debutDate = new Date(rdv.debut);
   const finDate = new Date(rdv.fin);
   const isMultiDay = format(debutDate, 'yyyy-MM-dd') !== format(finDate, 'yyyy-MM-dd');
+  const isLong = durationMin >= 120;
+
 
   const { position: pos, top, bottom, left, right, width, height, ...visualStyle } = style || {} as any;
   const wrapperStyle: React.CSSProperties = { position: pos, top, bottom, left, right, width, height };
