@@ -28,7 +28,6 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const { user } = useAuth();
   const poste = postes.find(p => p.id === rdv.posteId);
   const metier = metiers.find(m => m.id === poste?.metierId);
-  const isOwner = rdv.createdBy === user?.id;
 
   // Résolution via relations CRM, fallback sur les champs historiques
   const client = rdv.clientId ? crm.clients.find(c => c.id === rdv.clientId) : undefined;
