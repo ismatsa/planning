@@ -47,12 +47,16 @@ function ResultSummary({ result }: { result: any }) {
   const conflicts: any[] = Array.isArray(result.conflicts) ? result.conflicts : [];
   const slots: any[] = Array.isArray(result.suggested_slots) ? result.suggested_slots : [];
 
-  if (!changes.length && !missing.length && !warnings.length && !conflicts.length && !slots.length && !result.planning_impact) {
+  if (!changes.length && !missing.length && !warnings.length && !conflicts.length && !slots.length
+      && !result.planning_impact && !result.action) {
     return null;
   }
 
   return (
     <div className="mt-2 space-y-2 rounded-md border border-border bg-muted/40 p-2 text-xs">
+      {result.action && (
+        <p><span className="font-semibold">Action :</span> {String(result.action)}</p>
+      )}
       {changes.map((c, i) => (
         <div key={i} className="space-y-0.5">
           <p className="font-semibold">{c.label ?? `${c.resource ?? ''} ${c.action ?? ''}`.trim()}</p>
@@ -69,6 +73,7 @@ function ResultSummary({ result }: { result: any }) {
       {result.planning_impact && (
         <p><span className="font-semibold">Impact planning :</span> {String(result.planning_impact)}</p>
       )}
+
       {conflicts.length > 0 && (
         <div>
           <p className="font-semibold text-destructive">Conflit détecté</p>
@@ -97,7 +102,9 @@ function ResultSummary({ result }: { result: any }) {
   );
 }
 
-function MessageBubble({ message }: { message: AssistantMessage }) {
+const PLACEHOLDERS = ['Analyse en cours…', 'Analyse en cours...', 'Action réalisée.', 'Mise à jour'];
+
+export function MessageBubble({ message }: { message: AssistantMessage }) {
   const isUser = message.role === 'user';
   if (message.role === 'system') {
     return (
@@ -106,6 +113,11 @@ function MessageBubble({ message }: { message: AssistantMessage }) {
       </p>
     );
   }
+
+  const content = message.content?.trim() ?? '';
+  const isPlaceholder = !isUser && PLACEHOLDERS.includes(content);
+  const summary = !isUser && message.result?.summary ? String(message.result.summary) : null;
+
   return (
     <div className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}>
       {!isUser && message.status && <StatusPill status={message.status} />}
@@ -113,9 +125,13 @@ function MessageBubble({ message }: { message: AssistantMessage }) {
         className={cn(
           'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
           isUser ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-foreground',
+          isPlaceholder && 'italic text-muted-foreground',
         )}
       >
-        {message.content}
+        {content}
+        {summary && content !== summary && (
+          <p className="mt-1 text-xs text-muted-foreground">{summary}</p>
+        )}
         {message.attachments.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {message.attachments.map((a) => (
@@ -138,6 +154,7 @@ function MessageBubble({ message }: { message: AssistantMessage }) {
   );
 }
 
+
 export default function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
@@ -148,6 +165,9 @@ export default function AssistantWidget() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { messages, send, sending, activeStatus, error } = useAssistant(open);
+  const lastAssistantStatus = [...messages].reverse().find(m => m.role === 'assistant')?.status ?? null;
+
+
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -212,9 +232,10 @@ export default function AssistantWidget() {
                 {QUEUE_NOTICE}
               </p>
             )}
-            {activeStatus && activeStatus !== 'queued' && (
+            {activeStatus && activeStatus !== 'queued' && lastAssistantStatus !== activeStatus && (
               <div className="flex justify-start"><StatusPill status={activeStatus} /></div>
             )}
+
             {error && <p className="text-center text-xs text-destructive">{error}</p>}
             <div ref={bottomRef} />
           </div>

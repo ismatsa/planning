@@ -106,19 +106,34 @@ export function useAssistant(enabled: boolean) {
       if (!cancelled) setMessages((data ?? []).map(mapMessage));
     })();
 
+    const upsert = (row: any) => {
+      const msg = mapMessage(row);
+      setMessages(prev => {
+        const idx = prev.findIndex(m => m.id === msg.id);
+        if (idx === -1) return [...prev, msg];
+        const next = [...prev];
+        next[idx] = msg;
+        return next;
+      });
+      if (msg.role === 'assistant' && msg.status) {
+        setActiveStatus(msg.status as AssistantStatus);
+      }
+    };
+
     const channel = supabase
       .channel(`assistant-${conversationId}`)
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'assistant_messages',
         filter: `conversation_id=eq.${conversationId}`,
       }, (payload) => {
-        const msg = mapMessage(payload.new);
-        setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
-        if (msg.role === 'assistant' && msg.status) {
-          setActiveStatus(msg.status as AssistantStatus);
+        if (payload.eventType === 'DELETE') {
+          const id = (payload.old as any)?.id;
+          if (id) setMessages(prev => prev.filter(m => m.id !== id));
+          return;
         }
+        upsert(payload.new);
       })
       .subscribe();
 
@@ -127,6 +142,7 @@ export function useAssistant(enabled: boolean) {
       supabase.removeChannel(channel);
     };
   }, [conversationId]);
+
 
   // Suivi du job de l'utilisateur (Realtime)
   useEffect(() => {
@@ -139,11 +155,31 @@ export function useAssistant(enabled: boolean) {
         schema: 'public',
         table: 'hermes_jobs',
         filter: `user_id=eq.${uid}`,
-      }, (payload: any) => {
-        if (payload.new?.conversation_id === conversationId) {
-          setActiveStatus(payload.new.status as AssistantStatus);
+      }, async (payload: any) => {
+        if (payload.new?.conversation_id !== conversationId) return;
+        const status = payload.new.status as AssistantStatus;
+        setActiveStatus(status);
+        // Filet de sécurité : on relit le message assistant lié au job
+        if (status === 'completed' || status === 'failed' || status === 'needs_information' || status === 'confirmation_required') {
+          const { data } = await supabase
+            .from('assistant_messages')
+            .select('*')
+            .eq('job_id', payload.new.id)
+            .eq('role', 'assistant')
+            .maybeSingle();
+          if (data) {
+            const msg = mapMessage(data);
+            setMessages(prev => {
+              const idx = prev.findIndex(m => m.id === msg.id);
+              if (idx === -1) return [...prev, msg];
+              const next = [...prev];
+              next[idx] = msg;
+              return next;
+            });
+          }
         }
       })
+
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);

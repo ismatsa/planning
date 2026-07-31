@@ -1,6 +1,8 @@
 // Passerelle sécurisée pour le profil Hermes externe (polling sortant).
 // Authentification : header `x-hermes-token` == secret HERMES_GATEWAY_TOKEN.
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { resolveAssistantContent, buildResultPayload, STATUS_LABELS } from './content.ts';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,29 +29,38 @@ function timingSafeEqual(a: string, b: string) {
   return diff === 0;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  processing: 'Analyse en cours',
-  needs_information: 'Information manquante',
-  confirmation_required: 'Confirmation requise',
-  completed: 'Action réalisée',
-  failed: 'Erreur',
-};
-
-async function addAssistantMessage(job: any, content: string, status: string, result?: unknown) {
+// Un seul message assistant par job : créé au premier événement, mis à jour ensuite.
+async function upsertAssistantMessage(job: any, content: string, status: string, result?: unknown) {
   if (!job.conversation_id) return;
-  await admin.from('assistant_messages').insert({
-    conversation_id: job.conversation_id,
-    user_id: job.user_id,
-    role: 'assistant',
-    content,
-    status,
-    job_id: job.id,
-    result: result ?? null,
-  });
+
+  const { data: existing } = await admin
+    .from('assistant_messages')
+    .select('id')
+    .eq('job_id', job.id)
+    .eq('role', 'assistant')
+    .maybeSingle();
+
+  if (existing) {
+    await admin.from('assistant_messages')
+      .update({ content, status, result: result ?? null })
+      .eq('id', existing.id);
+  } else {
+    await admin.from('assistant_messages').insert({
+      conversation_id: job.conversation_id,
+      user_id: job.user_id,
+      role: 'assistant',
+      content,
+      status,
+      job_id: job.id,
+      result: result ?? null,
+    });
+  }
+
   await admin.from('assistant_conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', job.conversation_id);
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -82,7 +93,7 @@ Deno.serve(async (req) => {
       attachments.push({ ...a, signed_url: signed?.signedUrl ?? null });
     }
 
-    await addAssistantMessage(job, 'Analyse en cours…', 'processing');
+    await upsertAssistantMessage(job, STATUS_LABELS.processing, 'processing', { status: 'processing' });
 
     return json({
       job: {
@@ -116,12 +127,9 @@ Deno.serve(async (req) => {
     const { error } = await admin.from('hermes_jobs').update(patch).eq('id', jobId);
     if (error) return json({ error: 'update_failed' }, 500);
 
-    const text = String(body.message ?? STATUS_LABELS[status] ?? 'Mise à jour');
-    await addAssistantMessage({ ...job, status }, text, status, {
-      missing_fields: body.missing_fields ?? [],
-      warnings: body.warnings ?? [],
-      ...(body.result ?? {}),
-    });
+    const text = resolveAssistantContent(body, status);
+    await upsertAssistantMessage({ ...job, status }, text, status, buildResultPayload(body, status));
+
 
     await admin.from('assistant_audit_logs').insert({
       user_id: job.user_id, job_id: jobId, action: `assistant.${status}`,
@@ -139,19 +147,20 @@ Deno.serve(async (req) => {
       return json({ ok: true, status: job.status, duplicate: true });
     }
     const status = body.status === 'failed' ? 'failed' : 'completed';
-    const result = body.result ?? null;
+    const text = resolveAssistantContent(body, status);
+    const result = buildResultPayload(body, status);
 
     const { error } = await admin.from('hermes_jobs').update({
       status,
-      result,
-      warnings: body.warnings ?? [],
-      missing_fields: [],
+      result: { ...result, message: text },
+      warnings: result.warnings ?? [],
+      missing_fields: result.missing_fields ?? [],
       completed_at: new Date().toISOString(),
     }).eq('id', jobId);
     if (error) return json({ error: 'complete_failed' }, 500);
 
-    const text = String(body.message ?? (status === 'completed' ? 'Action réalisée.' : 'Erreur lors du traitement.'));
-    await addAssistantMessage({ ...job, status }, text, status, result);
+    await upsertAssistantMessage({ ...job, status }, text, status, result);
+
 
     const changes = Array.isArray(body.changes) ? body.changes : [];
     if (changes.length === 0) {
