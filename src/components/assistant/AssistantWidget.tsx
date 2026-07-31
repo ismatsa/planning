@@ -181,16 +181,58 @@ export default function AssistantWidget() {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const [hasNew, setHasNew] = useState(false);
 
   const { messages, send, sending, activeStatus, error } = useAssistant(open);
   const lastAssistantStatus = [...messages].reverse().find(m => m.role === 'assistant')?.status ?? null;
 
+  const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior });
+      });
+    });
+    setHasNew(false);
+    setAtBottom(true);
+  };
 
+  const isNearBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
+  // Ouverture : toujours en bas.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, activeStatus]);
+    if (!open) return;
+    setAtBottom(true);
+    setHasNew(false);
+    scrollToBottom('auto');
+  }, [open]);
+
+  // Nouveau message / statut / résumé : suivre uniquement si l'utilisateur est en bas.
+  useEffect(() => {
+    if (!open) return;
+    if (atBottom) scrollToBottom('smooth');
+    else if (messages.length > 0) setHasNew(true);
+  }, [messages.length, messages[messages.length - 1]?.result, activeStatus, open]);
+
+  // Redimensionnement du contenu (images, pièces jointes, résumés).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!open || !el) return;
+    const ro = new ResizeObserver(() => {
+      if (atBottom) el.scrollTop = el.scrollHeight;
+    });
+    Array.from(el.children).forEach(c => ro.observe(c));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, atBottom, messages.length]);
 
   useEffect(() => {
     if (open) textareaRef.current?.focus();
@@ -202,8 +244,10 @@ export default function AssistantWidget() {
     const payloadFiles = files;
     setText('');
     setFiles([]);
+    scrollToBottom('auto');
     await send(payload, payloadFiles, hint);
     setHint('libre');
+    scrollToBottom('smooth');
     textareaRef.current?.focus();
   };
 
@@ -288,27 +332,47 @@ export default function AssistantWidget() {
             </button>
           </header>
 
-          <div className="flex-1 space-y-3 overflow-y-auto p-3">
-            {messages.length === 0 && (
-              <div className="mt-6 text-center text-sm text-muted-foreground">
-                <Bot className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                Décrivez votre demande ou déposez une photo / capture / PDF.<br />
-                Devis brouillon, référence pièce, client, véhicule ou rendez-vous.
-              </div>
-            )}
-            {messages.map(m => <MessageBubble key={m.id} message={m} />)}
-            {activeStatus === 'queued' && (
-              <p className="mx-auto max-w-[90%] rounded-md bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
-                {QUEUE_NOTICE}
-              </p>
-            )}
-            {activeStatus && activeStatus !== 'queued' && activeStatus !== 'completed' && activeStatus !== 'failed' && lastAssistantStatus !== activeStatus && (
-              <div className="flex justify-start"><StatusPill status={activeStatus} /></div>
-            )}
+          <div className="relative flex-1 overflow-hidden">
+            <div
+              ref={scrollRef}
+              onScroll={() => {
+                const near = isNearBottom();
+                setAtBottom(near);
+                if (near) setHasNew(false);
+              }}
+              className="h-full space-y-3 overflow-y-auto p-3"
+            >
+              {messages.length === 0 && (
+                <div className="mt-6 text-center text-sm text-muted-foreground">
+                  <Bot className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                  Décrivez votre demande ou déposez une photo / capture / PDF.<br />
+                  Devis brouillon, référence pièce, client, véhicule ou rendez-vous.
+                </div>
+              )}
+              {messages.map(m => <MessageBubble key={m.id} message={m} />)}
+              {activeStatus === 'queued' && (
+                <p className="mx-auto max-w-[90%] rounded-md bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
+                  {QUEUE_NOTICE}
+                </p>
+              )}
+              {activeStatus && activeStatus !== 'queued' && activeStatus !== 'completed' && activeStatus !== 'failed' && lastAssistantStatus !== activeStatus && (
+                <div className="flex justify-start"><StatusPill status={activeStatus} /></div>
+              )}
 
-            {error && <p className="text-center text-xs text-destructive">{error}</p>}
-            <div ref={bottomRef} />
+              {error && <p className="text-center text-xs text-destructive">{error}</p>}
+              <div ref={bottomRef} />
+            </div>
+
+            {hasNew && !atBottom && (
+              <button
+                onClick={() => scrollToBottom('smooth')}
+                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-foreground shadow-md transition hover:bg-muted"
+              >
+                Nouveaux messages
+              </button>
+            )}
           </div>
+
 
           <div className="border-t border-border p-2">
             {/* Boutons d'actions rapides masqués temporairement */}
