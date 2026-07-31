@@ -147,19 +147,20 @@ Deno.serve(async (req) => {
       return json({ ok: true, status: job.status, duplicate: true });
     }
     const status = body.status === 'failed' ? 'failed' : 'completed';
-    const result = body.result ?? null;
+    const text = resolveAssistantContent(body, status);
+    const result = buildResultPayload(body, status);
 
     const { error } = await admin.from('hermes_jobs').update({
       status,
-      result,
-      warnings: body.warnings ?? [],
-      missing_fields: [],
+      result: { ...result, message: text },
+      warnings: result.warnings ?? [],
+      missing_fields: result.missing_fields ?? [],
       completed_at: new Date().toISOString(),
     }).eq('id', jobId);
     if (error) return json({ error: 'complete_failed' }, 500);
 
-    const text = String(body.message ?? (status === 'completed' ? 'Action réalisée.' : 'Erreur lors du traitement.'));
-    await addAssistantMessage({ ...job, status }, text, status, result);
+    await upsertAssistantMessage({ ...job, status }, text, status, result);
+
 
     const changes = Array.isArray(body.changes) ? body.changes : [];
     if (changes.length === 0) {
