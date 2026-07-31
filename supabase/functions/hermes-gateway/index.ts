@@ -127,12 +127,9 @@ Deno.serve(async (req) => {
     const { error } = await admin.from('hermes_jobs').update(patch).eq('id', jobId);
     if (error) return json({ error: 'update_failed' }, 500);
 
-    const text = String(body.message ?? STATUS_LABELS[status] ?? 'Mise à jour');
-    await addAssistantMessage({ ...job, status }, text, status, {
-      missing_fields: body.missing_fields ?? [],
-      warnings: body.warnings ?? [],
-      ...(body.result ?? {}),
-    });
+    const text = resolveAssistantContent(body, status);
+    await upsertAssistantMessage({ ...job, status }, text, status, buildResultPayload(body, status));
+
 
     await admin.from('assistant_audit_logs').insert({
       user_id: job.user_id, job_id: jobId, action: `assistant.${status}`,
