@@ -1,6 +1,8 @@
 // Passerelle sécurisée pour le profil Hermes externe (polling sortant).
 // Authentification : header `x-hermes-token` == secret HERMES_GATEWAY_TOKEN.
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { resolveAssistantContent, buildResultPayload, STATUS_LABELS } from './content.ts';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
