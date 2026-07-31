@@ -169,6 +169,9 @@ export default function DevisEnvoyes() {
                   <tbody>
                     {items.map(({ devis: d, days }) => {
                       const dMetiers = devisMetiers[d.id] || [];
+                      const resps = devisResponsibles[d.id] || [];
+                      const canSeeDetails = resps.includes(user?.id || '') || d.createdBy === user?.id;
+                      const parties = resolveDevisParties(d, crm.clients, crm.vehicules);
                       return (
                         <tr
                           key={d.id}
@@ -178,15 +181,15 @@ export default function DevisEnvoyes() {
                           <td className="px-4 py-3 text-xs">
                             {d.sentAt
                               ? format(new Date(d.sentAt), 'd MMM yyyy', { locale: fr })
-                              : '—'}
+                              : NOT_SET}
                           </td>
                           <td className="px-4 py-3 text-xs font-medium">
                             {days === 0 ? "aujourd'hui" : `${days} j`}
                           </td>
-                          <td className="px-4 py-3">{d.clientNom || '—'}</td>
+                          <td className="px-4 py-3">{canSeeDetails ? parties.clientName : '—'}</td>
                           <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                            {d.clientTel ? (() => {
-                              const { countryCode, number } = parsePhone(d.clientTel);
+                            {canSeeDetails && parties.clientPhone ? (() => {
+                              const { countryCode, number } = parsePhone(parties.clientPhone);
                               const waNum = toWhatsAppNumber(countryCode, number);
                               return (
                                 <Tooltip>
@@ -205,11 +208,12 @@ export default function DevisEnvoyes() {
                                   <TooltipContent>Relance WhatsApp</TooltipContent>
                                 </Tooltip>
                               );
-                            })() : '—'}
+                            })() : (canSeeDetails ? NOT_SET : '—')}
                           </td>
                           <td className="px-4 py-3 text-xs">
-                            {[d.marque, d.modele, d.annee].filter(Boolean).join(' ') || '—'}
+                            {parties.vehiculeLabel}
                           </td>
+
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap gap-1">
                               {dMetiers.map(mid => {
