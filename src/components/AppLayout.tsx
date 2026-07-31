@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import AppSidebar from './AppSidebar';
+import AssistantWidget from './assistant/AssistantWidget';
 
 const SidebarContext = createContext({ collapsed: false, toggle: () => {} });
 export const useSidebarState = () => useContext(SidebarContext);
@@ -15,6 +16,7 @@ export default function AppLayout() {
         <main className={`min-h-screen transition-all duration-200 ${collapsed ? 'ml-0' : 'ml-16 lg:ml-56'}`}>
           <Outlet />
         </main>
+        <AssistantWidget />
       </div>
     </SidebarContext.Provider>
   );
