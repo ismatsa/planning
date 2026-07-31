@@ -28,7 +28,7 @@ export default function Login() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center pb-2">
-          <img src={logo} alt="PowerTech" className="h-12 object-contain mb-3" />
+          <img src={logo} alt="Powertech" className="h-12 object-contain mb-3" />
           <CardTitle className="text-lg font-display">Connexion</CardTitle>
           <CardDescription>Accédez à votre espace de gestion.</CardDescription>
         </CardHeader>

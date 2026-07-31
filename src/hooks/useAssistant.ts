@@ -82,7 +82,7 @@ export function useAssistant(enabled: boolean) {
       if (!id) {
         const { data: created } = await supabase
           .from('assistant_conversations')
-          .insert({ user_id: uid, title: 'Assistant PowerTech' })
+          .insert({ user_id: uid, title: 'Assistant Powertech' })
           .select('id')
           .single();
         id = created?.id ?? null;

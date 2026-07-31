@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
-  title: PowerTech API v1
+  title: Powertech API v1
   version: "1.0.0"
   description: |
     API sécurisée et auditée permettant à un assistant opérationnel externe autorisé de
-    consulter, créer et modifier les demandes de devis, rendez-vous, clients et véhicules PowerTech.
+    consulter, créer et modifier les demandes de devis, rendez-vous, clients et véhicules Powertech.
 
     ## Authentification
     Toutes les routes (sauf `/health`) exigent une clé API :
@@ -30,7 +30,7 @@ info:
     - Envoi / validation / refus / annulation d'un devis, et modification d'un devis
       déjà envoyé, validé, refusé ou annulé.
   contact:
-    name: PowerTech
+    name: Powertech
 servers:
   - url: https://iueeeaoptvmxlxgcrmck.supabase.co/functions/v1/api-v1/api/v1
     description: Production
@@ -702,7 +702,7 @@ paths:
   /maintenance:
     get:
       tags: [Entretiens]
-      summary: Lister les entretiens (carnet PowerTech)
+      summary: Lister les entretiens (carnet Powertech)
       description: "Scope requis : `maintenance:read`."
       parameters:
         - { name: vehicule_id, in: query, schema: { type: string, format: uuid } }
@@ -766,7 +766,7 @@ components:
     BearerApiKey:
       type: http
       scheme: bearer
-      description: "Clé API PowerTech (`Authorization: Bearer pt_...`). Générée dans Administration › Intégrations API."
+      description: "Clé API Powertech (`Authorization: Bearer pt_...`). Générée dans Administration › Intégrations API."
 
   parameters:
     Id:

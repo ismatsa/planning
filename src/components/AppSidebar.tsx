@@ -91,9 +91,9 @@ export default function AppSidebar() {
       >
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-4 px-2">
-          <img src={logo} alt="PowerTech" className="h-9 w-9 object-contain" />
+          <img src={logo} alt="Powertech" className="h-9 w-9 object-contain" />
           <span className="hidden lg:block text-sidebar-primary-foreground font-display font-bold text-lg tracking-tight">
-            PowerTech
+            Powertech
           </span>
         </div>
 
