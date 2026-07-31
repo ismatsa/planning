@@ -326,10 +326,10 @@ export default function DevisList() {
                         {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{canSeeDetails ? (d.clientNom || '—') : '—'}</td>
+                    <td className="px-4 py-3">{canSeeDetails ? parties.clientName : '—'}</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      {canSeeDetails && d.clientTel ? (() => {
-                        const { countryCode, number } = parsePhone(d.clientTel);
+                      {canSeeDetails && parties.clientPhone ? (() => {
+                        const { countryCode, number } = parsePhone(parties.clientPhone);
                         const waNum = toWhatsAppNumber(countryCode, number);
                         const display = `${countryCode} ${number}`;
                         return (
@@ -349,9 +349,9 @@ export default function DevisList() {
                             <TooltipContent>Envoyer un message WhatsApp</TooltipContent>
                           </Tooltip>
                         );
-                      })() : '—'}
+                      })() : (canSeeDetails ? NOT_SET : '—')}
                     </td>
-                    <td className="px-4 py-3 text-xs">{[d.marque, d.modele, d.annee].filter(Boolean).join(' ') || '—'}</td>
+                    <td className="px-4 py-3 text-xs">{parties.vehiculeLabel}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {dMetiers.map(mid => {
