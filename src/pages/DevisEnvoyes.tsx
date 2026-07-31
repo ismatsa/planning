@@ -17,6 +17,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import type { Devis } from '@/types/devis';
+import { resolveDevisParties, NOT_SET } from '@/lib/devisDisplay';
 
 type Bucket = 'recent' | 'monitor' | 'followup' | 'critical';
 
