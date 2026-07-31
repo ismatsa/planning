@@ -8,3 +8,10 @@ verify_jwt = false
 
 [functions.api-v1]
 verify_jwt = false
+
+[functions.create-hermes-job]
+verify_jwt = false
+
+[functions.hermes-gateway]
+verify_jwt = false
+
