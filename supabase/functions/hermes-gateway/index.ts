@@ -27,29 +27,38 @@ function timingSafeEqual(a: string, b: string) {
   return diff === 0;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  processing: 'Analyse en cours',
-  needs_information: 'Information manquante',
-  confirmation_required: 'Confirmation requise',
-  completed: 'Action réalisée',
-  failed: 'Erreur',
-};
-
-async function addAssistantMessage(job: any, content: string, status: string, result?: unknown) {
+// Un seul message assistant par job : créé au premier événement, mis à jour ensuite.
+async function upsertAssistantMessage(job: any, content: string, status: string, result?: unknown) {
   if (!job.conversation_id) return;
-  await admin.from('assistant_messages').insert({
-    conversation_id: job.conversation_id,
-    user_id: job.user_id,
-    role: 'assistant',
-    content,
-    status,
-    job_id: job.id,
-    result: result ?? null,
-  });
+
+  const { data: existing } = await admin
+    .from('assistant_messages')
+    .select('id')
+    .eq('job_id', job.id)
+    .eq('role', 'assistant')
+    .maybeSingle();
+
+  if (existing) {
+    await admin.from('assistant_messages')
+      .update({ content, status, result: result ?? null })
+      .eq('id', existing.id);
+  } else {
+    await admin.from('assistant_messages').insert({
+      conversation_id: job.conversation_id,
+      user_id: job.user_id,
+      role: 'assistant',
+      content,
+      status,
+      job_id: job.id,
+      result: result ?? null,
+    });
+  }
+
   await admin.from('assistant_conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', job.conversation_id);
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
