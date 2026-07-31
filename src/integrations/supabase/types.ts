@@ -307,21 +307,27 @@ export type Database = {
       }
       assistant_conversations: {
         Row: {
+          assistant: string
           created_at: string
+          hermes_session_id: string | null
           id: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          assistant?: string
           created_at?: string
+          hermes_session_id?: string | null
           id?: string
           title?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          assistant?: string
           created_at?: string
+          hermes_session_id?: string | null
           id?: string
           title?: string
           updated_at?: string
