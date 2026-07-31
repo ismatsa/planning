@@ -165,6 +165,9 @@ export default function AssistantWidget() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { messages, send, sending, activeStatus, error } = useAssistant(open);
+  const lastAssistantStatus = [...messages].reverse().find(m => m.role === 'assistant')?.status ?? null;
+
+
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
