@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import {
-  useAssistant, STATUS_LABELS, QUEUE_NOTICE,
+  useAssistant, QUEUE_NOTICE,
   type AssistantStatus, type AssistantMessage,
 } from '@/hooks/useAssistant';
 import {
