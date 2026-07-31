@@ -255,26 +255,30 @@ export default function AssistantWidget() {
           </div>
 
           <div className="border-t border-border p-2">
-            <div className="mb-2 flex flex-wrap gap-1">
-              {QUICK_ACTIONS.map(a => (
-                <button
-                  key={a.hint}
-                  onClick={() => {
-                    setHint(a.hint);
-                    setText(a.prompt);
-                    textareaRef.current?.focus();
-                  }}
-                  className={cn(
-                    'rounded-full border px-2 py-1 text-[11px] transition',
-                    hint === a.hint
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border text-muted-foreground hover:bg-muted',
-                  )}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
+            {/* Boutons d'actions rapides masqués temporairement */}
+            {SHOW_QUICK_ACTIONS && (
+              <div className="mb-2 flex flex-wrap gap-1">
+                {QUICK_ACTIONS.map(a => (
+                  <button
+                    key={a.hint}
+                    onClick={() => {
+                      setHint(a.hint);
+                      setText(a.prompt);
+                      textareaRef.current?.focus();
+                    }}
+                    className={cn(
+                      'rounded-full border px-2 py-1 text-[11px] transition',
+                      hint === a.hint
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:bg-muted',
+                    )}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
 
             {files.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-1">
