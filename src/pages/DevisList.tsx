@@ -314,6 +314,7 @@ export default function DevisList() {
                 const isTerminal = TERMINAL_STATUSES.includes(d.statut);
                 const isAssignedToMe = d.assignedUserId === user?.id && !isTerminal;
                 const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
+                const parties = resolveDevisParties(d, crm.clients, crm.vehicules);
 
                 return (
                   <tr
