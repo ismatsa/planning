@@ -7,9 +7,8 @@ import { fr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Send, Bell, AlertTriangle, Clock, MessageCircle } from 'lucide-react';
+import { Search, Send, Bell, AlertTriangle, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -18,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import type { Devis } from '@/types/devis';
 import { resolveDevisParties, NOT_SET } from '@/lib/devisDisplay';
+import { ClientNameCell, ClientPhoneCell } from '@/components/devis/PartyCells';
 
 type Bucket = 'recent' | 'monitor' | 'followup' | 'critical';
 
@@ -187,30 +187,17 @@ export default function DevisEnvoyes() {
                           <td className="px-4 py-3 text-xs font-medium">
                             {days === 0 ? "aujourd'hui" : `${days} j`}
                           </td>
-                          <td className="px-4 py-3">{canSeeDetails ? parties.clientName : '—'}</td>
-                          <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                            {canSeeDetails && parties.clientPhone ? (() => {
-                              const { countryCode, number } = parsePhone(parties.clientPhone);
-                              const waNum = toWhatsAppNumber(countryCode, number);
-                              return (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <a
-                                      href={`https://wa.me/${waNum}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1.5 text-xs hover:underline"
-                                      style={{ color: '#25D366' }}
-                                    >
-                                      <MessageCircle className="h-3.5 w-3.5" />
-                                      {countryCode} {number}
-                                    </a>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Relance WhatsApp</TooltipContent>
-                                </Tooltip>
-                              );
-                            })() : (canSeeDetails ? NOT_SET : '—')}
+                          <td className="px-4 py-3">
+                            <ClientNameCell
+                              name={parties.clientName}
+                              clientId={parties.client?.id}
+                              canSee={canSeeDetails}
+                            />
                           </td>
+                          <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                            <ClientPhoneCell phone={parties.clientPhone} canSee={canSeeDetails} compact />
+                          </td>
+
                           <td className="px-4 py-3 text-xs">
                             {parties.vehiculeLabel}
                           </td>
