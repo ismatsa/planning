@@ -118,9 +118,12 @@ export function MessageBubble({ message }: { message: AssistantMessage }) {
   const isPlaceholder = !isUser && PLACEHOLDERS.includes(content);
   const summary = !isUser && message.result?.summary ? String(message.result.summary) : null;
 
+  // Une fois l'action terminée, on n'affiche plus les textes techniques de statut.
+  if (isPlaceholder && (message.status === 'completed' || message.status === 'failed')) return null;
+
   return (
     <div className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}>
-      {!isUser && message.status && <StatusPill status={message.status} />}
+      {!isUser && message.status && !isPlaceholder && <StatusPill status={message.status} />}
       <div
         className={cn(
           'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
@@ -232,7 +235,7 @@ export default function AssistantWidget() {
                 {QUEUE_NOTICE}
               </p>
             )}
-            {activeStatus && activeStatus !== 'queued' && lastAssistantStatus !== activeStatus && (
+            {activeStatus && activeStatus !== 'queued' && activeStatus !== 'completed' && activeStatus !== 'failed' && lastAssistantStatus !== activeStatus && (
               <div className="flex justify-start"><StatusPill status={activeStatus} /></div>
             )}
 
