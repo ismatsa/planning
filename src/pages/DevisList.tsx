@@ -328,31 +328,17 @@ export default function DevisList() {
                         {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{canSeeDetails ? parties.clientName : '—'}</td>
-                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      {canSeeDetails && parties.clientPhone ? (() => {
-                        const { countryCode, number } = parsePhone(parties.clientPhone);
-                        const waNum = toWhatsAppNumber(countryCode, number);
-                        const display = `${countryCode} ${number}`;
-                        return (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <a
-                                href={`https://wa.me/${waNum}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-sm hover:underline cursor-pointer"
-                                style={{ color: '#25D366' }}
-                              >
-                                <MessageCircle className="h-4 w-4 shrink-0" />
-                                <span>{display}</span>
-                              </a>
-                            </TooltipTrigger>
-                            <TooltipContent>Envoyer un message WhatsApp</TooltipContent>
-                          </Tooltip>
-                        );
-                      })() : (canSeeDetails ? NOT_SET : '—')}
+                    <td className="px-4 py-3">
+                      <ClientNameCell
+                        name={parties.clientName}
+                        clientId={parties.client?.id}
+                        canSee={canSeeDetails}
+                      />
                     </td>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <ClientPhoneCell phone={parties.clientPhone} canSee={canSeeDetails} />
+                    </td>
+
                     <td className="px-4 py-3 text-xs">{parties.vehiculeLabel}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
