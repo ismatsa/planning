@@ -14,8 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Plus, CalendarDays, Flame, SlidersHorizontal } from 'lucide-react';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 import { supabase } from '@/integrations/supabase/client';
-import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
-import { MessageCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import {

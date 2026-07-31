@@ -7,9 +7,8 @@ import { fr } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Send, Bell, AlertTriangle, Clock, MessageCircle } from 'lucide-react';
+import { Search, Send, Bell, AlertTriangle, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
