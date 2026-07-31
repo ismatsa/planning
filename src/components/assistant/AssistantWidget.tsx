@@ -97,7 +97,9 @@ function ResultSummary({ result }: { result: any }) {
   );
 }
 
-function MessageBubble({ message }: { message: AssistantMessage }) {
+const PLACEHOLDERS = ['Analyse en cours…', 'Analyse en cours...', 'Action réalisée.', 'Mise à jour'];
+
+export function MessageBubble({ message }: { message: AssistantMessage }) {
   const isUser = message.role === 'user';
   if (message.role === 'system') {
     return (
@@ -106,6 +108,11 @@ function MessageBubble({ message }: { message: AssistantMessage }) {
       </p>
     );
   }
+
+  const content = message.content?.trim() ?? '';
+  const isPlaceholder = !isUser && PLACEHOLDERS.includes(content);
+  const summary = !isUser && message.result?.summary ? String(message.result.summary) : null;
+
   return (
     <div className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}>
       {!isUser && message.status && <StatusPill status={message.status} />}
@@ -113,9 +120,13 @@ function MessageBubble({ message }: { message: AssistantMessage }) {
         className={cn(
           'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
           isUser ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-foreground',
+          isPlaceholder && 'italic text-muted-foreground',
         )}
       >
-        {message.content}
+        {content}
+        {summary && content !== summary && (
+          <p className="mt-1 text-xs text-muted-foreground">{summary}</p>
+        )}
         {message.attachments.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {message.attachments.map((a) => (
@@ -137,6 +148,7 @@ function MessageBubble({ message }: { message: AssistantMessage }) {
     </div>
   );
 }
+
 
 export default function AssistantWidget() {
   const [open, setOpen] = useState(false);
