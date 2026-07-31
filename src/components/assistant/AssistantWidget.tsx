@@ -47,12 +47,16 @@ function ResultSummary({ result }: { result: any }) {
   const conflicts: any[] = Array.isArray(result.conflicts) ? result.conflicts : [];
   const slots: any[] = Array.isArray(result.suggested_slots) ? result.suggested_slots : [];
 
-  if (!changes.length && !missing.length && !warnings.length && !conflicts.length && !slots.length && !result.planning_impact) {
+  if (!changes.length && !missing.length && !warnings.length && !conflicts.length && !slots.length
+      && !result.planning_impact && !result.action) {
     return null;
   }
 
   return (
     <div className="mt-2 space-y-2 rounded-md border border-border bg-muted/40 p-2 text-xs">
+      {result.action && (
+        <p><span className="font-semibold">Action :</span> {String(result.action)}</p>
+      )}
       {changes.map((c, i) => (
         <div key={i} className="space-y-0.5">
           <p className="font-semibold">{c.label ?? `${c.resource ?? ''} ${c.action ?? ''}`.trim()}</p>
@@ -69,6 +73,7 @@ function ResultSummary({ result }: { result: any }) {
       {result.planning_impact && (
         <p><span className="font-semibold">Impact planning :</span> {String(result.planning_impact)}</p>
       )}
+
       {conflicts.length > 0 && (
         <div>
           <p className="font-semibold text-destructive">Conflit détecté</p>
