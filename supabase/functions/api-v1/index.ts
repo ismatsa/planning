@@ -1,4 +1,4 @@
-// PowerTech API v1 — API sécurisée pour assistant opérationnel externe
+// Powertech API v1 — API sécurisée pour assistant opérationnel externe
 // Auth: Authorization: Bearer <api key>  (jamais journalisée)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -885,7 +885,7 @@ async function handleQuoteRequests(ctx: Ctx, segments: string[]): Promise<Respon
       await audit(ctx, { resource: 'devis', record_id: id, operation: 'blocked', result: 'denied',
         denial_reason: `Transition de statut interdite vers ${body.statut}` });
       throw new ApiError(403, 'STATUT_INTERDIT',
-        'L\'envoi, la validation, le refus ou l\'annulation d\'un devis sont réservés à l\'interface PowerTech.');
+        'L\'envoi, la validation, le refus ou l\'annulation d\'un devis sont réservés à l\'interface Powertech.');
     }
     requireEtag(ctx, current);
     const patch: Record<string, unknown> = {};

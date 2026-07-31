@@ -1,11 +1,11 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "PowerTech API v1",
+    "title": "Powertech API v1",
     "version": "1.0.0",
-    "description": "API sécurisée et auditée permettant à un assistant opérationnel externe autorisé de\nconsulter, créer et modifier les demandes de devis, rendez-vous, clients et véhicules PowerTech.\n\n## Authentification\nToutes les routes (sauf `/health`) exigent une clé API :\n`Authorization: Bearer pt_xxx`. La clé n'est jamais journalisée.\nChaque clé porte des **scopes** ; un scope manquant renvoie `403 SCOPE_INSUFFISANT`.\n\n## Conventions\n- Réponses : `{ \"data\": ... }` (+ `{ \"meta\": { count, limit, offset } }` pour les listes).\n- Erreurs : `{ \"error\": { code, message, details, request_id } }`.\n- **Simulation** : ajoutez `?dry_run=true` (ou `\"dry_run\": true` dans le corps) sur toute\n  écriture pour obtenir un aperçu sans persistance.\n- **Idempotence** : en-tête `Idempotency-Key` sur les `POST` ; la réponse initiale est rejouée.\n- **Concurrence optimiste** : tout `PATCH` doit inclure le `updated_at` (ou `etag`) lu\n  précédemment, sinon `400 CONTROLE_CONCURRENCE_REQUIS` / `409 MODIFICATION_CONCURRENTE`.\n- **Débit** : 120 requêtes / minute par clé et par IP (`429 LIMITE_DEBIT_DEPASSEE`).\n\n## Opérations interdites (403)\n- Toute suppression (`DELETE`) de données.\n- Annulation d'un rendez-vous (`statut: \"annule\"`).\n- Changement de propriétaire d'un véhicule via `PATCH /vehicles/{id}` (`client_id`) :\n  utiliser `POST /vehicles/{id}/transfer`, qui préserve l'historique.\n\n- Envoi / validation / refus / annulation d'un devis, et modification d'un devis\n  déjà envoyé, validé, refusé ou annulé.\n",
+    "description": "API sécurisée et auditée permettant à un assistant opérationnel externe autorisé de\nconsulter, créer et modifier les demandes de devis, rendez-vous, clients et véhicules Powertech.\n\n## Authentification\nToutes les routes (sauf `/health`) exigent une clé API :\n`Authorization: Bearer pt_xxx`. La clé n'est jamais journalisée.\nChaque clé porte des **scopes** ; un scope manquant renvoie `403 SCOPE_INSUFFISANT`.\n\n## Conventions\n- Réponses : `{ \"data\": ... }` (+ `{ \"meta\": { count, limit, offset } }` pour les listes).\n- Erreurs : `{ \"error\": { code, message, details, request_id } }`.\n- **Simulation** : ajoutez `?dry_run=true` (ou `\"dry_run\": true` dans le corps) sur toute\n  écriture pour obtenir un aperçu sans persistance.\n- **Idempotence** : en-tête `Idempotency-Key` sur les `POST` ; la réponse initiale est rejouée.\n- **Concurrence optimiste** : tout `PATCH` doit inclure le `updated_at` (ou `etag`) lu\n  précédemment, sinon `400 CONTROLE_CONCURRENCE_REQUIS` / `409 MODIFICATION_CONCURRENTE`.\n- **Débit** : 120 requêtes / minute par clé et par IP (`429 LIMITE_DEBIT_DEPASSEE`).\n\n## Opérations interdites (403)\n- Toute suppression (`DELETE`) de données.\n- Annulation d'un rendez-vous (`statut: \"annule\"`).\n- Changement de propriétaire d'un véhicule via `PATCH /vehicles/{id}` (`client_id`) :\n  utiliser `POST /vehicles/{id}/transfer`, qui préserve l'historique.\n\n- Envoi / validation / refus / annulation d'un devis, et modification d'un devis\n  déjà envoyé, validé, refusé ou annulé.\n",
     "contact": {
-      "name": "PowerTech"
+      "name": "Powertech"
     }
   },
   "servers": [
@@ -1588,7 +1588,7 @@
         "tags": [
           "Entretiens"
         ],
-        "summary": "Lister les entretiens (carnet PowerTech)",
+        "summary": "Lister les entretiens (carnet Powertech)",
         "description": "Scope requis : `maintenance:read`.",
         "parameters": [
           {
@@ -1723,7 +1723,7 @@
       "BearerApiKey": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Clé API PowerTech (`Authorization: Bearer pt_...`). Générée dans Administration › Intégrations API."
+        "description": "Clé API Powertech (`Authorization: Bearer pt_...`). Générée dans Administration › Intégrations API."
       }
     },
     "parameters": {

@@ -179,10 +179,10 @@ export default function AssistantWidget() {
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-lg transition hover:brightness-110"
-          aria-label="Ouvrir l'Assistant PowerTech"
+          aria-label="Ouvrir l'Assistant Powertech"
         >
           <Bot className="h-5 w-5" />
-          <span className="hidden text-sm font-semibold sm:inline">Assistant PowerTech</span>
+          <span className="hidden text-sm font-semibold sm:inline">Assistant Powertech</span>
         </button>
       )}
 
@@ -191,7 +191,7 @@ export default function AssistantWidget() {
           <header className="flex items-center justify-between border-b border-border bg-primary px-3 py-2 text-primary-foreground">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
-              <span className="text-sm font-semibold">Assistant PowerTech</span>
+              <span className="text-sm font-semibold">Assistant Powertech</span>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Fermer">
               <X className="h-4 w-4" />
