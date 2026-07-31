@@ -106,10 +106,10 @@ export default function DevisList() {
         }
         if (search) {
           const s = search.toLowerCase();
-          const vehicleStr = [d.marque, d.modele].filter(Boolean).join(' ').toLowerCase();
+          const p = resolveDevisParties(d, crm.clients, crm.vehicules);
           if (
-            !d.clientNom?.toLowerCase().includes(s) &&
-            !vehicleStr.includes(s)
+            !p.clientName.toLowerCase().includes(s) &&
+            !p.vehiculeLabel.toLowerCase().includes(s)
           ) return false;
         }
         if (filterResponsibles.length > 0) {
