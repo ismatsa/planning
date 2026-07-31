@@ -235,7 +235,7 @@ export default function AssistantWidget() {
                 {QUEUE_NOTICE}
               </p>
             )}
-            {activeStatus && activeStatus !== 'queued' && lastAssistantStatus !== activeStatus && (
+            {activeStatus && activeStatus !== 'queued' && activeStatus !== 'completed' && activeStatus !== 'failed' && lastAssistantStatus !== activeStatus && (
               <div className="flex justify-start"><StatusPill status={activeStatus} /></div>
             )}
 
