@@ -39,6 +39,7 @@ export const QUEUE_NOTICE =
   'Votre demande est enregistrée et sera traitée dès que possible. Merci de patienter.';
 
 const BUCKET = 'hermes-temporary-files';
+const ASSISTANT = 'powertech';
 
 function mapMessage(row: any): AssistantMessage {
   return {
@@ -70,22 +71,25 @@ export function useAssistant(enabled: boolean) {
       if (!uid) return;
       userIdRef.current = uid;
 
-      const { data: existing } = await supabase
-        .from('assistant_conversations')
-        .select('id')
-        .eq('user_id', uid)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Une seule conversation active par utilisateur (user_id + assistant)
+      const findActive = async () => {
+        const { data } = await supabase
+          .from('assistant_conversations')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('assistant', ASSISTANT)
+          .maybeSingle();
+        return data?.id ?? null;
+      };
 
-      let id = existing?.id ?? null;
+      let id = await findActive();
       if (!id) {
         const { data: created } = await supabase
           .from('assistant_conversations')
-          .insert({ user_id: uid, title: 'Assistant Powertech' })
+          .insert({ user_id: uid, assistant: ASSISTANT, title: 'Assistant Powertech' })
           .select('id')
-          .single();
-        id = created?.id ?? null;
+          .maybeSingle();
+        id = created?.id ?? (await findActive());
       }
       if (!cancelled && id) setConversationId(id);
     })();
@@ -225,7 +229,7 @@ export function useAssistant(enabled: boolean) {
       // 3. Tâche Hermes
       const { data, error: fnError } = await supabase.functions.invoke('create-hermes-job', {
         body: {
-          conversation_id: conversationId,
+          // conversation_id / hermes_session_id sont résolus côté serveur
           message: text,
           action_hint: actionHint,
           attachments,

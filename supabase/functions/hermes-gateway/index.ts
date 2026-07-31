@@ -1,7 +1,7 @@
 // Passerelle sécurisée pour le profil Hermes externe (polling sortant).
 // Authentification : header `x-hermes-token` == secret HERMES_GATEWAY_TOKEN.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { resolveAssistantContent, buildResultPayload, STATUS_LABELS } from './content.ts';
+import { resolveAssistantContent, buildResultPayload, resolveSessionId, STATUS_LABELS } from './content.ts';
 
 
 const corsHeaders = {
@@ -62,6 +62,15 @@ async function upsertAssistantMessage(job: any, content: string, status: string,
 }
 
 
+// Enregistre la session Hermes sur la conversation (jamais fournie par le frontend).
+async function persistSessionId(job: any, body: any) {
+  const sessionId = resolveSessionId(body);
+  if (!sessionId || !job?.conversation_id) return;
+  await admin.from('assistant_conversations')
+    .update({ hermes_session_id: sessionId })
+    .eq('id', job.conversation_id);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -95,12 +104,23 @@ Deno.serve(async (req) => {
 
     await upsertAssistantMessage(job, STATUS_LABELS.processing, 'processing', { status: 'processing' });
 
+    let hermesSessionId: string | null = null;
+    if (job.conversation_id) {
+      const { data: conv } = await admin
+        .from('assistant_conversations')
+        .select('hermes_session_id')
+        .eq('id', job.conversation_id)
+        .maybeSingle();
+      hermesSessionId = conv?.hermes_session_id ?? null;
+    }
+
     return json({
       job: {
         id: job.id,
         user_id: job.user_id,
         user_role: job.user_role,
         conversation_id: job.conversation_id,
+        hermes_session_id: hermesSessionId,
         message: job.message,
         action_hint: job.action_hint,
         attachments,
@@ -127,6 +147,7 @@ Deno.serve(async (req) => {
     const { error } = await admin.from('hermes_jobs').update(patch).eq('id', jobId);
     if (error) return json({ error: 'update_failed' }, 500);
 
+    await persistSessionId(job, body);
     const text = resolveAssistantContent(body, status);
     await upsertAssistantMessage({ ...job, status }, text, status, buildResultPayload(body, status));
 
@@ -147,6 +168,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, status: job.status, duplicate: true });
     }
     const status = body.status === 'failed' ? 'failed' : 'completed';
+    await persistSessionId(job, body);
     const text = resolveAssistantContent(body, status);
     const result = buildResultPayload(body, status);
 
