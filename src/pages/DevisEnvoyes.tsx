@@ -76,8 +76,8 @@ export default function DevisEnvoyes() {
       .filter(d => {
         if (!search) return true;
         const s = search.toLowerCase();
-        const vehicleStr = [d.marque, d.modele].filter(Boolean).join(' ').toLowerCase();
-        return d.clientNom?.toLowerCase().includes(s) || vehicleStr.includes(s);
+        const p = resolveDevisParties(d, crm.clients, crm.vehicules);
+        return p.clientName.toLowerCase().includes(s) || p.vehiculeLabel.toLowerCase().includes(s);
       })
       .map(d => {
         const ref = d.sentAt ? new Date(d.sentAt) : new Date(d.updatedAt);
@@ -85,7 +85,7 @@ export default function DevisEnvoyes() {
         return { devis: d, days, bucket: bucketFor(days) };
       })
       .sort((a, b) => b.days - a.days);
-  }, [devisList, search]);
+  }, [devisList, search, crm.clients, crm.vehicules]);
 
   const grouped = useMemo(() => {
     const map: Record<Bucket, typeof sentDevis> = {
