@@ -11,6 +11,10 @@ import {
   useAssistant, STATUS_LABELS, QUEUE_NOTICE,
   type AssistantStatus, type AssistantMessage,
 } from '@/hooks/useAssistant';
+import {
+  statusLabel, actionLabel, actionRecordIds, toBullets, summaryRows, mainMessage,
+} from './resultView';
+
 
 const QUICK_ACTIONS: { hint: string; label: string; prompt: string }[] = [
   { hint: 'devis', label: 'Devis', prompt: 'Crée un devis brouillon : ' },
