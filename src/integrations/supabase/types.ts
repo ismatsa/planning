@@ -263,6 +263,119 @@ export type Database = {
           },
         ]
       }
+      assistant_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          error: string | null
+          id: string
+          job_id: string | null
+          new_value: Json | null
+          old_value: Json | null
+          record_id: string | null
+          resource: string | null
+          result: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          job_id?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          resource?: string | null
+          result?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          job_id?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          resource?: string | null
+          result?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      assistant_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      assistant_messages: {
+        Row: {
+          attachments: Json
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          job_id: string | null
+          result: Json | null
+          role: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json
+          content?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          result?: Json | null
+          role: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          attachments?: Json
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          result?: Json | null
+          role?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string | null
@@ -786,6 +899,74 @@ export type Database = {
           },
         ]
       }
+      hermes_jobs: {
+        Row: {
+          action_hint: string | null
+          attachments: Json
+          attempts: number
+          claimed_at: string | null
+          completed_at: string | null
+          conversation_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          message: string
+          missing_fields: Json
+          result: Json | null
+          status: string
+          user_id: string
+          user_role: string
+          warnings: Json
+        }
+        Insert: {
+          action_hint?: string | null
+          attachments?: Json
+          attempts?: number
+          claimed_at?: string | null
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key: string
+          message?: string
+          missing_fields?: Json
+          result?: Json | null
+          status?: string
+          user_id: string
+          user_role: string
+          warnings?: Json
+        }
+        Update: {
+          action_hint?: string | null
+          attachments?: Json
+          attempts?: number
+          claimed_at?: string | null
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key?: string
+          message?: string
+          missing_fields?: Json
+          result?: Json | null
+          status?: string
+          user_id?: string
+          user_role?: string
+          warnings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hermes_jobs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intervenants: {
         Row: {
           created_at: string
@@ -1198,6 +1379,35 @@ export type Database = {
         }
         Returns: boolean
       }
+      hermes_claim_next_job: {
+        Args: never
+        Returns: {
+          action_hint: string | null
+          attachments: Json
+          attempts: number
+          claimed_at: string | null
+          completed_at: string | null
+          conversation_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          message: string
+          missing_fields: Json
+          result: Json | null
+          status: string
+          user_id: string
+          user_role: string
+          warnings: Json
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "hermes_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      hermes_purge_expired: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "administrateur" | "contributeur"
