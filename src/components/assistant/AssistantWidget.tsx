@@ -177,6 +177,8 @@ export default function AssistantWidget() {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [hint, setHint] = useState('libre');
+  const [dragging, setDragging] = useState(false);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
