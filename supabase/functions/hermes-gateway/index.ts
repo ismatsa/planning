@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       attachments.push({ ...a, signed_url: signed?.signedUrl ?? null });
     }
 
-    await addAssistantMessage(job, 'Analyse en cours…', 'processing');
+    await upsertAssistantMessage(job, STATUS_LABELS.processing, 'processing', { status: 'processing' });
 
     return json({
       job: {
