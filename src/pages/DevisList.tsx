@@ -22,6 +22,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { resolveDevisParties, NOT_SET } from '@/lib/devisDisplay';
 
 const TERMINAL_STATUSES: StatutDevis[] = ['valide', 'refuse', 'annule'];
 
