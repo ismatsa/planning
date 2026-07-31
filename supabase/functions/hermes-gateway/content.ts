@@ -42,3 +42,17 @@ export function buildResultPayload(body: any, status: string) {
     missing_fields: body?.missing_fields ?? base.missing_fields ?? [],
   };
 }
+
+/** Identifiant de session Hermes renvoyé par le worker (plusieurs alias tolérés). */
+export function resolveSessionId(body: any): string | null {
+  const candidates = [
+    body?.hermes_session_id,
+    body?.session_id,
+    body?.result?.hermes_session_id,
+    body?.result?.session_id,
+  ];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) return c.trim().slice(0, 200);
+  }
+  return null;
+}
