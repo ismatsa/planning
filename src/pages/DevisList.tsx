@@ -119,7 +119,7 @@ export default function DevisList() {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, showPast, user]);
+  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, showPast, user, crm.clients, crm.vehicules]);
 
   const myActionCount = useMemo(() => {
     if (!user) return 0;
