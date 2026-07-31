@@ -364,17 +364,17 @@ export default function DevisList() {
                             </span>
                           );
                         })}
-                        {dMetiers.length === 0 && '—'}
+                        {dMetiers.length === 0 && NOT_SET}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {resps.map(rid => profileOptions.find(p => p.id === rid)?.company || '').filter(Boolean).join(', ') || '—'}
+                      {resps.map(rid => profileOptions.find(p => p.id === rid)?.company || '').filter(Boolean).join(', ') || NOT_SET}
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {d.assignedUserId ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || '—') : '—'}
+                      {d.assignedUserId ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || NOT_SET) : NOT_SET}
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {billingProfile ? billingProfile.company : '—'}
+                      {billingProfile ? billingProfile.company : NOT_SET}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">

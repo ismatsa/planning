@@ -228,13 +228,13 @@ export default function DevisEnvoyes() {
                                   </span>
                                 );
                               })}
-                              {dMetiers.length === 0 && '—'}
+                              {dMetiers.length === 0 && NOT_SET}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-xs">
                             {d.assignedUserId
-                              ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || '—')
-                              : '—'}
+                              ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || NOT_SET)
+                              : NOT_SET}
                           </td>
                           <td className="px-4 py-3 text-xs">
                             {d.followUpCount > 0 ? (
