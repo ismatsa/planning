@@ -39,6 +39,23 @@ function StatusPill({ status }: { status: AssistantStatus }) {
   );
 }
 
+// Jamais de "[object Object]" : on rend un texte lisible quelle que soit la forme reçue.
+export function toText(value: any): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(toText).filter(Boolean).join(', ');
+  if (typeof value === 'object') {
+    const preferred = value.label ?? value.message ?? value.name ?? value.text ?? value.value;
+    if (preferred !== undefined && typeof preferred !== 'object') return toText(preferred);
+    return Object.entries(value)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `${k} : ${toText(v)}`)
+      .join(' — ');
+  }
+  return String(value);
+}
+
 function ResultSummary({ result }: { result: any }) {
   if (!result || typeof result !== 'object') return null;
   const changes: any[] = Array.isArray(result.changes) ? result.changes : [];
@@ -55,7 +72,7 @@ function ResultSummary({ result }: { result: any }) {
   return (
     <div className="mt-2 space-y-2 rounded-md border border-border bg-muted/40 p-2 text-xs">
       {result.action && (
-        <p><span className="font-semibold">Action :</span> {String(result.action)}</p>
+        <p><span className="font-semibold">Action :</span> {toText(result.action)}</p>
       )}
       {changes.map((c, i) => (
         <div key={i} className="space-y-0.5">
@@ -71,31 +88,31 @@ function ResultSummary({ result }: { result: any }) {
         </div>
       ))}
       {result.planning_impact && (
-        <p><span className="font-semibold">Impact planning :</span> {String(result.planning_impact)}</p>
+        <p><span className="font-semibold">Impact planning :</span> {toText(result.planning_impact)}</p>
       )}
 
       {conflicts.length > 0 && (
         <div>
           <p className="font-semibold text-destructive">Conflit détecté</p>
-          <ul className="list-disc pl-4">{conflicts.map((c, i) => <li key={i}>{typeof c === 'string' ? c : JSON.stringify(c)}</li>)}</ul>
+          <ul className="list-disc pl-4">{conflicts.map((c, i) => <li key={i}>{toText(c)}</li>)}</ul>
         </div>
       )}
       {slots.length > 0 && (
         <div>
           <p className="font-semibold">Créneaux disponibles</p>
-          <ul className="list-disc pl-4">{slots.map((s, i) => <li key={i}>{typeof s === 'string' ? s : JSON.stringify(s)}</li>)}</ul>
+          <ul className="list-disc pl-4">{slots.map((s, i) => <li key={i}>{toText(s)}</li>)}</ul>
         </div>
       )}
       {missing.length > 0 && (
         <div>
           <p className="font-semibold">Informations manquantes</p>
-          <ul className="list-disc pl-4">{missing.map((m, i) => <li key={i}>{typeof m === 'string' ? m : JSON.stringify(m)}</li>)}</ul>
+          <ul className="list-disc pl-4">{missing.map((m, i) => <li key={i}>{toText(m)}</li>)}</ul>
         </div>
       )}
       {warnings.length > 0 && (
         <div>
           <p className="font-semibold">Avertissements</p>
-          <ul className="list-disc pl-4">{warnings.map((w, i) => <li key={i}>{typeof w === 'string' ? w : JSON.stringify(w)}</li>)}</ul>
+          <ul className="list-disc pl-4">{warnings.map((w, i) => <li key={i}>{toText(w)}</li>)}</ul>
         </div>
       )}
     </div>
@@ -116,7 +133,7 @@ export function MessageBubble({ message }: { message: AssistantMessage }) {
 
   const content = message.content?.trim() ?? '';
   const isPlaceholder = !isUser && PLACEHOLDERS.includes(content);
-  const summary = !isUser && message.result?.summary ? String(message.result.summary) : null;
+  const summary = !isUser && message.result?.summary ? toText(message.result.summary) : null;
 
   // Une fois l'action terminée, on n'affiche plus les textes techniques de statut.
   if (isPlaceholder && (message.status === 'completed' || message.status === 'failed')) return null;
