@@ -177,6 +177,8 @@ export default function AssistantWidget() {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [hint, setHint] = useState('libre');
+  const [dragging, setDragging] = useState(false);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -210,6 +212,41 @@ export default function AssistantWidget() {
     setFiles(prev => [...prev, ...Array.from(list)].slice(0, 10));
   };
 
+  const dragDepth = useRef(0);
+
+  const hasFiles = (e: React.DragEvent) =>
+    Array.from(e.dataTransfer?.types ?? []).includes('Files');
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth.current += 1;
+    setDragging(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth.current = 0;
+    setDragging(false);
+    pickFiles(e.dataTransfer.files);
+    textareaRef.current?.focus();
+  };
+
+
   return (
     <>
       {!open && (
@@ -224,7 +261,23 @@ export default function AssistantWidget() {
       )}
 
       {open && (
-        <div className="fixed bottom-4 right-4 z-50 flex h-[min(640px,85vh)] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
+        <div
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={cn(
+            'fixed bottom-4 right-4 z-50 flex h-[min(640px,85vh)] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border bg-background shadow-2xl',
+            dragging ? 'border-primary ring-2 ring-primary/40' : 'border-border',
+          )}
+        >
+          {dragging && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-background/90 text-sm font-medium text-primary">
+              <Paperclip className="h-6 w-6" />
+              Déposez votre document ou votre image ici
+            </div>
+          )}
+
           <header className="flex items-center justify-between border-b border-border bg-primary px-3 py-2 text-primary-foreground">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
