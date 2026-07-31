@@ -155,11 +155,31 @@ export function useAssistant(enabled: boolean) {
         schema: 'public',
         table: 'hermes_jobs',
         filter: `user_id=eq.${uid}`,
-      }, (payload: any) => {
-        if (payload.new?.conversation_id === conversationId) {
-          setActiveStatus(payload.new.status as AssistantStatus);
+      }, async (payload: any) => {
+        if (payload.new?.conversation_id !== conversationId) return;
+        const status = payload.new.status as AssistantStatus;
+        setActiveStatus(status);
+        // Filet de sécurité : on relit le message assistant lié au job
+        if (status === 'completed' || status === 'failed' || status === 'needs_information' || status === 'confirmation_required') {
+          const { data } = await supabase
+            .from('assistant_messages')
+            .select('*')
+            .eq('job_id', payload.new.id)
+            .eq('role', 'assistant')
+            .maybeSingle();
+          if (data) {
+            const msg = mapMessage(data);
+            setMessages(prev => {
+              const idx = prev.findIndex(m => m.id === msg.id);
+              if (idx === -1) return [...prev, msg];
+              const next = [...prev];
+              next[idx] = msg;
+              return next;
+            });
+          }
         }
       })
+
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
