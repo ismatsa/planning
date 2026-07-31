@@ -39,7 +39,7 @@ const statusBadgeClass: Record<StatutDevis, string> = {
 };
 
 export default function DevisList() {
-  const { metiers, devis: devisStore } = useStore();
+  const { metiers, devis: devisStore, crm } = useStore();
   const { devisList, devisResponsibles, devisIntervenants, devisMetiers } = devisStore;
   const { user } = useAuth();
   const navigate = useNavigate();
