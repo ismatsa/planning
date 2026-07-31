@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { resolveAssistantContent, buildResultPayload } from "./content.ts";
+import { resolveAssistantContent, buildResultPayload, resolveSessionId } from './content.ts';
 
 Deno.test("complete-job utilise body.message", () => {
   assertEquals(
@@ -38,4 +38,11 @@ Deno.test("buildResultPayload conserve les données structurées", () => {
   assertEquals(payload.warnings, ["Prix estimé"]);
   assertEquals(payload.missing_fields, ["vin"]);
   assertEquals(payload.status, "completed");
+});
+
+Deno.test("resolveSessionId lit les alias de session Hermes", () => {
+  assertEquals(resolveSessionId({ hermes_session_id: "sess_1" }), "sess_1");
+  assertEquals(resolveSessionId({ session_id: "sess_2" }), "sess_2");
+  assertEquals(resolveSessionId({ result: { hermes_session_id: "sess_3" } }), "sess_3");
+  assertEquals(resolveSessionId({ message: "hello" }), null);
 });
