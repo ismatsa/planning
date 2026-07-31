@@ -22,6 +22,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { resolveDevisParties, NOT_SET } from '@/lib/devisDisplay';
 
 const TERMINAL_STATUSES: StatutDevis[] = ['valide', 'refuse', 'annule'];
 
@@ -38,7 +39,7 @@ const statusBadgeClass: Record<StatutDevis, string> = {
 };
 
 export default function DevisList() {
-  const { metiers, devis: devisStore } = useStore();
+  const { metiers, devis: devisStore, crm } = useStore();
   const { devisList, devisResponsibles, devisIntervenants, devisMetiers } = devisStore;
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -105,10 +106,10 @@ export default function DevisList() {
         }
         if (search) {
           const s = search.toLowerCase();
-          const vehicleStr = [d.marque, d.modele].filter(Boolean).join(' ').toLowerCase();
+          const p = resolveDevisParties(d, crm.clients, crm.vehicules);
           if (
-            !d.clientNom?.toLowerCase().includes(s) &&
-            !vehicleStr.includes(s)
+            !p.clientName.toLowerCase().includes(s) &&
+            !p.vehiculeLabel.toLowerCase().includes(s)
           ) return false;
         }
         if (filterResponsibles.length > 0) {
@@ -118,7 +119,7 @@ export default function DevisList() {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, showPast, user]);
+  }, [devisList, filterMetier, filterStatut, search, filterResponsibles, devisResponsibles, devisIntervenants, devisMetiers, onlyMine, showPast, user, crm.clients, crm.vehicules]);
 
   const myActionCount = useMemo(() => {
     if (!user) return 0;
@@ -313,6 +314,7 @@ export default function DevisList() {
                 const isTerminal = TERMINAL_STATUSES.includes(d.statut);
                 const isAssignedToMe = d.assignedUserId === user?.id && !isTerminal;
                 const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
+                const parties = resolveDevisParties(d, crm.clients, crm.vehicules);
 
                 return (
                   <tr
@@ -326,10 +328,10 @@ export default function DevisList() {
                         {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{canSeeDetails ? (d.clientNom || '—') : '—'}</td>
+                    <td className="px-4 py-3">{canSeeDetails ? parties.clientName : '—'}</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      {canSeeDetails && d.clientTel ? (() => {
-                        const { countryCode, number } = parsePhone(d.clientTel);
+                      {canSeeDetails && parties.clientPhone ? (() => {
+                        const { countryCode, number } = parsePhone(parties.clientPhone);
                         const waNum = toWhatsAppNumber(countryCode, number);
                         const display = `${countryCode} ${number}`;
                         return (
@@ -349,9 +351,9 @@ export default function DevisList() {
                             <TooltipContent>Envoyer un message WhatsApp</TooltipContent>
                           </Tooltip>
                         );
-                      })() : '—'}
+                      })() : (canSeeDetails ? NOT_SET : '—')}
                     </td>
-                    <td className="px-4 py-3 text-xs">{[d.marque, d.modele, d.annee].filter(Boolean).join(' ') || '—'}</td>
+                    <td className="px-4 py-3 text-xs">{parties.vehiculeLabel}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {dMetiers.map(mid => {
@@ -362,17 +364,17 @@ export default function DevisList() {
                             </span>
                           );
                         })}
-                        {dMetiers.length === 0 && '—'}
+                        {dMetiers.length === 0 && NOT_SET}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {resps.map(rid => profileOptions.find(p => p.id === rid)?.company || '').filter(Boolean).join(', ') || '—'}
+                      {resps.map(rid => profileOptions.find(p => p.id === rid)?.company || '').filter(Boolean).join(', ') || NOT_SET}
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {d.assignedUserId ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || '—') : '—'}
+                      {d.assignedUserId ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || NOT_SET) : NOT_SET}
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {billingProfile ? billingProfile.company : '—'}
+                      {billingProfile ? billingProfile.company : NOT_SET}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">

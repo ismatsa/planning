@@ -17,6 +17,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import type { Devis } from '@/types/devis';
+import { resolveDevisParties, NOT_SET } from '@/lib/devisDisplay';
 
 type Bucket = 'recent' | 'monitor' | 'followup' | 'critical';
 
@@ -42,7 +43,7 @@ function bucketFor(days: number): Bucket {
 }
 
 export default function DevisEnvoyes() {
-  const { metiers, devis: devisStore } = useStore();
+  const { metiers, devis: devisStore, crm } = useStore();
   const { devisList, devisResponsibles, devisMetiers, recordFollowUp } = devisStore;
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -75,8 +76,8 @@ export default function DevisEnvoyes() {
       .filter(d => {
         if (!search) return true;
         const s = search.toLowerCase();
-        const vehicleStr = [d.marque, d.modele].filter(Boolean).join(' ').toLowerCase();
-        return d.clientNom?.toLowerCase().includes(s) || vehicleStr.includes(s);
+        const p = resolveDevisParties(d, crm.clients, crm.vehicules);
+        return p.clientName.toLowerCase().includes(s) || p.vehiculeLabel.toLowerCase().includes(s);
       })
       .map(d => {
         const ref = d.sentAt ? new Date(d.sentAt) : new Date(d.updatedAt);
@@ -84,7 +85,7 @@ export default function DevisEnvoyes() {
         return { devis: d, days, bucket: bucketFor(days) };
       })
       .sort((a, b) => b.days - a.days);
-  }, [devisList, search]);
+  }, [devisList, search, crm.clients, crm.vehicules]);
 
   const grouped = useMemo(() => {
     const map: Record<Bucket, typeof sentDevis> = {
@@ -169,6 +170,9 @@ export default function DevisEnvoyes() {
                   <tbody>
                     {items.map(({ devis: d, days }) => {
                       const dMetiers = devisMetiers[d.id] || [];
+                      const resps = devisResponsibles[d.id] || [];
+                      const canSeeDetails = resps.includes(user?.id || '') || d.createdBy === user?.id;
+                      const parties = resolveDevisParties(d, crm.clients, crm.vehicules);
                       return (
                         <tr
                           key={d.id}
@@ -178,15 +182,15 @@ export default function DevisEnvoyes() {
                           <td className="px-4 py-3 text-xs">
                             {d.sentAt
                               ? format(new Date(d.sentAt), 'd MMM yyyy', { locale: fr })
-                              : '—'}
+                              : NOT_SET}
                           </td>
                           <td className="px-4 py-3 text-xs font-medium">
                             {days === 0 ? "aujourd'hui" : `${days} j`}
                           </td>
-                          <td className="px-4 py-3">{d.clientNom || '—'}</td>
+                          <td className="px-4 py-3">{canSeeDetails ? parties.clientName : '—'}</td>
                           <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                            {d.clientTel ? (() => {
-                              const { countryCode, number } = parsePhone(d.clientTel);
+                            {canSeeDetails && parties.clientPhone ? (() => {
+                              const { countryCode, number } = parsePhone(parties.clientPhone);
                               const waNum = toWhatsAppNumber(countryCode, number);
                               return (
                                 <Tooltip>
@@ -205,11 +209,12 @@ export default function DevisEnvoyes() {
                                   <TooltipContent>Relance WhatsApp</TooltipContent>
                                 </Tooltip>
                               );
-                            })() : '—'}
+                            })() : (canSeeDetails ? NOT_SET : '—')}
                           </td>
                           <td className="px-4 py-3 text-xs">
-                            {[d.marque, d.modele, d.annee].filter(Boolean).join(' ') || '—'}
+                            {parties.vehiculeLabel}
                           </td>
+
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap gap-1">
                               {dMetiers.map(mid => {
@@ -223,13 +228,13 @@ export default function DevisEnvoyes() {
                                   </span>
                                 );
                               })}
-                              {dMetiers.length === 0 && '—'}
+                              {dMetiers.length === 0 && NOT_SET}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-xs">
                             {d.assignedUserId
-                              ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || '—')
-                              : '—'}
+                              ? (profileOptions.find(p => p.id === d.assignedUserId)?.company || NOT_SET)
+                              : NOT_SET}
                           </td>
                           <td className="px-4 py-3 text-xs">
                             {d.followUpCount > 0 ? (
