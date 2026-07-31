@@ -330,27 +330,47 @@ export default function AssistantWidget() {
             </button>
           </header>
 
-          <div className="flex-1 space-y-3 overflow-y-auto p-3">
-            {messages.length === 0 && (
-              <div className="mt-6 text-center text-sm text-muted-foreground">
-                <Bot className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                Décrivez votre demande ou déposez une photo / capture / PDF.<br />
-                Devis brouillon, référence pièce, client, véhicule ou rendez-vous.
-              </div>
-            )}
-            {messages.map(m => <MessageBubble key={m.id} message={m} />)}
-            {activeStatus === 'queued' && (
-              <p className="mx-auto max-w-[90%] rounded-md bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
-                {QUEUE_NOTICE}
-              </p>
-            )}
-            {activeStatus && activeStatus !== 'queued' && activeStatus !== 'completed' && activeStatus !== 'failed' && lastAssistantStatus !== activeStatus && (
-              <div className="flex justify-start"><StatusPill status={activeStatus} /></div>
-            )}
+          <div className="relative flex-1 overflow-hidden">
+            <div
+              ref={scrollRef}
+              onScroll={() => {
+                const near = isNearBottom();
+                setAtBottom(near);
+                if (near) setHasNew(false);
+              }}
+              className="h-full space-y-3 overflow-y-auto p-3"
+            >
+              {messages.length === 0 && (
+                <div className="mt-6 text-center text-sm text-muted-foreground">
+                  <Bot className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                  Décrivez votre demande ou déposez une photo / capture / PDF.<br />
+                  Devis brouillon, référence pièce, client, véhicule ou rendez-vous.
+                </div>
+              )}
+              {messages.map(m => <MessageBubble key={m.id} message={m} />)}
+              {activeStatus === 'queued' && (
+                <p className="mx-auto max-w-[90%] rounded-md bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
+                  {QUEUE_NOTICE}
+                </p>
+              )}
+              {activeStatus && activeStatus !== 'queued' && activeStatus !== 'completed' && activeStatus !== 'failed' && lastAssistantStatus !== activeStatus && (
+                <div className="flex justify-start"><StatusPill status={activeStatus} /></div>
+              )}
 
-            {error && <p className="text-center text-xs text-destructive">{error}</p>}
-            <div ref={bottomRef} />
+              {error && <p className="text-center text-xs text-destructive">{error}</p>}
+              <div ref={bottomRef} />
+            </div>
+
+            {hasNew && !atBottom && (
+              <button
+                onClick={() => scrollToBottom('smooth')}
+                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-foreground shadow-md transition hover:bg-muted"
+              >
+                Nouveaux messages
+              </button>
+            )}
           </div>
+
 
           <div className="border-t border-border p-2">
             {/* Boutons d'actions rapides masqués temporairement */}
