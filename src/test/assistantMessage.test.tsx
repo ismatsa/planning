@@ -28,7 +28,7 @@ describe('AssistantWidget MessageBubble', () => {
       screen.getByText("Bonjour ! Je suis l'assistant Powertech. Comment puis-je vous aider ?"),
     ).toBeInTheDocument();
     // Le badge de statut reste visible sans remplacer la réponse
-    expect(screen.getByText('Action réalisée')).toBeInTheDocument();
+    expect(screen.getByText('Réponse reçue')).toBeInTheDocument();
   });
 
   it('affiche avertissements et informations manquantes', () => {

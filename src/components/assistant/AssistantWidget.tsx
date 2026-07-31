@@ -8,9 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import {
-  useAssistant, STATUS_LABELS, QUEUE_NOTICE,
+  useAssistant, QUEUE_NOTICE,
   type AssistantStatus, type AssistantMessage,
 } from '@/hooks/useAssistant';
+import {
+  statusLabel, actionLabel, actionRecordIds, toBullets, summaryRows, mainMessage,
+} from './resultView';
+
 
 const QUICK_ACTIONS: { hint: string; label: string; prompt: string }[] = [
   { hint: 'devis', label: 'Devis', prompt: 'Crée un devis brouillon : ' },
@@ -29,17 +33,17 @@ const STATUS_STYLES: Record<AssistantStatus, { icon: any; className: string }> =
   failed: { icon: AlertTriangle, className: 'bg-destructive/10 text-destructive' },
 };
 
-function StatusPill({ status }: { status: AssistantStatus }) {
+function StatusPill({ status, result }: { status: AssistantStatus; result?: any }) {
   const { icon: Icon, className } = STATUS_STYLES[status];
   return (
     <Badge variant="secondary" className={cn('gap-1 font-medium', className)}>
       <Icon className={cn('h-3 w-3', status === 'processing' && 'animate-spin')} />
-      {STATUS_LABELS[status]}
+      {statusLabel(status, result)}
     </Badge>
   );
 }
 
-// Jamais de "[object Object]" : on rend un texte lisible quelle que soit la forme reçue.
+// Conservé pour compatibilité : ne jamais rendre un objet brut.
 export function toText(value: any): string {
   if (value === null || value === undefined) return '';
   if (typeof value === 'string') return value;
@@ -56,63 +60,52 @@ export function toText(value: any): string {
   return String(value);
 }
 
+function Bullets({ title, items, tone }: { title: string; items: string[]; tone?: 'warning' }) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <p className={cn('font-semibold', tone === 'warning' && 'text-amber-600')}>{title}</p>
+      <ul className="list-disc pl-4">
+        {items.map((item, i) => <li key={i}>{item}</li>)}
+      </ul>
+    </div>
+  );
+}
+
 function ResultSummary({ result }: { result: any }) {
   if (!result || typeof result !== 'object') return null;
-  const changes: any[] = Array.isArray(result.changes) ? result.changes : [];
-  const missing: any[] = Array.isArray(result.missing_fields) ? result.missing_fields : [];
-  const warnings: any[] = Array.isArray(result.warnings) ? result.warnings : [];
-  const conflicts: any[] = Array.isArray(result.conflicts) ? result.conflicts : [];
-  const slots: any[] = Array.isArray(result.suggested_slots) ? result.suggested_slots : [];
 
-  if (!changes.length && !missing.length && !warnings.length && !conflicts.length && !slots.length
-      && !result.planning_impact && !result.action) {
+  const action = actionLabel(result.action);
+  const recordIds = actionRecordIds(result.action);
+  const missing = toBullets(result.missing_fields);
+  const warnings = toBullets(result.warnings);
+  const conflicts = toBullets(result.conflicts);
+  const slots = toBullets(result.suggested_slots);
+  const rows = summaryRows(result.summary);
+
+  if (!action && !missing.length && !warnings.length && !conflicts.length && !slots.length && !rows.length) {
     return null;
   }
 
   return (
     <div className="mt-2 space-y-2 rounded-md border border-border bg-muted/40 p-2 text-xs">
-      {result.action && (
-        <p><span className="font-semibold">Action :</span> {toText(result.action)}</p>
+      {action && (
+        <p>
+          <span className="font-semibold">Action :</span> {action}
+          {recordIds.length > 0 && <span className="text-muted-foreground"> ({recordIds.join(', ')})</span>}
+        </p>
       )}
-      {changes.map((c, i) => (
-        <div key={i} className="space-y-0.5">
-          <p className="font-semibold">{c.label ?? `${c.resource ?? ''} ${c.action ?? ''}`.trim()}</p>
-          {c.old_value !== undefined && (
-            <p className="text-muted-foreground">
-              Ancienne valeur : <span className="line-through">{JSON.stringify(c.old_value)}</span>
+      <Bullets title="Conflit détecté" items={conflicts} tone="warning" />
+      <Bullets title="Créneaux disponibles" items={slots} />
+      <Bullets title="Informations manquantes" items={missing} />
+      <Bullets title="Avertissements" items={warnings} tone="warning" />
+      {rows.length > 0 && (
+        <div className="space-y-0.5">
+          {rows.map((r) => (
+            <p key={r.label}>
+              <span className="font-semibold">{r.label} :</span> {r.value}
             </p>
-          )}
-          {c.new_value !== undefined && (
-            <p className="text-foreground">Nouvelle valeur : {JSON.stringify(c.new_value)}</p>
-          )}
-        </div>
-      ))}
-      {result.planning_impact && (
-        <p><span className="font-semibold">Impact planning :</span> {toText(result.planning_impact)}</p>
-      )}
-
-      {conflicts.length > 0 && (
-        <div>
-          <p className="font-semibold text-destructive">Conflit détecté</p>
-          <ul className="list-disc pl-4">{conflicts.map((c, i) => <li key={i}>{toText(c)}</li>)}</ul>
-        </div>
-      )}
-      {slots.length > 0 && (
-        <div>
-          <p className="font-semibold">Créneaux disponibles</p>
-          <ul className="list-disc pl-4">{slots.map((s, i) => <li key={i}>{toText(s)}</li>)}</ul>
-        </div>
-      )}
-      {missing.length > 0 && (
-        <div>
-          <p className="font-semibold">Informations manquantes</p>
-          <ul className="list-disc pl-4">{missing.map((m, i) => <li key={i}>{toText(m)}</li>)}</ul>
-        </div>
-      )}
-      {warnings.length > 0 && (
-        <div>
-          <p className="font-semibold">Avertissements</p>
-          <ul className="list-disc pl-4">{warnings.map((w, i) => <li key={i}>{toText(w)}</li>)}</ul>
+          ))}
         </div>
       )}
     </div>
@@ -131,16 +124,19 @@ export function MessageBubble({ message }: { message: AssistantMessage }) {
     );
   }
 
-  const content = message.content?.trim() ?? '';
-  const isPlaceholder = !isUser && PLACEHOLDERS.includes(content);
-  const summary = !isUser && message.result?.summary ? toText(message.result.summary) : null;
+  const content = isUser
+    ? (message.content ?? '')
+    : mainMessage(message.result, message.content);
+  const isPlaceholder = !isUser && PLACEHOLDERS.includes(content.trim());
 
   // Une fois l'action terminée, on n'affiche plus les textes techniques de statut.
   if (isPlaceholder && (message.status === 'completed' || message.status === 'failed')) return null;
 
   return (
     <div className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}>
-      {!isUser && message.status && !isPlaceholder && <StatusPill status={message.status} />}
+      {!isUser && message.status && !isPlaceholder && (
+        <StatusPill status={message.status} result={message.result} />
+      )}
       <div
         className={cn(
           'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
@@ -149,9 +145,6 @@ export function MessageBubble({ message }: { message: AssistantMessage }) {
         )}
       >
         {content}
-        {summary && content !== summary && (
-          <p className="mt-1 text-xs text-muted-foreground">{summary}</p>
-        )}
         {message.attachments.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {message.attachments.map((a) => (
@@ -173,6 +166,7 @@ export function MessageBubble({ message }: { message: AssistantMessage }) {
     </div>
   );
 }
+
 
 
 export default function AssistantWidget() {
