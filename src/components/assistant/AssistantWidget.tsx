@@ -16,7 +16,10 @@ import {
 } from './resultView';
 
 
+const SHOW_QUICK_ACTIONS = false;
+
 const QUICK_ACTIONS: { hint: string; label: string; prompt: string }[] = [
+
   { hint: 'devis', label: 'Devis', prompt: 'Crée un devis brouillon : ' },
   { hint: 'reference_piece', label: 'Référence pièce', prompt: 'Recherche la référence constructeur (PartsLink24) : VIN ' },
   { hint: 'client_vehicule', label: 'Client / Véhicule', prompt: 'Recherche ou crée le client et son véhicule : ' },
