@@ -181,16 +181,58 @@ export default function AssistantWidget() {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const [hasNew, setHasNew] = useState(false);
 
   const { messages, send, sending, activeStatus, error } = useAssistant(open);
   const lastAssistantStatus = [...messages].reverse().find(m => m.role === 'assistant')?.status ?? null;
 
+  const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior });
+      });
+    });
+    setHasNew(false);
+    setAtBottom(true);
+  };
 
+  const isNearBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
+  // Ouverture : toujours en bas.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, activeStatus]);
+    if (!open) return;
+    setAtBottom(true);
+    setHasNew(false);
+    scrollToBottom('auto');
+  }, [open]);
+
+  // Nouveau message / statut / résumé : suivre uniquement si l'utilisateur est en bas.
+  useEffect(() => {
+    if (!open) return;
+    if (atBottom) scrollToBottom('smooth');
+    else if (messages.length > 0) setHasNew(true);
+  }, [messages.length, messages[messages.length - 1]?.result, activeStatus, open]);
+
+  // Redimensionnement du contenu (images, pièces jointes, résumés).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!open || !el) return;
+    const ro = new ResizeObserver(() => {
+      if (atBottom) el.scrollTop = el.scrollHeight;
+    });
+    Array.from(el.children).forEach(c => ro.observe(c));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, atBottom, messages.length]);
 
   useEffect(() => {
     if (open) textareaRef.current?.focus();
