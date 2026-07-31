@@ -244,8 +244,10 @@ export default function AssistantWidget() {
     const payloadFiles = files;
     setText('');
     setFiles([]);
+    scrollToBottom('auto');
     await send(payload, payloadFiles, hint);
     setHint('libre');
+    scrollToBottom('smooth');
     textareaRef.current?.focus();
   };
 
