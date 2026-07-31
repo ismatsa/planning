@@ -43,7 +43,7 @@ function bucketFor(days: number): Bucket {
 }
 
 export default function DevisEnvoyes() {
-  const { metiers, devis: devisStore } = useStore();
+  const { metiers, devis: devisStore, crm } = useStore();
   const { devisList, devisResponsibles, devisMetiers, recordFollowUp } = devisStore;
   const { user } = useAuth();
   const navigate = useNavigate();
