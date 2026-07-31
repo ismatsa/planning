@@ -53,7 +53,6 @@ Deno.serve(async (req) => {
 
   const message = String(body.message ?? '').slice(0, 8000);
   const actionHint = ALLOWED_HINTS.includes(body.action_hint) ? body.action_hint : 'libre';
-  const conversationId = body.conversation_id ?? null;
   const idempotencyKey = String(body.idempotency_key ?? crypto.randomUUID()).slice(0, 200);
   const attachments = Array.isArray(body.attachments) ? body.attachments.slice(0, 10) : [];
 
@@ -61,12 +60,36 @@ Deno.serve(async (req) => {
     return json({ error: 'empty_request' }, 400);
   }
 
-  // La conversation doit appartenir à l'utilisateur
-  if (conversationId) {
+  // Conversation résolue côté serveur : une seule session active par utilisateur.
+  // Le conversation_id / hermes_session_id envoyés par le frontend sont ignorés.
+  const ASSISTANT = 'powertech';
+  let conversationId: string | null = null;
+  {
     const { data: conv } = await admin
-      .from('assistant_conversations').select('user_id').eq('id', conversationId).maybeSingle();
-    if (!conv || conv.user_id !== userId) return json({ error: 'forbidden_conversation' }, 403);
+      .from('assistant_conversations')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('assistant', ASSISTANT)
+      .maybeSingle();
+    conversationId = conv?.id ?? null;
+    if (!conversationId) {
+      const { data: created, error: convError } = await admin
+        .from('assistant_conversations')
+        .insert({ user_id: userId, assistant: ASSISTANT, title: 'Assistant Powertech' })
+        .select('id')
+        .single();
+      if (convError) {
+        // Course entre deux onglets : on relit la conversation existante
+        const { data: again } = await admin
+          .from('assistant_conversations')
+          .select('id').eq('user_id', userId).eq('assistant', ASSISTANT).maybeSingle();
+        conversationId = again?.id ?? null;
+      } else {
+        conversationId = created?.id ?? null;
+      }
+    }
   }
+  if (!conversationId) return json({ error: 'conversation_unavailable' }, 500);
 
   // Les fichiers doivent être dans le dossier privé de l'utilisateur
   const safeAttachments: any[] = [];
@@ -124,5 +147,5 @@ Deno.serve(async (req) => {
     .select('id', { count: 'exact', head: true })
     .in('status', ['queued', 'processing']);
 
-  return json({ job_id: job.id, status: job.status, queued: (count ?? 1) > 1 });
+  return json({ job_id: job.id, status: job.status, conversation_id: conversationId, queued: (count ?? 1) > 1 });
 });
