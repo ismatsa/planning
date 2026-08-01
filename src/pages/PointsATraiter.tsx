@@ -336,11 +336,11 @@ export default function PointsATraiter() {
       ) : (
         <div className="overflow-x-auto pb-4" ref={boardRef}>
           <div className="flex gap-3 min-w-max items-start">
-            {columns.map(({ statut, cards }) => (
-              <section key={statut} className="w-[260px] shrink-0 rounded-lg bg-muted/30 border">
+            {columns.map(({ def, cards }) => (
+              <section key={def.key} className="w-[260px] shrink-0 rounded-lg bg-muted/30 border">
                 <header className="flex items-center gap-2 p-3 border-b">
-                  <span className={`h-2.5 w-2.5 rounded-full ${COLUMN_ACCENT[statut]}`} aria-hidden="true" />
-                  <h2 className="text-sm font-semibold flex-1 truncate">{STATUT_DEVIS_LABELS[statut]}</h2>
+                  <span className={`h-2.5 w-2.5 rounded-full ${def.accent}`} aria-hidden="true" />
+                  <h2 className="text-sm font-semibold flex-1 truncate">{def.label}</h2>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span
@@ -350,7 +350,7 @@ export default function PointsATraiter() {
                         {cards.length}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>{COLUMN_HINT[statut](cards.length)}</TooltipContent>
+                    <TooltipContent>{def.hint(cards.length)}</TooltipContent>
                   </Tooltip>
                 </header>
                 <div className="p-2 space-y-2 max-h-[calc(100vh-220px)] overflow-y-auto">
@@ -362,14 +362,16 @@ export default function PointsATraiter() {
                         key={d.id}
                         devis={d}
                         activity={activityByDevis.get(d.id) || { unread: 0, assigned: false, tasks: 0 }}
+                        assignedToMe={!!user && d.assignedUserId === user.id}
                         assignedLabel={
-                          d.assignedUserId
-                            ? (d.assignedUserId === user?.id ? 'vous' : profileNames[d.assignedUserId] || undefined)
+                          d.assignedUserId && d.assignedUserId !== user?.id
+                            ? profileNames[d.assignedUserId] || undefined
                             : undefined
                         }
                         canSeeContact={!!user}
                         onOpen={handleOpenCard}
                       />
+
                     ))
                   )}
                 </div>
