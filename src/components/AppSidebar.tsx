@@ -14,6 +14,7 @@ import {
   Send,
   Contact,
   Car,
+  ClipboardList,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/store/AuthContext";
@@ -21,6 +22,8 @@ import { useStore } from "@/store/StoreContext";
 import { useSidebarState } from "./AppLayout";
 import logo from "@/assets/powertech-short.png";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useActionItems } from "@/store/ActionItemsContext";
 import { useMemo } from "react";
 
 export default function AppSidebar() {
@@ -28,6 +31,7 @@ export default function AppSidebar() {
   const { logout, user, isAdmin } = useAuth();
   const { collapsed, toggle } = useSidebarState();
   const { devis: devisStore } = useStore();
+  const { totalCount } = useActionItems();
 
   const TERMINAL_STATUTS = ['valide', 'refuse', 'annule'];
   const assignedCount = useMemo(() => {
@@ -39,7 +43,7 @@ export default function AppSidebar() {
 
   const sections: {
     title: string;
-    items: { to: string; icon: any; label: string; adminOnly?: boolean; badge?: number }[];
+    items: { to: string; icon: any; label: string; adminOnly?: boolean; badge?: number; badgeTooltip?: boolean }[];
   }[] = [
     {
       title: "Événements",
@@ -63,6 +67,13 @@ export default function AppSidebar() {
           to: "/devis/envoyes",
           icon: Send,
           label: "Devis envoyés",
+        },
+        {
+          to: "/devis/points-a-traiter",
+          icon: ClipboardList,
+          label: "Points à traiter",
+          badge: totalCount > 0 ? totalCount : undefined,
+          badgeTooltip: true,
         },
       ],
     },
@@ -106,7 +117,7 @@ export default function AppSidebar() {
                 <span className="hidden lg:block text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold px-3 mb-1">
                   {section.title}
                 </span>
-                {visibleItems.map(({ to, icon: Icon, label, badge }) => {
+                {visibleItems.map(({ to, icon: Icon, label, badge, badgeTooltip }) => {
                   const active =
                     to === "/"
                       ? location.pathname === "/"
@@ -129,9 +140,22 @@ export default function AppSidebar() {
                       <Icon className="h-5 w-5 shrink-0" />
                       <span className="hidden lg:block flex-1">{label}</span>
                       {badge !== undefined && (
-                        <span className="hidden lg:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
-                          {badge}
-                        </span>
+                        badgeTooltip ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="hidden lg:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
+                                {badge > 99 ? "99+" : badge}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {badge === 1 ? "1 point à traiter" : `${badge} points à traiter`}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="hidden lg:inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
+                            {badge > 99 ? "99+" : badge}
+                          </span>
+                        )
                       )}
                     </Link>
                   );
