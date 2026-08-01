@@ -300,6 +300,7 @@ export default function DevisList() {
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Assigné à</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Facturation</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Statut</th>
+                <th className="w-10 px-2 py-2.5"><span className="sr-only">Ouvrir</span></th>
               </tr>
             </thead>
             <tbody>
@@ -318,7 +319,7 @@ export default function DevisList() {
                 return (
                   <tr
                     key={d.id}
-                    className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${getRowStyle(d)}`}
+                    className={`border-b last:border-0 cursor-pointer transition-colors [&:hover:not(:has([data-noopen]:hover))]:bg-muted/40 [&:has([data-open-btn]:focus-visible)]:bg-muted/40 ${getRowStyle(d)}`}
                     onClick={() => navigate(`/devis/${d.id}`)}
                   >
                     <td className="px-4 py-3 font-medium">
@@ -327,24 +328,25 @@ export default function DevisList() {
                         {format(new Date(d.createdAt), 'd MMM yyyy', { locale: fr })}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-noopen onClick={e => e.stopPropagation()}>
                       <ClientNameCell
                         name={parties.clientName}
                         clientId={parties.client?.id}
                         canSee={canSeeDetails}
                       />
                     </td>
-                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                    <td className="px-4 py-3" data-noopen onClick={e => e.stopPropagation()}>
                       <ClientPhoneCell phone={parties.clientPhone} canSee={canSeeDetails} />
                     </td>
 
-                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                    <td className="px-4 py-3" data-noopen onClick={e => e.stopPropagation()}>
                       <VehiculeCell
                         label={parties.vehiculeLabel}
                         vin={parties.vehicule?.vin || d.vin || undefined}
                         vehiculeId={parties.vehicule?.id}
                       />
                     </td>
+
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {dMetiers.map(mid => {
