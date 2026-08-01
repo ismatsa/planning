@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import { NOT_SET } from '@/lib/devisDisplay';
 
-export const MASKED = 'Coordonnées masquées';
+export const MASKED = 'Accès non autorisé';
 
 /** Client name — clickable when the CRM client record exists. */
 export function ClientNameCell({

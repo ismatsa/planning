@@ -170,8 +170,7 @@ export default function DevisEnvoyes() {
                   <tbody>
                     {items.map(({ devis: d, days }) => {
                       const dMetiers = devisMetiers[d.id] || [];
-                      const resps = devisResponsibles[d.id] || [];
-                      const canSeeDetails = resps.includes(user?.id || '') || d.createdBy === user?.id;
+                      const canSeeDetails = !!user;
                       const parties = resolveDevisParties(d, crm.clients, crm.vehicules);
                       return (
                         <tr
