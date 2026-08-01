@@ -33,8 +33,8 @@ export function ReturnOriginProvider({
 
 /** Default label for known internal routes, used when a screen declares no explicit label. */
 function defaultLabel(pathname: string): string {
-  if (pathname.startsWith('/points-a-traiter')) return 'Points à traiter';
-  if (pathname.startsWith('/devis/envoyes') || pathname.startsWith('/devis-envoyes')) return 'Devis envoyés';
+  if (pathname.includes('points-a-traiter')) return 'Points à traiter';
+  if (pathname.startsWith('/devis/envoyes')) return 'Devis envoyés';
   if (pathname.startsWith('/devis/creer')) return 'Création de devis';
   if (/^\/devis\/[^/]+$/.test(pathname)) return 'le devis';
   if (pathname.startsWith('/devis')) return 'Demandes de devis';
