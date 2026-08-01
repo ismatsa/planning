@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { resolveDevisParties, NOT_SET } from '@/lib/devisDisplay';
-import { ClientNameCell, ClientPhoneCell } from '@/components/devis/PartyCells';
+import { ClientNameCell, ClientPhoneCell, VehiculeCell } from '@/components/devis/PartyCells';
 
 const TERMINAL_STATUSES: StatutDevis[] = ['valide', 'refuse', 'annule'];
 
@@ -338,7 +338,13 @@ export default function DevisList() {
                       <ClientPhoneCell phone={parties.clientPhone} canSee={canSeeDetails} />
                     </td>
 
-                    <td className="px-4 py-3 text-xs">{parties.vehiculeLabel}</td>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <VehiculeCell
+                        label={parties.vehiculeLabel}
+                        vin={parties.vehicule?.vin || d.vin || undefined}
+                        vehiculeId={parties.vehicule?.id}
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {dMetiers.map(mid => {

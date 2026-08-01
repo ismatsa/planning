@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import type { Devis } from '@/types/devis';
 import { resolveDevisParties, NOT_SET } from '@/lib/devisDisplay';
-import { ClientNameCell, ClientPhoneCell } from '@/components/devis/PartyCells';
+import { ClientNameCell, ClientPhoneCell, VehiculeCell } from '@/components/devis/PartyCells';
 
 type Bucket = 'recent' | 'monitor' | 'followup' | 'critical';
 
@@ -197,8 +197,12 @@ export default function DevisEnvoyes() {
                             <ClientPhoneCell phone={parties.clientPhone} canSee={canSeeDetails} compact />
                           </td>
 
-                          <td className="px-4 py-3 text-xs">
-                            {parties.vehiculeLabel}
+                          <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                            <VehiculeCell
+                              label={parties.vehiculeLabel}
+                              vin={parties.vehicule?.vin || d.vin || undefined}
+                              vehiculeId={parties.vehicule?.id}
+                            />
                           </td>
 
                           <td className="px-4 py-3">

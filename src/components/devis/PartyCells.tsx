@@ -72,3 +72,54 @@ export function ClientPhoneCell({
     </Tooltip>
   );
 }
+
+/** Vehicle: "Marque Modèle Année" + "VIN : …", whole cell clickable to the vehicle record. */
+export function VehiculeCell({
+  label,
+  vin,
+  vehiculeId,
+}: {
+  label: string;
+  vin?: string;
+  vehiculeId?: string;
+}) {
+  const navigate = useNavigate();
+  if (!label || label === NOT_SET) return <span className="text-muted-foreground text-xs">{NOT_SET}</span>;
+
+  const content = (
+    <>
+      <span className="text-xs font-medium block">{label}</span>
+      {vin && <span className="text-[11px] text-muted-foreground block">VIN : {vin}</span>}
+    </>
+  );
+
+  if (!vehiculeId) return <div className="text-xs">{content}</div>;
+
+  const open = () => navigate(`/vehicules/${vehiculeId}`);
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          role="link"
+          tabIndex={0}
+          onClick={e => {
+            e.stopPropagation();
+            open();
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              open();
+            }
+          }}
+          className="-mx-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+        >
+          {content}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>Ouvrir la fiche véhicule</TooltipContent>
+    </Tooltip>
+  );
+}
