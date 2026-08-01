@@ -95,17 +95,18 @@ function KanbanCard({
   devis,
   activity,
   assignedLabel,
+  onOpen,
 }: {
   devis: Devis;
   activity: CardActivity;
   assignedLabel?: string;
+  onOpen: (devis: Devis, trigger: HTMLElement) => void;
 }) {
-  const navigate = useNavigate();
   const { crm } = useStore();
   const parties = resolveDevisParties(devis, crm.clients, crm.vehicules);
   const vin = parties.vehicule?.vin || devis.vin;
   const isSent = devis.statut === 'envoye';
-  const open = () => navigate(`/devis/${devis.id}`);
+  const open = (e: React.SyntheticEvent) => onOpen(devis, e.currentTarget as HTMLElement);
 
   return (
     <div
