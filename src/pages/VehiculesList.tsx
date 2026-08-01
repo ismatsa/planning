@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ReturnOriginProvider, useNavigateWithReturn } from '@/lib/returnNav';
 import { useStore } from '@/store/StoreContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,8 @@ import { clientDisplayName, VEHICULE_STATUT_LABELS, VehiculeStatut } from '@/typ
 export default function VehiculesList() {
   const { crm } = useStore();
   const navigate = useNavigate();
+  const navigateWithReturn = useNavigateWithReturn();
+  const location = useLocation();
 
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState('all');
@@ -97,7 +100,7 @@ export default function VehiculesList() {
         {filtered.map(v => (
           <button
             key={v.id}
-            onClick={() => navigate(`/vehicules/${v.id}`)}
+            onClick={() => navigateWithReturn(`/vehicules/${v.id}`)}
             className="w-full text-left p-4 hover:bg-muted/50 transition-colors flex items-center gap-3"
           >
             <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -125,7 +128,7 @@ export default function VehiculesList() {
       <VehiculeFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
-        onSaved={(v) => navigate(`/vehicules/${v.id}`)}
+        onSaved={(v) => navigateWithReturn(`/vehicules/${v.id}`)}
       />
     </div>
   );

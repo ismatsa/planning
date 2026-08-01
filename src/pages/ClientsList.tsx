@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ReturnOriginProvider, useNavigateWithReturn } from '@/lib/returnNav';
 import { useStore } from '@/store/StoreContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,10 +17,13 @@ import { clientDisplayName, CLIENT_TYPE_LABELS, ClientType } from '@/types/crm';
 export default function ClientsList() {
   const { crm } = useStore();
   const navigate = useNavigate();
+  const navigateWithReturn = useNavigateWithReturn();
+  const location = useLocation();
 
-  const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [showArchived, setShowArchived] = useState(false);
+  const restored = (location.state || {}) as any;
+  const [search, setSearch] = useState(restored.search ?? '');
+  const [filterType, setFilterType] = useState(restored.filterType ?? 'all');
+  const [showArchived, setShowArchived] = useState(restored.showArchived ?? false);
   const [formOpen, setFormOpen] = useState(false);
 
   const vehiculeCount = useMemo(() => {
@@ -88,7 +92,7 @@ export default function ClientsList() {
         {filtered.map(c => (
           <button
             key={c.id}
-            onClick={() => navigate(`/clients/${c.id}`)}
+            onClick={() => navigateWithReturn(`/clients/${c.id}`)}
             className="w-full text-left p-4 hover:bg-muted/50 transition-colors flex items-center gap-3"
           >
             <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -119,7 +123,7 @@ export default function ClientsList() {
       <ClientFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
-        onSaved={(c) => navigate(`/clients/${c.id}`)}
+        onSaved={(c) => navigateWithReturn(`/clients/${c.id}`)}
       />
     </div>
   );
