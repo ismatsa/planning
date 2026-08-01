@@ -249,11 +249,13 @@ export default function PointsATraiter() {
     return map;
   }, [items]);
 
+  /** Rétention : les colonnes Validé / Refusé / Annulé n'affichent que les 7 derniers jours. */
   const columns = useMemo(() => {
+    const now = Date.now();
     return COLUMNS.map(statut => ({
       statut,
       cards: devisList
-        .filter(d => d.statut === statut)
+        .filter(d => d.statut === statut && isVisibleInKanban(d, now))
         .sort((a, b) =>
           new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()),
     }));
