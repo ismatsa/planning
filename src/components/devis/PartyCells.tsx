@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, ChevronRight } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import { NOT_SET } from '@/lib/devisDisplay';
+
 
 export const MASKED = 'Accès non autorisé';
 
