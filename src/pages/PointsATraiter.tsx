@@ -97,17 +97,20 @@ function KanbanCard({
   devis,
   activity,
   assignedLabel,
+  canSeeContact,
   onOpen,
 }: {
   devis: Devis;
   activity: CardActivity;
   assignedLabel?: string;
+  canSeeContact: boolean;
   onOpen: (devis: Devis, trigger: HTMLElement) => void;
 }) {
   const { crm } = useStore();
   const parties = resolveDevisParties(devis, crm.clients, crm.vehicules);
   const vin = parties.vehicule?.vin || devis.vin;
   const isSent = devis.statut === 'envoye';
+  const relance = needsFollowUp(devis);
   const open = (e: React.SyntheticEvent) => onOpen(devis, e.currentTarget as HTMLElement);
 
   return (
@@ -119,7 +122,11 @@ function KanbanCard({
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); }
       }}
       aria-label={`Ouvrir ${isSent ? 'le devis envoyé' : 'la demande de devis'} ${parties.clientName}`}
-      className="rounded-lg border bg-card p-3 space-y-2 cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={`rounded-lg border p-3 space-y-2 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        relance
+          ? 'border-destructive/40 bg-destructive/10 hover:bg-destructive/15'
+          : 'bg-card hover:bg-muted/40'
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -144,15 +151,30 @@ function KanbanCard({
           {isSent ? 'Devis envoyé' : 'Demande de devis'}
         </Badge>
         <Badge variant="secondary" className="text-[10px]">{STATUT_DEVIS_LABELS[devis.statut]}</Badge>
+        {relance && (
+          <Badge variant="destructive" className="text-[10px] gap-1">
+            <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+            Relance à préparer
+          </Badge>
+        )}
       </div>
 
       <div className="text-[11px] text-muted-foreground space-y-0.5">
         <p>{formatDistanceToNow(new Date(devis.updatedAt || devis.createdAt), { addSuffix: true, locale: fr })}</p>
         {assignedLabel && <p>Assigné à {assignedLabel}</p>}
       </div>
+
+      {relance && (
+        <FollowUpButton
+          devisId={devis.id}
+          phone={parties.clientPhone}
+          canSeeContact={canSeeContact}
+        />
+      )}
     </div>
   );
 }
+
 
 export default function PointsATraiter() {
   const { user } = useAuth();
