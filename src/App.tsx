@@ -23,6 +23,9 @@ import ClientDetail from "./pages/ClientDetail";
 import VehiculesList from "./pages/VehiculesList";
 import VehiculeDetail from "./pages/VehiculeDetail";
 import ApiIntegrations from "./pages/ApiIntegrations";
+import PointsATraiter from "./pages/PointsATraiter";
+import { ActionItemsProvider } from "./store/ActionItemsContext";
+
 
 const queryClient = new QueryClient();
 
