@@ -389,7 +389,14 @@ export default function DevisList() {
                         )}
                       </div>
                     </td>
+                    <td className="w-10 px-2 py-3 text-right" data-open-btn>
+                      <OpenRowButton
+                        label="Ouvrir la demande de devis"
+                        onOpen={() => navigate(`/devis/${d.id}`)}
+                      />
+                    </td>
                   </tr>
+
                 );
               })}
             </tbody>
