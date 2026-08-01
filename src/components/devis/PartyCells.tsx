@@ -24,18 +24,26 @@ export function ClientNameCell({
   if (!name || name === NOT_SET) return <span className="text-muted-foreground">{NOT_SET}</span>;
   if (!clientId) return <span className={className}>{name}</span>;
   return (
-    <button
-      type="button"
-      onClick={e => {
-        e.stopPropagation();
-        navigate(`/clients/${clientId}`);
-      }}
-      className={`text-left hover:underline text-primary font-medium ${className}`}
-    >
-      {name}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            navigate(`/clients/${clientId}`);
+          }}
+          aria-label={`Ouvrir la fiche client ${name}`}
+          className={`inline-flex items-center gap-1 text-left hover:underline text-primary font-medium rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
+        >
+          <span>{name}</span>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>Ouvrir la fiche client</TooltipContent>
+    </Tooltip>
   );
 }
+
 
 /** Phone with a green WhatsApp icon opening https://wa.me/<normalized>. */
 export function ClientPhoneCell({
