@@ -197,8 +197,12 @@ export default function DevisEnvoyes() {
                             <ClientPhoneCell phone={parties.clientPhone} canSee={canSeeDetails} compact />
                           </td>
 
-                          <td className="px-4 py-3 text-xs">
-                            {parties.vehiculeLabel}
+                          <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                            <VehiculeCell
+                              label={parties.vehiculeLabel}
+                              vin={parties.vehicule?.vin || d.vin || undefined}
+                              vehiculeId={parties.vehicule?.id}
+                            />
                           </td>
 
                           <td className="px-4 py-3">
