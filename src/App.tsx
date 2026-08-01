@@ -23,6 +23,9 @@ import ClientDetail from "./pages/ClientDetail";
 import VehiculesList from "./pages/VehiculesList";
 import VehiculeDetail from "./pages/VehiculeDetail";
 import ApiIntegrations from "./pages/ApiIntegrations";
+import PointsATraiter from "./pages/PointsATraiter";
+import { ActionItemsProvider } from "./store/ActionItemsContext";
+
 
 const queryClient = new QueryClient();
 
@@ -47,27 +50,31 @@ function AppRoutes() {
 
   return (
     <StoreProvider>
-      <Routes>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<Index />} />
-          <Route path="/rendez-vous" element={<RendezVousList />} />
-          <Route path="/creneaux" element={<Creneaux />} />
-          <Route path="/parametres" element={<Parametres />} />
-          <Route path="/utilisateurs" element={<UserManagement />} />
-          <Route path="/integrations-api" element={<ApiIntegrations />} />
-          <Route path="/profil" element={<Profil />} />
-          <Route path="/devis" element={<DevisList />} />
-          <Route path="/devis/envoyes" element={<DevisEnvoyes />} />
-          <Route path="/devis/creer" element={<CreerDevis />} />
-          <Route path="/devis/:id" element={<DevisDetail />} />
-          <Route path="/clients" element={<ClientsList />} />
-          <Route path="/clients/:id" element={<ClientDetail />} />
-          <Route path="/vehicules" element={<VehiculesList />} />
-          <Route path="/vehicules/:id" element={<VehiculeDetail />} />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <ActionItemsProvider>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Index />} />
+            <Route path="/rendez-vous" element={<RendezVousList />} />
+            <Route path="/creneaux" element={<Creneaux />} />
+            <Route path="/parametres" element={<Parametres />} />
+            <Route path="/utilisateurs" element={<UserManagement />} />
+            <Route path="/integrations-api" element={<ApiIntegrations />} />
+            <Route path="/profil" element={<Profil />} />
+            <Route path="/devis" element={<DevisList />} />
+            <Route path="/devis/envoyes" element={<DevisEnvoyes />} />
+            <Route path="/devis/points-a-traiter" element={<PointsATraiter />} />
+            <Route path="/devis/creer" element={<CreerDevis />} />
+            <Route path="/devis/:id" element={<DevisDetail />} />
+            <Route path="/clients" element={<ClientsList />} />
+            <Route path="/clients/:id" element={<ClientDetail />} />
+            <Route path="/vehicules" element={<VehiculesList />} />
+            <Route path="/vehicules/:id" element={<VehiculeDetail />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </ActionItemsProvider>
     </StoreProvider>
+
   );
 }
 
