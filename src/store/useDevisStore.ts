@@ -19,6 +19,7 @@ function mapDevis(row: any): Devis {
     clientId: row.client_id || undefined,
     vehiculeId: row.vehicule_id || undefined,
     sentAt: row.sent_at || undefined,
+    statusChangedAt: row.status_changed_at || undefined,
     followUpCount: row.follow_up_count ?? 0,
     lastFollowUpAt: row.last_follow_up_at || undefined,
     createdAt: row.created_at,
