@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, ChevronRight } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import { NOT_SET } from '@/lib/devisDisplay';
+
 
 export const MASKED = 'Accès non autorisé';
 
@@ -23,18 +24,26 @@ export function ClientNameCell({
   if (!name || name === NOT_SET) return <span className="text-muted-foreground">{NOT_SET}</span>;
   if (!clientId) return <span className={className}>{name}</span>;
   return (
-    <button
-      type="button"
-      onClick={e => {
-        e.stopPropagation();
-        navigate(`/clients/${clientId}`);
-      }}
-      className={`text-left hover:underline text-primary font-medium ${className}`}
-    >
-      {name}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            navigate(`/clients/${clientId}`);
+          }}
+          aria-label={`Ouvrir la fiche client ${name}`}
+          className={`inline-flex items-center gap-1 text-left hover:underline text-primary font-medium rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
+        >
+          <span>{name}</span>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>Ouvrir la fiche client</TooltipContent>
+    </Tooltip>
   );
 }
+
 
 /** Phone with a green WhatsApp icon opening https://wa.me/<normalized>. */
 export function ClientPhoneCell({
@@ -86,14 +95,17 @@ export function VehiculeCell({
   const navigate = useNavigate();
   if (!label || label === NOT_SET) return <span className="text-muted-foreground text-xs">{NOT_SET}</span>;
 
-  const content = (
+  const content = (clickable: boolean) => (
     <>
-      <span className="text-xs font-medium block">{label}</span>
+      <span className="text-xs font-medium flex items-center gap-1">
+        {label}
+        {clickable && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />}
+      </span>
       {vin && <span className="text-[11px] text-muted-foreground block">{vin}</span>}
     </>
   );
 
-  if (!vehiculeId) return <div className="text-xs">{content}</div>;
+  if (!vehiculeId) return <div className="text-xs">{content(false)}</div>;
 
   const open = () => navigate(`/vehicules/${vehiculeId}`);
 
@@ -103,6 +115,7 @@ export function VehiculeCell({
         <div
           role="link"
           tabIndex={0}
+          aria-label={`Ouvrir la fiche véhicule ${label}`}
           onClick={e => {
             e.stopPropagation();
             open();
@@ -116,10 +129,39 @@ export function VehiculeCell({
           }}
           className="-mx-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
         >
-          {content}
+          {content(true)}
         </div>
       </TooltipTrigger>
       <TooltipContent>Ouvrir la fiche véhicule</TooltipContent>
     </Tooltip>
   );
 }
+
+/** Narrow trailing cell button opening the row's record. */
+export function OpenRowButton({
+  onOpen,
+  label,
+}: {
+  onOpen: () => void;
+  label: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          onClick={e => {
+            e.stopPropagation();
+            onOpen();
+          }}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
