@@ -158,6 +158,17 @@ export default function PointsATraiter() {
   const { devisList } = devisStore;
   const { items, unreadNotificationsCount, markAllNotificationsAsRead, totalCount, loading } = useActionItems();
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const [openDevis, setOpenDevis] = useState<Devis | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  const handleOpenCard = (d: Devis, trigger: HTMLElement) => {
+    triggerRef.current = trigger;
+    setOpenDevis(d);
+  };
+  const closeDialog = () => {
+    setOpenDevis(null);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  };
 
   useEffect(() => {
     supabase.from('profiles').select('id, company, email').then(({ data }) => {
