@@ -296,6 +296,8 @@ export default function PointsATraiter() {
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Chargement…</p>
+      ) : columns.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun point à traiter pour le moment.</p>
       ) : (
         <div className="overflow-x-auto pb-4" ref={boardRef}>
           <div className="flex gap-3 min-w-max items-start">
