@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ReturnOriginProvider, useNavigateWithReturn } from '@/lib/returnNav';
 import { useStore } from '@/store/StoreContext';
@@ -20,10 +20,18 @@ export default function VehiculesList() {
   const location = useLocation();
   const restored = (location.state || {}) as any;
 
-  const [search, setSearch] = useState('');
-  const [filterStatut, setFilterStatut] = useState('all');
-  const [filterMarque, setFilterMarque] = useState('all');
-  const [showArchived, setShowArchived] = useState(false);
+  /** Restore the scroll position when returning from a client / vehicle / quote record. */
+  useEffect(() => {
+    if (typeof restored.scrollY === 'number') {
+      requestAnimationFrame(() => window.scrollTo({ top: restored.scrollY }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [search, setSearch] = useState(restored.search ?? '');
+  const [filterStatut, setFilterStatut] = useState(restored.filterStatut ?? 'all');
+  const [filterMarque, setFilterMarque] = useState(restored.filterMarque ?? 'all');
+  const [showArchived, setShowArchived] = useState(restored.showArchived ?? false);
   const [formOpen, setFormOpen] = useState(false);
 
   const marques = useMemo(

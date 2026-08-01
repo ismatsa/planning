@@ -52,6 +52,14 @@ export default function DevisEnvoyes() {
   const location = useLocation();
 
   const restored = (location.state || {}) as any;
+
+  /** Restore the scroll position when returning from a client / vehicle / quote record. */
+  useEffect(() => {
+    if (typeof restored.scrollY === 'number') {
+      requestAnimationFrame(() => window.scrollTo({ top: restored.scrollY }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [search, setSearch] = useState(restored.search ?? '');
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
 
