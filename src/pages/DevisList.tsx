@@ -338,7 +338,13 @@ export default function DevisList() {
                       <ClientPhoneCell phone={parties.clientPhone} canSee={canSeeDetails} />
                     </td>
 
-                    <td className="px-4 py-3 text-xs">{parties.vehiculeLabel}</td>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <VehiculeCell
+                        label={parties.vehiculeLabel}
+                        vin={parties.vehicule?.vin || d.vin || undefined}
+                        vehiculeId={parties.vehicule?.id}
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {dMetiers.map(mid => {
