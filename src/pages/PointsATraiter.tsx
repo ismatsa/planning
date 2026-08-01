@@ -114,7 +114,7 @@ function KanbanCard({
       tabIndex={0}
       onClick={open}
       onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); }
       }}
       aria-label={`Ouvrir ${isSent ? 'le devis envoyé' : 'la demande de devis'} ${parties.clientName}`}
       className="rounded-lg border bg-card p-3 space-y-2 cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
