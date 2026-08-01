@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useRef } from 'react';
+import DevisDetailDialog from '@/components/devis/DevisDetailDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Bell, CheckCheck, ClipboardCheck, UserCheck } from 'lucide-react';
@@ -95,17 +95,18 @@ function KanbanCard({
   devis,
   activity,
   assignedLabel,
+  onOpen,
 }: {
   devis: Devis;
   activity: CardActivity;
   assignedLabel?: string;
+  onOpen: (devis: Devis, trigger: HTMLElement) => void;
 }) {
-  const navigate = useNavigate();
   const { crm } = useStore();
   const parties = resolveDevisParties(devis, crm.clients, crm.vehicules);
   const vin = parties.vehicule?.vin || devis.vin;
   const isSent = devis.statut === 'envoye';
-  const open = () => navigate(`/devis/${devis.id}`);
+  const open = (e: React.SyntheticEvent) => onOpen(devis, e.currentTarget as HTMLElement);
 
   return (
     <div
@@ -113,7 +114,7 @@ function KanbanCard({
       tabIndex={0}
       onClick={open}
       onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); }
       }}
       aria-label={`Ouvrir ${isSent ? 'le devis envoyé' : 'la demande de devis'} ${parties.clientName}`}
       className="rounded-lg border bg-card p-3 space-y-2 cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -157,6 +158,17 @@ export default function PointsATraiter() {
   const { devisList } = devisStore;
   const { items, unreadNotificationsCount, markAllNotificationsAsRead, totalCount, loading } = useActionItems();
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const [openDevis, setOpenDevis] = useState<Devis | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  const handleOpenCard = (d: Devis, trigger: HTMLElement) => {
+    triggerRef.current = trigger;
+    setOpenDevis(d);
+  };
+  const closeDialog = () => {
+    setOpenDevis(null);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  };
 
   useEffect(() => {
     supabase.from('profiles').select('id, company, email').then(({ data }) => {
@@ -260,6 +272,7 @@ export default function PointsATraiter() {
                             ? (d.assignedUserId === user?.id ? 'vous' : profileNames[d.assignedUserId] || undefined)
                             : undefined
                         }
+                        onOpen={handleOpenCard}
                       />
                     ))
                   )}
@@ -269,6 +282,12 @@ export default function PointsATraiter() {
           </div>
         </div>
       )}
+
+      <DevisDetailDialog
+        devis={openDevis}
+        open={!!openDevis}
+        onOpenChange={o => { if (!o) closeDialog(); }}
+      />
     </div>
   );
 }
