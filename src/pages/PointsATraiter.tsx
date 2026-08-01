@@ -330,6 +330,7 @@ export default function PointsATraiter() {
                             ? (d.assignedUserId === user?.id ? 'vous' : profileNames[d.assignedUserId] || undefined)
                             : undefined
                         }
+                        canSeeContact={!!user}
                         onOpen={handleOpenCard}
                       />
                     ))
