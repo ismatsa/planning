@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ReturnOriginProvider, useNavigateWithReturn } from '@/lib/returnNav';
 import { useStore } from '@/store/StoreContext';
 import { useAuth } from '@/store/AuthContext';
 import { format, differenceInCalendarDays } from 'date-fns';
@@ -47,8 +48,19 @@ export default function DevisEnvoyes() {
   const { devisList, devisResponsibles, devisMetiers, recordFollowUp } = devisStore;
   const { user } = useAuth();
   const navigate = useNavigate();
+  const navigateWithReturn = useNavigateWithReturn();
+  const location = useLocation();
 
-  const [search, setSearch] = useState('');
+  const restored = (location.state || {}) as any;
+
+  /** Restore the scroll position when returning from a client / vehicle / quote record. */
+  useEffect(() => {
+    if (typeof restored.scrollY === 'number') {
+      requestAnimationFrame(() => window.scrollTo({ top: restored.scrollY }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [search, setSearch] = useState(restored.search ?? '');
   const [profileOptions, setProfileOptions] = useState<{ id: string; company: string }[]>([]);
 
   const [followUpTarget, setFollowUpTarget] = useState<Devis | null>(null);
@@ -106,6 +118,7 @@ export default function DevisEnvoyes() {
   }
 
   return (
+    <ReturnOriginProvider value={() => ({ label: 'Devis envoyés', state: { search, scrollY: window.scrollY } })}>
     <div className="p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -177,7 +190,7 @@ export default function DevisEnvoyes() {
                         <tr
                           key={d.id}
                           className="border-b last:border-0 cursor-pointer transition-colors [&:hover:not(:has([data-noopen]:hover))]:bg-muted/40 [&:has([data-open-btn]:focus-visible)]:bg-muted/40"
-                          onClick={() => navigate(`/devis/${d.id}`)}
+                          onClick={() => navigateWithReturn(`/devis/${d.id}`)}
                         >
                           <td className="px-4 py-3 text-xs">
                             {d.sentAt
@@ -264,7 +277,7 @@ export default function DevisEnvoyes() {
                           <td className="w-10 px-2 py-3 text-right" data-open-btn>
                             <OpenRowButton
                               label="Ouvrir le devis envoyé"
-                              onOpen={() => navigate(`/devis/${d.id}`)}
+                              onOpen={() => navigateWithReturn(`/devis/${d.id}`)}
                             />
                           </td>
                         </tr>
@@ -323,5 +336,6 @@ export default function DevisEnvoyes() {
         </DialogContent>
       </Dialog>
     </div>
+    </ReturnOriginProvider>
   );
 }

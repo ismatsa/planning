@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useBackNavigation } from '@/lib/returnNav';
 import { useStore } from '@/store/StoreContext';
 import DevisForm from '@/components/devis/DevisForm';
 import DevisCommentFeed from '@/components/devis/DevisCommentFeed';
@@ -22,6 +23,9 @@ export default function DevisDetail() {
   const { devisList, devisMetiers, devisResponsibles, devisIntervenants } = devisStore;
 
   const devis = devisList.find(d => d.id === id);
+  const { goBack, label: backLabel } = useBackNavigation(
+    devis?.statut === 'envoye' ? '/devis/envoyes' : '/devis',
+  );
 
   const [assignedUserId, setAssignedUserId] = useState('');
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
@@ -45,7 +49,7 @@ export default function DevisDetail() {
   if (!devis) {
     return (
       <div className="p-6 max-w-4xl">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/devis')} className="mb-4">
+        <Button variant="ghost" size="sm" onClick={goBack} title={`Retour à ${backLabel}`} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" /> Retour
         </Button>
         <p className="text-muted-foreground">Devis introuvable.</p>
@@ -81,7 +85,7 @@ export default function DevisDetail() {
     <div className="p-6 max-w-7xl space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/devis')}>
+        <Button variant="ghost" size="sm" onClick={goBack} title={`Retour à ${backLabel}`}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Retour
         </Button>
         <h1 className="text-xl font-display font-bold flex-1">Détail du devis</h1>
@@ -97,8 +101,8 @@ export default function DevisDetail() {
           <div className="rounded-lg border bg-card p-5">
             <DevisForm
               devis={devis}
-              onSaved={() => navigate('/devis')}
-              onDeleted={() => navigate('/devis')}
+              onSaved={goBack}
+              onDeleted={goBack}
               onConvert={handleConvert}
               assignedUserId={assignedUserId}
               onAssignedUserIdChange={setAssignedUserId}

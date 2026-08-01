@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigateWithReturn } from '@/lib/returnNav';
 import { MessageCircle, ChevronRight } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
@@ -19,7 +19,7 @@ export function ClientNameCell({
   canSee: boolean;
   className?: string;
 }) {
-  const navigate = useNavigate();
+  const navigate = useNavigateWithReturn();
   if (!canSee) return <span className="text-muted-foreground">{MASKED}</span>;
   if (!name || name === NOT_SET) return <span className="text-muted-foreground">{NOT_SET}</span>;
   if (!clientId) return <span className={className}>{name}</span>;
@@ -92,7 +92,7 @@ export function VehiculeCell({
   vin?: string;
   vehiculeId?: string;
 }) {
-  const navigate = useNavigate();
+  const navigate = useNavigateWithReturn();
   if (!label || label === NOT_SET) return <span className="text-muted-foreground text-xs">{NOT_SET}</span>;
 
   const content = (clickable: boolean) => (

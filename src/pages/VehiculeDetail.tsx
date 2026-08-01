@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useBackNavigation, useNavigateWithReturn } from '@/lib/returnNav';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useStore } from '@/store/StoreContext';
@@ -27,6 +28,8 @@ import { STATUT_DEVIS_LABELS } from '@/types/devis';
 export default function VehiculeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const navigateWithReturn = useNavigateWithReturn();
+  const { goBack, label: backLabel } = useBackNavigation('/vehicules');
   const { crm, rdvs, devis: devisStore } = useStore();
   const { isAdmin } = useAuth();
 
@@ -72,7 +75,7 @@ export default function VehiculeDetail() {
   if (!vehicule) {
     return (
       <div className="p-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/vehicules')}>
+        <Button variant="ghost" size="sm" onClick={goBack} title={`Retour à ${backLabel}`}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Retour
         </Button>
         <p className="mt-6 text-muted-foreground">Véhicule introuvable.</p>
@@ -96,7 +99,7 @@ export default function VehiculeDetail() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl">
       <div className="flex items-center gap-3 mb-5">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/vehicules')}>
+        <Button variant="ghost" size="sm" onClick={goBack} title={`Retour à ${backLabel}`}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Retour
         </Button>
       </div>
@@ -129,7 +132,7 @@ export default function VehiculeDetail() {
                 <div>
                   Propriétaire actuel :{' '}
                   {owner ? (
-                    <button className="text-primary hover:underline" onClick={() => navigate(`/clients/${owner.id}`)}>
+                    <button className="text-primary hover:underline" onClick={() => navigateWithReturn(`/clients/${owner.id}`)}>
                       {clientDisplayName(owner)}
                     </button>
                   ) : '—'}
@@ -249,7 +252,7 @@ export default function VehiculeDetail() {
             {vehiculeDevis.map(d => (
               <button
                 key={d.id}
-                onClick={() => navigate(`/devis/${d.id}`)}
+                onClick={() => navigateWithReturn(`/devis/${d.id}`)}
                 className="w-full text-left p-4 text-sm flex items-center justify-between gap-3 hover:bg-muted/50"
               >
                 <div>
@@ -276,7 +279,7 @@ export default function VehiculeDetail() {
                   <div>
                     <button
                       className="font-medium text-primary hover:underline"
-                      onClick={() => c && navigate(`/clients/${c.id}`)}
+                      onClick={() => c && navigateWithReturn(`/clients/${c.id}`)}
                     >
                       {clientDisplayName(c)}
                     </button>

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ReturnOriginProvider, useNavigateWithReturn } from '@/lib/returnNav';
 import { useStore } from '@/store/StoreContext';
 import { useAuth } from '@/store/AuthContext';
 import { STATUT_DEVIS_LABELS, StatutDevis } from '@/types/devis';
@@ -42,13 +43,24 @@ export default function DevisList() {
   const { devisList, devisResponsibles, devisIntervenants, devisMetiers } = devisStore;
   const { user } = useAuth();
   const navigate = useNavigate();
+  const navigateWithReturn = useNavigateWithReturn();
+  const location = useLocation();
 
-  const [search, setSearch] = useState('');
-  const [filterMetier, setFilterMetier] = useState('all');
-  const [filterStatut, setFilterStatut] = useState('all');
-  const [filterResponsibles, setFilterResponsibles] = useState<string[]>([]);
-  const [onlyMine, setOnlyMine] = useState(false);
-  const [showPast, setShowPast] = useState(false);
+  const restored = (location.state || {}) as any;
+
+  /** Restore the scroll position when returning from a client / vehicle / quote record. */
+  useEffect(() => {
+    if (typeof restored.scrollY === 'number') {
+      requestAnimationFrame(() => window.scrollTo({ top: restored.scrollY }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [search, setSearch] = useState(restored.search ?? '');
+  const [filterMetier, setFilterMetier] = useState(restored.filterMetier ?? 'all');
+  const [filterStatut, setFilterStatut] = useState(restored.filterStatut ?? 'all');
+  const [filterResponsibles, setFilterResponsibles] = useState<string[]>(restored.filterResponsibles ?? []);
+  const [onlyMine, setOnlyMine] = useState(restored.onlyMine ?? false);
+  const [showPast, setShowPast] = useState(restored.showPast ?? false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Temp state for dialog (apply on confirm)
@@ -172,6 +184,7 @@ export default function DevisList() {
   }
 
   return (
+    <ReturnOriginProvider value={() => ({ label: 'Demandes de devis', state: { search, filterMetier, filterStatut, filterResponsibles, onlyMine, showPast, scrollY: window.scrollY } })}>
     <div className="p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -320,7 +333,7 @@ export default function DevisList() {
                   <tr
                     key={d.id}
                     className={`border-b last:border-0 cursor-pointer transition-colors [&:hover:not(:has([data-noopen]:hover))]:bg-muted/40 [&:has([data-open-btn]:focus-visible)]:bg-muted/40 ${getRowStyle(d)}`}
-                    onClick={() => navigate(`/devis/${d.id}`)}
+                    onClick={() => navigateWithReturn(`/devis/${d.id}`)}
                   >
                     <td className="px-4 py-3 font-medium">
                       <span className="inline-flex items-center gap-1.5">
@@ -392,7 +405,7 @@ export default function DevisList() {
                     <td className="w-10 px-2 py-3 text-right" data-open-btn>
                       <OpenRowButton
                         label="Ouvrir la demande de devis"
-                        onOpen={() => navigate(`/devis/${d.id}`)}
+                        onOpen={() => navigateWithReturn(`/devis/${d.id}`)}
                       />
                     </td>
                   </tr>
@@ -404,5 +417,6 @@ export default function DevisList() {
         </div>
       )}
     </div>
+    </ReturnOriginProvider>
   );
 }

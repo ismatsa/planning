@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ReturnOriginProvider, useNavigateWithReturn } from '@/lib/returnNav';
 import { useStore } from '@/store/StoreContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,11 +16,22 @@ import { clientDisplayName, VEHICULE_STATUT_LABELS, VehiculeStatut } from '@/typ
 export default function VehiculesList() {
   const { crm } = useStore();
   const navigate = useNavigate();
+  const navigateWithReturn = useNavigateWithReturn();
+  const location = useLocation();
+  const restored = (location.state || {}) as any;
 
-  const [search, setSearch] = useState('');
-  const [filterStatut, setFilterStatut] = useState('all');
-  const [filterMarque, setFilterMarque] = useState('all');
-  const [showArchived, setShowArchived] = useState(false);
+  /** Restore the scroll position when returning from a client / vehicle / quote record. */
+  useEffect(() => {
+    if (typeof restored.scrollY === 'number') {
+      requestAnimationFrame(() => window.scrollTo({ top: restored.scrollY }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [search, setSearch] = useState(restored.search ?? '');
+  const [filterStatut, setFilterStatut] = useState(restored.filterStatut ?? 'all');
+  const [filterMarque, setFilterMarque] = useState(restored.filterMarque ?? 'all');
+  const [showArchived, setShowArchived] = useState(restored.showArchived ?? false);
   const [formOpen, setFormOpen] = useState(false);
 
   const marques = useMemo(
@@ -50,6 +62,7 @@ export default function VehiculesList() {
   }, [crm.vehicules, search, filterStatut, filterMarque, showArchived, clientById]);
 
   return (
+    <ReturnOriginProvider value={() => ({ label: 'Véhicules', state: { search, filterStatut, filterMarque, showArchived, scrollY: window.scrollY } })}>
     <div className="p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <h1 className="text-xl font-display font-bold">Véhicules</h1>
@@ -97,7 +110,7 @@ export default function VehiculesList() {
         {filtered.map(v => (
           <button
             key={v.id}
-            onClick={() => navigate(`/vehicules/${v.id}`)}
+            onClick={() => navigateWithReturn(`/vehicules/${v.id}`)}
             className="w-full text-left p-4 hover:bg-muted/50 transition-colors flex items-center gap-3"
           >
             <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -125,8 +138,9 @@ export default function VehiculesList() {
       <VehiculeFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
-        onSaved={(v) => navigate(`/vehicules/${v.id}`)}
+        onSaved={(v) => navigateWithReturn(`/vehicules/${v.id}`)}
       />
     </div>
+    </ReturnOriginProvider>
   );
 }

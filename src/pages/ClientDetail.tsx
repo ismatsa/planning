@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useBackNavigation, useNavigateWithReturn } from '@/lib/returnNav';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useStore } from '@/store/StoreContext';
@@ -26,6 +27,8 @@ import { STATUT_DEVIS_LABELS } from '@/types/devis';
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const navigateWithReturn = useNavigateWithReturn();
+  const { goBack, label: backLabel } = useBackNavigation('/clients');
   const { crm, rdvs, devis: devisStore } = useStore();
   const { user, isAdmin } = useAuth();
 
@@ -77,7 +80,7 @@ export default function ClientDetail() {
   if (!client) {
     return (
       <div className="p-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/clients')}>
+        <Button variant="ghost" size="sm" onClick={goBack} title={`Retour à ${backLabel}`}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Retour
         </Button>
         <p className="mt-6 text-muted-foreground">Client introuvable.</p>
@@ -101,7 +104,7 @@ export default function ClientDetail() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl">
       <div className="flex items-center gap-3 mb-5">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/clients')}>
+        <Button variant="ghost" size="sm" onClick={goBack} title={`Retour à ${backLabel}`}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Retour
         </Button>
       </div>
@@ -192,7 +195,7 @@ export default function ClientDetail() {
             {ownedVehicules.map(v => (
               <button
                 key={v.id}
-                onClick={() => navigate(`/vehicules/${v.id}`)}
+                onClick={() => navigateWithReturn(`/vehicules/${v.id}`)}
                 className="w-full text-left p-4 hover:bg-muted/50 flex items-center gap-3"
               >
                 <Car className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -212,7 +215,7 @@ export default function ClientDetail() {
                 {pastVehicules.map(v => (
                   <button
                     key={v.id}
-                    onClick={() => navigate(`/vehicules/${v.id}`)}
+                    onClick={() => navigateWithReturn(`/vehicules/${v.id}`)}
                     className="w-full text-left p-4 hover:bg-muted/50 flex items-center gap-3 opacity-80"
                   >
                     <Car className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -257,7 +260,7 @@ export default function ClientDetail() {
             {clientDevis.map(d => (
               <button
                 key={d.id}
-                onClick={() => navigate(`/devis/${d.id}`)}
+                onClick={() => navigateWithReturn(`/devis/${d.id}`)}
                 className="w-full text-left p-4 text-sm flex items-center justify-between gap-3 hover:bg-muted/50"
               >
                 <div className="min-w-0">

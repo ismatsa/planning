@@ -1,4 +1,6 @@
 import { useMemo, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { ReturnOriginProvider } from '@/lib/returnNav';
 import DevisDetailDialog from '@/components/devis/DevisDetailDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -160,6 +162,26 @@ export default function PointsATraiter() {
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
   const [openDevis, setOpenDevis] = useState<Devis | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const location = useLocation();
+  const restored = (location.state || {}) as { openDevisId?: string; scrollX?: number; scrollY?: number };
+  const restoredRef = useRef(false);
+
+  /** Restore the Kanban position and the previously open pop-up when coming back. */
+  useEffect(() => {
+    if (restoredRef.current || devisList.length === 0) return;
+    restoredRef.current = true;
+    if (restored.openDevisId) {
+      const d = devisList.find(x => x.id === restored.openDevisId);
+      if (d) setOpenDevis(d);
+    }
+    requestAnimationFrame(() => {
+      if (boardRef.current && typeof restored.scrollX === 'number') {
+        boardRef.current.scrollLeft = restored.scrollX;
+      }
+      if (typeof restored.scrollY === 'number') window.scrollTo({ top: restored.scrollY });
+    });
+  }, [devisList, restored.openDevisId, restored.scrollX, restored.scrollY]);
 
   const handleOpenCard = (d: Devis, trigger: HTMLElement) => {
     triggerRef.current = trigger;
@@ -214,6 +236,16 @@ export default function PointsATraiter() {
   }, [devisList]);
 
   return (
+    <ReturnOriginProvider
+      value={() => ({
+        label: 'Points à traiter',
+        state: {
+          openDevisId: openDevis?.id,
+          scrollX: boardRef.current?.scrollLeft ?? 0,
+          scrollY: window.scrollY,
+        },
+      })}
+    >
     <div className="p-4 lg:p-6 space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -239,7 +271,7 @@ export default function PointsATraiter() {
       {loading ? (
         <p className="text-sm text-muted-foreground">Chargement…</p>
       ) : (
-        <div className="overflow-x-auto pb-4">
+        <div className="overflow-x-auto pb-4" ref={boardRef}>
           <div className="flex gap-3 min-w-max items-start">
             {columns.map(({ statut, cards }) => (
               <section key={statut} className="w-[260px] shrink-0 rounded-lg bg-muted/30 border">
@@ -289,5 +321,6 @@ export default function PointsATraiter() {
         onOpenChange={o => { if (!o) closeDialog(); }}
       />
     </div>
+    </ReturnOriginProvider>
   );
 }
