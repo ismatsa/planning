@@ -1015,6 +1015,27 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_reads: {
+        Row: {
+          id: string
+          item_key: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          item_key: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          item_key?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       postes: {
         Row: {
           actif: boolean
