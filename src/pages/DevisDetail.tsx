@@ -19,12 +19,13 @@ interface ProfileOption { id: string; email: string; company: string; }
 export default function DevisDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const fallback = devisList.find(d => d.id === id)?.statut === 'envoye' ? '/devis/envoyes' : '/devis';
-  const { goBack, label: backLabel } = useBackNavigation(fallback);
   const { devis: devisStore } = useStore();
   const { devisList, devisMetiers, devisResponsibles, devisIntervenants } = devisStore;
 
   const devis = devisList.find(d => d.id === id);
+  const { goBack, label: backLabel } = useBackNavigation(
+    devis?.statut === 'envoye' ? '/devis/envoyes' : '/devis',
+  );
 
   const [assignedUserId, setAssignedUserId] = useState('');
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
