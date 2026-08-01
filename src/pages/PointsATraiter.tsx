@@ -258,7 +258,7 @@ export default function PointsATraiter() {
         .filter(d => d.statut === statut && isVisibleInKanban(d, now))
         .sort((a, b) =>
           new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()),
-    }));
+    })).filter(col => col.cards.length > 0);
   }, [devisList]);
 
   return (
