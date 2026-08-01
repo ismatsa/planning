@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useRef } from 'react';
+import DevisDetailDialog from '@/components/devis/DevisDetailDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Bell, CheckCheck, ClipboardCheck, UserCheck } from 'lucide-react';
