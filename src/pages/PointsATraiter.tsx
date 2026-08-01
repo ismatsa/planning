@@ -10,7 +10,7 @@ import { useAuth } from '@/store/AuthContext';
 import { useStore } from '@/store/StoreContext';
 import { useActionItems, ActionItem } from '@/store/ActionItemsContext';
 import { STATUT_DEVIS_LABELS, StatutDevis, Devis } from '@/types/devis';
-import { resolveDevisParties, NOT_SET } from '@/lib/devisDisplay';
+import { resolveDevisParties } from '@/lib/devisDisplay';
 import { ClientNameCell, VehiculeCell } from '@/components/devis/PartyCells';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
@@ -269,7 +269,6 @@ export default function PointsATraiter() {
           </div>
         </div>
       )}
-      <p className="sr-only">{NOT_SET}</p>
     </div>
   );
 }
