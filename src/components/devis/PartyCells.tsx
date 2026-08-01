@@ -89,7 +89,7 @@ export function VehiculeCell({
   const content = (
     <>
       <span className="text-xs font-medium block">{label}</span>
-      {vin && <span className="text-[11px] text-muted-foreground block">VIN : {vin}</span>}
+      {vin && <span className="text-[11px] text-muted-foreground block">{vin}</span>}
     </>
   );
 
