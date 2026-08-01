@@ -19,43 +19,69 @@ import { ClientNameCell, VehiculeCell } from '@/components/devis/PartyCells';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 
-/** Kanban columns are strictly the business statuses that already exist in the model. */
-const COLUMNS: StatutDevis[] = [
-  'demande_recue',
-  'a_chiffrer',
-  'en_cours_de_devis',
-  'en_attente_infos',
-  'devis_pret',
-  'envoye',
-  'valide',
-  'refuse',
-  'annule',
+/**
+ * Kanban columns. Les statuts restent inchangés en base : seul l'affichage regroupe
+ * demande_recue / a_chiffrer / en_cours_de_devis dans une colonne « Devis à traiter ».
+ */
+interface KanbanColumnDef {
+  key: string;
+  label: string;
+  statuts: StatutDevis[];
+  accent: string;
+  hint: (n: number) => string;
+}
+
+const COLUMN_DEFS: KanbanColumnDef[] = [
+  {
+    key: 'a_traiter',
+    label: 'Devis à traiter',
+    statuts: ['demande_recue', 'a_chiffrer', 'en_cours_de_devis'],
+    accent: 'bg-sky-500',
+    hint: n => `${n} devis à traiter`,
+  },
+  {
+    key: 'en_attente_infos',
+    label: STATUT_DEVIS_LABELS.en_attente_infos,
+    statuts: ['en_attente_infos'],
+    accent: 'bg-yellow-500',
+    hint: n => `${n} devis en attente d'informations`,
+  },
+  {
+    key: 'devis_pret',
+    label: STATUT_DEVIS_LABELS.devis_pret,
+    statuts: ['devis_pret'],
+    accent: 'bg-violet-500',
+    hint: n => `${n} devis à valider`,
+  },
+  {
+    key: 'envoye',
+    label: STATUT_DEVIS_LABELS.envoye,
+    statuts: ['envoye'],
+    accent: 'bg-primary',
+    hint: n => `${n} devis envoyé${n > 1 ? 's' : ''}`,
+  },
+  {
+    key: 'valide',
+    label: STATUT_DEVIS_LABELS.valide,
+    statuts: ['valide'],
+    accent: 'bg-emerald-500',
+    hint: n => `${n} devis validé${n > 1 ? 's' : ''}`,
+  },
+  {
+    key: 'refuse',
+    label: STATUT_DEVIS_LABELS.refuse,
+    statuts: ['refuse'],
+    accent: 'bg-destructive',
+    hint: n => `${n} devis refusé${n > 1 ? 's' : ''}`,
+  },
+  {
+    key: 'annule',
+    label: STATUT_DEVIS_LABELS.annule,
+    statuts: ['annule'],
+    accent: 'bg-muted-foreground',
+    hint: n => `${n} devis annulé${n > 1 ? 's' : ''}`,
+  },
 ];
-
-/** Tooltip wording per column, reusing the existing status semantics. */
-const COLUMN_HINT: Record<StatutDevis, (n: number) => string> = {
-  demande_recue: n => `${n} demande${n > 1 ? 's' : ''} reçue${n > 1 ? 's' : ''}`,
-  a_chiffrer: n => `${n} devis en attente de chiffrage`,
-  en_cours_de_devis: n => `${n} devis en cours de chiffrage`,
-  en_attente_infos: n => `${n} devis en attente d'informations`,
-  devis_pret: n => `${n} devis à valider`,
-  envoye: n => `${n} devis envoyé${n > 1 ? 's' : ''}`,
-  valide: n => `${n} devis validé${n > 1 ? 's' : ''}`,
-  refuse: n => `${n} devis refusé${n > 1 ? 's' : ''}`,
-  annule: n => `${n} devis annulé${n > 1 ? 's' : ''}`,
-};
-
-const COLUMN_ACCENT: Record<StatutDevis, string> = {
-  demande_recue: 'bg-sky-500',
-  a_chiffrer: 'bg-amber-500',
-  en_cours_de_devis: 'bg-orange-500',
-  en_attente_infos: 'bg-yellow-500',
-  devis_pret: 'bg-violet-500',
-  envoye: 'bg-primary',
-  valide: 'bg-emerald-500',
-  refuse: 'bg-destructive',
-  annule: 'bg-muted-foreground',
-};
 
 interface CardActivity {
   unread: number;
