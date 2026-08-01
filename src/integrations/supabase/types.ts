@@ -456,6 +456,7 @@ export type Database = {
           modele: string | null
           notes: string | null
           sent_at: string | null
+          status_changed_at: string | null
           statut: string
           updated_at: string
           vehicule_id: string | null
@@ -477,6 +478,7 @@ export type Database = {
           modele?: string | null
           notes?: string | null
           sent_at?: string | null
+          status_changed_at?: string | null
           statut?: string
           updated_at?: string
           vehicule_id?: string | null
@@ -498,6 +500,7 @@ export type Database = {
           modele?: string | null
           notes?: string | null
           sent_at?: string | null
+          status_changed_at?: string | null
           statut?: string
           updated_at?: string
           vehicule_id?: string | null

@@ -37,6 +37,8 @@ export interface Devis {
   clientId?: string;
   vehiculeId?: string;
   sentAt?: string;
+  /** Date réelle du dernier changement de statut (jamais approximée par createdAt). */
+  statusChangedAt?: string;
   followUpCount: number;
   lastFollowUpAt?: string;
   createdAt: string;

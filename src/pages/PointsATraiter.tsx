@@ -4,7 +4,9 @@ import { ReturnOriginProvider } from '@/lib/returnNav';
 import DevisDetailDialog from '@/components/devis/DevisDetailDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Bell, CheckCheck, ClipboardCheck, UserCheck } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCheck, ClipboardCheck, UserCheck } from 'lucide-react';
+import FollowUpButton from '@/components/devis/FollowUpButton';
+import { isVisibleInKanban, needsFollowUp } from '@/lib/statusAge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -97,17 +99,20 @@ function KanbanCard({
   devis,
   activity,
   assignedLabel,
+  canSeeContact,
   onOpen,
 }: {
   devis: Devis;
   activity: CardActivity;
   assignedLabel?: string;
+  canSeeContact: boolean;
   onOpen: (devis: Devis, trigger: HTMLElement) => void;
 }) {
   const { crm } = useStore();
   const parties = resolveDevisParties(devis, crm.clients, crm.vehicules);
   const vin = parties.vehicule?.vin || devis.vin;
   const isSent = devis.statut === 'envoye';
+  const relance = needsFollowUp(devis);
   const open = (e: React.SyntheticEvent) => onOpen(devis, e.currentTarget as HTMLElement);
 
   return (
@@ -119,7 +124,11 @@ function KanbanCard({
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); }
       }}
       aria-label={`Ouvrir ${isSent ? 'le devis envoyé' : 'la demande de devis'} ${parties.clientName}`}
-      className="rounded-lg border bg-card p-3 space-y-2 cursor-pointer transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={`rounded-lg border p-3 space-y-2 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        relance
+          ? 'border-destructive/40 bg-destructive/10 hover:bg-destructive/15'
+          : 'bg-card hover:bg-muted/40'
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -144,15 +153,30 @@ function KanbanCard({
           {isSent ? 'Devis envoyé' : 'Demande de devis'}
         </Badge>
         <Badge variant="secondary" className="text-[10px]">{STATUT_DEVIS_LABELS[devis.statut]}</Badge>
+        {relance && (
+          <Badge variant="destructive" className="text-[10px] gap-1">
+            <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+            Relance à préparer
+          </Badge>
+        )}
       </div>
 
       <div className="text-[11px] text-muted-foreground space-y-0.5">
         <p>{formatDistanceToNow(new Date(devis.updatedAt || devis.createdAt), { addSuffix: true, locale: fr })}</p>
         {assignedLabel && <p>Assigné à {assignedLabel}</p>}
       </div>
+
+      {relance && (
+        <FollowUpButton
+          devisId={devis.id}
+          phone={parties.clientPhone}
+          canSeeContact={canSeeContact}
+        />
+      )}
     </div>
   );
 }
+
 
 export default function PointsATraiter() {
   const { user } = useAuth();
@@ -225,11 +249,13 @@ export default function PointsATraiter() {
     return map;
   }, [items]);
 
+  /** Rétention : les colonnes Validé / Refusé / Annulé n'affichent que les 7 derniers jours. */
   const columns = useMemo(() => {
+    const now = Date.now();
     return COLUMNS.map(statut => ({
       statut,
       cards: devisList
-        .filter(d => d.statut === statut)
+        .filter(d => d.statut === statut && isVisibleInKanban(d, now))
         .sort((a, b) =>
           new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()),
     }));
@@ -304,6 +330,7 @@ export default function PointsATraiter() {
                             ? (d.assignedUserId === user?.id ? 'vous' : profileNames[d.assignedUserId] || undefined)
                             : undefined
                         }
+                        canSeeContact={!!user}
                         onOpen={handleOpenCard}
                       />
                     ))
