@@ -248,7 +248,7 @@ export default function DevisEnvoyes() {
                               <span className="text-muted-foreground">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
+                          <td className="px-4 py-3 text-right" data-noopen onClick={e => e.stopPropagation()}>
                             <Button
                               size="sm"
                               variant="outline"
@@ -261,7 +261,14 @@ export default function DevisEnvoyes() {
                               Relancer
                             </Button>
                           </td>
+                          <td className="w-10 px-2 py-3 text-right" data-open-btn>
+                            <OpenRowButton
+                              label="Ouvrir le devis envoyé"
+                              onOpen={() => navigate(`/devis/${d.id}`)}
+                            />
+                          </td>
                         </tr>
+
                       );
                     })}
                   </tbody>
