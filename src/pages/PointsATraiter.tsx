@@ -19,43 +19,69 @@ import { ClientNameCell, VehiculeCell } from '@/components/devis/PartyCells';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 
-/** Kanban columns are strictly the business statuses that already exist in the model. */
-const COLUMNS: StatutDevis[] = [
-  'demande_recue',
-  'a_chiffrer',
-  'en_cours_de_devis',
-  'en_attente_infos',
-  'devis_pret',
-  'envoye',
-  'valide',
-  'refuse',
-  'annule',
+/**
+ * Kanban columns. Les statuts restent inchangés en base : seul l'affichage regroupe
+ * demande_recue / a_chiffrer / en_cours_de_devis dans une colonne « Devis à traiter ».
+ */
+interface KanbanColumnDef {
+  key: string;
+  label: string;
+  statuts: StatutDevis[];
+  accent: string;
+  hint: (n: number) => string;
+}
+
+const COLUMN_DEFS: KanbanColumnDef[] = [
+  {
+    key: 'a_traiter',
+    label: 'Devis à traiter',
+    statuts: ['demande_recue', 'a_chiffrer', 'en_cours_de_devis'],
+    accent: 'bg-sky-500',
+    hint: n => `${n} devis à traiter`,
+  },
+  {
+    key: 'en_attente_infos',
+    label: STATUT_DEVIS_LABELS.en_attente_infos,
+    statuts: ['en_attente_infos'],
+    accent: 'bg-yellow-500',
+    hint: n => `${n} devis en attente d'informations`,
+  },
+  {
+    key: 'devis_pret',
+    label: STATUT_DEVIS_LABELS.devis_pret,
+    statuts: ['devis_pret'],
+    accent: 'bg-violet-500',
+    hint: n => `${n} devis à valider`,
+  },
+  {
+    key: 'envoye',
+    label: STATUT_DEVIS_LABELS.envoye,
+    statuts: ['envoye'],
+    accent: 'bg-primary',
+    hint: n => `${n} devis envoyé${n > 1 ? 's' : ''}`,
+  },
+  {
+    key: 'valide',
+    label: STATUT_DEVIS_LABELS.valide,
+    statuts: ['valide'],
+    accent: 'bg-emerald-500',
+    hint: n => `${n} devis validé${n > 1 ? 's' : ''}`,
+  },
+  {
+    key: 'refuse',
+    label: STATUT_DEVIS_LABELS.refuse,
+    statuts: ['refuse'],
+    accent: 'bg-destructive',
+    hint: n => `${n} devis refusé${n > 1 ? 's' : ''}`,
+  },
+  {
+    key: 'annule',
+    label: STATUT_DEVIS_LABELS.annule,
+    statuts: ['annule'],
+    accent: 'bg-muted-foreground',
+    hint: n => `${n} devis annulé${n > 1 ? 's' : ''}`,
+  },
 ];
-
-/** Tooltip wording per column, reusing the existing status semantics. */
-const COLUMN_HINT: Record<StatutDevis, (n: number) => string> = {
-  demande_recue: n => `${n} demande${n > 1 ? 's' : ''} reçue${n > 1 ? 's' : ''}`,
-  a_chiffrer: n => `${n} devis en attente de chiffrage`,
-  en_cours_de_devis: n => `${n} devis en cours de chiffrage`,
-  en_attente_infos: n => `${n} devis en attente d'informations`,
-  devis_pret: n => `${n} devis à valider`,
-  envoye: n => `${n} devis envoyé${n > 1 ? 's' : ''}`,
-  valide: n => `${n} devis validé${n > 1 ? 's' : ''}`,
-  refuse: n => `${n} devis refusé${n > 1 ? 's' : ''}`,
-  annule: n => `${n} devis annulé${n > 1 ? 's' : ''}`,
-};
-
-const COLUMN_ACCENT: Record<StatutDevis, string> = {
-  demande_recue: 'bg-sky-500',
-  a_chiffrer: 'bg-amber-500',
-  en_cours_de_devis: 'bg-orange-500',
-  en_attente_infos: 'bg-yellow-500',
-  devis_pret: 'bg-violet-500',
-  envoye: 'bg-primary',
-  valide: 'bg-emerald-500',
-  refuse: 'bg-destructive',
-  annule: 'bg-muted-foreground',
-};
 
 interface CardActivity {
   unread: number;
@@ -99,12 +125,14 @@ function KanbanCard({
   devis,
   activity,
   assignedLabel,
+  assignedToMe,
   canSeeContact,
   onOpen,
 }: {
   devis: Devis;
   activity: CardActivity;
   assignedLabel?: string;
+  assignedToMe: boolean;
   canSeeContact: boolean;
   onOpen: (devis: Devis, trigger: HTMLElement) => void;
 }) {
@@ -113,6 +141,7 @@ function KanbanCard({
   const vin = parties.vehicule?.vin || devis.vin;
   const isSent = devis.statut === 'envoye';
   const relance = needsFollowUp(devis);
+  const highlight = relance || assignedToMe;
   const open = (e: React.SyntheticEvent) => onOpen(devis, e.currentTarget as HTMLElement);
 
   return (
@@ -125,8 +154,8 @@ function KanbanCard({
       }}
       aria-label={`Ouvrir ${isSent ? 'le devis envoyé' : 'la demande de devis'} ${parties.clientName}`}
       className={`rounded-lg border p-3 space-y-2 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-        relance
-          ? 'border-destructive/40 bg-destructive/10 hover:bg-destructive/15'
+        highlight
+          ? `bg-destructive/10 hover:bg-destructive/15 ${assignedToMe ? 'border-destructive/70' : 'border-destructive/40'}`
           : 'bg-card hover:bg-muted/40'
       }`}
     >
@@ -153,6 +182,12 @@ function KanbanCard({
           {isSent ? 'Devis envoyé' : 'Demande de devis'}
         </Badge>
         <Badge variant="secondary" className="text-[10px]">{STATUT_DEVIS_LABELS[devis.statut]}</Badge>
+        {assignedToMe && (
+          <Badge variant="destructive" className="text-[10px] gap-1">
+            <UserCheck className="h-3 w-3" aria-hidden="true" />
+            À vous
+          </Badge>
+        )}
         {relance && (
           <Badge variant="destructive" className="text-[10px] gap-1">
             <AlertTriangle className="h-3 w-3" aria-hidden="true" />
@@ -163,7 +198,7 @@ function KanbanCard({
 
       <div className="text-[11px] text-muted-foreground space-y-0.5">
         <p>{formatDistanceToNow(new Date(devis.updatedAt || devis.createdAt), { addSuffix: true, locale: fr })}</p>
-        {assignedLabel && <p>Assigné à {assignedLabel}</p>}
+        {assignedLabel && !assignedToMe && <p>Assigné à {assignedLabel}</p>}
       </div>
 
       {relance && (
@@ -252,10 +287,10 @@ export default function PointsATraiter() {
   /** Rétention : les colonnes Validé / Refusé / Annulé n'affichent que les 7 derniers jours. */
   const columns = useMemo(() => {
     const now = Date.now();
-    return COLUMNS.map(statut => ({
-      statut,
+    return COLUMN_DEFS.map(def => ({
+      def,
       cards: devisList
-        .filter(d => d.statut === statut && isVisibleInKanban(d, now))
+        .filter(d => def.statuts.includes(d.statut) && isVisibleInKanban(d, now))
         .sort((a, b) =>
           new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()),
     })).filter(col => col.cards.length > 0);
@@ -301,11 +336,11 @@ export default function PointsATraiter() {
       ) : (
         <div className="overflow-x-auto pb-4" ref={boardRef}>
           <div className="flex gap-3 min-w-max items-start">
-            {columns.map(({ statut, cards }) => (
-              <section key={statut} className="w-[260px] shrink-0 rounded-lg bg-muted/30 border">
+            {columns.map(({ def, cards }) => (
+              <section key={def.key} className="w-[260px] shrink-0 rounded-lg bg-muted/30 border">
                 <header className="flex items-center gap-2 p-3 border-b">
-                  <span className={`h-2.5 w-2.5 rounded-full ${COLUMN_ACCENT[statut]}`} aria-hidden="true" />
-                  <h2 className="text-sm font-semibold flex-1 truncate">{STATUT_DEVIS_LABELS[statut]}</h2>
+                  <span className={`h-2.5 w-2.5 rounded-full ${def.accent}`} aria-hidden="true" />
+                  <h2 className="text-sm font-semibold flex-1 truncate">{def.label}</h2>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span
@@ -315,7 +350,7 @@ export default function PointsATraiter() {
                         {cards.length}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>{COLUMN_HINT[statut](cards.length)}</TooltipContent>
+                    <TooltipContent>{def.hint(cards.length)}</TooltipContent>
                   </Tooltip>
                 </header>
                 <div className="p-2 space-y-2 max-h-[calc(100vh-220px)] overflow-y-auto">
@@ -327,14 +362,16 @@ export default function PointsATraiter() {
                         key={d.id}
                         devis={d}
                         activity={activityByDevis.get(d.id) || { unread: 0, assigned: false, tasks: 0 }}
+                        assignedToMe={!!user && d.assignedUserId === user.id}
                         assignedLabel={
-                          d.assignedUserId
-                            ? (d.assignedUserId === user?.id ? 'vous' : profileNames[d.assignedUserId] || undefined)
+                          d.assignedUserId && d.assignedUserId !== user?.id
+                            ? profileNames[d.assignedUserId] || undefined
                             : undefined
                         }
                         canSeeContact={!!user}
                         onOpen={handleOpenCard}
                       />
+
                     ))
                   )}
                 </div>
