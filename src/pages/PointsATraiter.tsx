@@ -261,6 +261,7 @@ export default function PointsATraiter() {
                             ? (d.assignedUserId === user?.id ? 'vous' : profileNames[d.assignedUserId] || undefined)
                             : undefined
                         }
+                        onOpen={handleOpenCard}
                       />
                     ))
                   )}
@@ -270,6 +271,12 @@ export default function PointsATraiter() {
           </div>
         </div>
       )}
+
+      <DevisDetailDialog
+        devis={openDevis}
+        open={!!openDevis}
+        onOpenChange={o => { if (!o) closeDialog(); }}
+      />
     </div>
   );
 }
