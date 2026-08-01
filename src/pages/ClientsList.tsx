@@ -52,6 +52,7 @@ export default function ClientsList() {
   }, [crm.clients, search, filterType, showArchived]);
 
   return (
+    <ReturnOriginProvider value={() => ({ label: 'Clients', state: { search, filterType, showArchived, scrollY: window.scrollY } })}>
     <div className="p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <h1 className="text-xl font-display font-bold">Clients</h1>
@@ -126,5 +127,6 @@ export default function ClientsList() {
         onSaved={(c) => navigateWithReturn(`/clients/${c.id}`)}
       />
     </div>
+    </ReturnOriginProvider>
   );
 }

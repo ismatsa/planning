@@ -18,6 +18,7 @@ export default function VehiculesList() {
   const navigate = useNavigate();
   const navigateWithReturn = useNavigateWithReturn();
   const location = useLocation();
+  const restored = (location.state || {}) as any;
 
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState('all');
@@ -53,6 +54,7 @@ export default function VehiculesList() {
   }, [crm.vehicules, search, filterStatut, filterMarque, showArchived, clientById]);
 
   return (
+    <ReturnOriginProvider value={() => ({ label: 'Véhicules', state: { search, filterStatut, filterMarque, showArchived, scrollY: window.scrollY } })}>
     <div className="p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <h1 className="text-xl font-display font-bold">Véhicules</h1>
@@ -131,5 +133,6 @@ export default function VehiculesList() {
         onSaved={(v) => navigateWithReturn(`/vehicules/${v.id}`)}
       />
     </div>
+    </ReturnOriginProvider>
   );
 }

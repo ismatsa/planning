@@ -110,6 +110,7 @@ export default function DevisEnvoyes() {
   }
 
   return (
+    <ReturnOriginProvider value={() => ({ label: 'Devis envoyés', state: { search, scrollY: window.scrollY } })}>
     <div className="p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -327,5 +328,6 @@ export default function DevisEnvoyes() {
         </DialogContent>
       </Dialog>
     </div>
+    </ReturnOriginProvider>
   );
 }

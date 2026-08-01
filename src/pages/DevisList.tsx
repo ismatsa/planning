@@ -176,6 +176,7 @@ export default function DevisList() {
   }
 
   return (
+    <ReturnOriginProvider value={() => ({ label: 'Demandes de devis', state: { search, filterMetier, filterStatut, filterResponsibles, onlyMine, showPast, scrollY: window.scrollY } })}>
     <div className="p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -408,5 +409,6 @@ export default function DevisList() {
         </div>
       )}
     </div>
+    </ReturnOriginProvider>
   );
 }
