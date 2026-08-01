@@ -309,7 +309,7 @@ export default function DevisList() {
                 const billingProfile = d.billingResponsibleUserId
                   ? profileOptions.find(p => p.id === d.billingResponsibleUserId)
                   : null;
-                const canSeeDetails = resps.includes(user?.id || '') || d.createdBy === user?.id;
+                const canSeeDetails = !!user;
                 const isTerminal = TERMINAL_STATUSES.includes(d.statut);
                 const isAssignedToMe = d.assignedUserId === user?.id && !isTerminal;
                 const linkedRdvId = d.statut === 'valide' ? linkedRdvMap[d.id] : undefined;
