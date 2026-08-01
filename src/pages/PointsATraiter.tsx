@@ -125,12 +125,14 @@ function KanbanCard({
   devis,
   activity,
   assignedLabel,
+  assignedToMe,
   canSeeContact,
   onOpen,
 }: {
   devis: Devis;
   activity: CardActivity;
   assignedLabel?: string;
+  assignedToMe: boolean;
   canSeeContact: boolean;
   onOpen: (devis: Devis, trigger: HTMLElement) => void;
 }) {
@@ -139,6 +141,7 @@ function KanbanCard({
   const vin = parties.vehicule?.vin || devis.vin;
   const isSent = devis.statut === 'envoye';
   const relance = needsFollowUp(devis);
+  const highlight = relance || assignedToMe;
   const open = (e: React.SyntheticEvent) => onOpen(devis, e.currentTarget as HTMLElement);
 
   return (
@@ -151,8 +154,8 @@ function KanbanCard({
       }}
       aria-label={`Ouvrir ${isSent ? 'le devis envoyé' : 'la demande de devis'} ${parties.clientName}`}
       className={`rounded-lg border p-3 space-y-2 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-        relance
-          ? 'border-destructive/40 bg-destructive/10 hover:bg-destructive/15'
+        highlight
+          ? `bg-destructive/10 hover:bg-destructive/15 ${assignedToMe ? 'border-destructive/70' : 'border-destructive/40'}`
           : 'bg-card hover:bg-muted/40'
       }`}
     >
@@ -179,6 +182,12 @@ function KanbanCard({
           {isSent ? 'Devis envoyé' : 'Demande de devis'}
         </Badge>
         <Badge variant="secondary" className="text-[10px]">{STATUT_DEVIS_LABELS[devis.statut]}</Badge>
+        {assignedToMe && (
+          <Badge variant="destructive" className="text-[10px] gap-1">
+            <UserCheck className="h-3 w-3" aria-hidden="true" />
+            À vous
+          </Badge>
+        )}
         {relance && (
           <Badge variant="destructive" className="text-[10px] gap-1">
             <AlertTriangle className="h-3 w-3" aria-hidden="true" />
@@ -189,7 +198,7 @@ function KanbanCard({
 
       <div className="text-[11px] text-muted-foreground space-y-0.5">
         <p>{formatDistanceToNow(new Date(devis.updatedAt || devis.createdAt), { addSuffix: true, locale: fr })}</p>
-        {assignedLabel && <p>Assigné à {assignedLabel}</p>}
+        {assignedLabel && !assignedToMe && <p>Assigné à {assignedLabel}</p>}
       </div>
 
       {relance && (
