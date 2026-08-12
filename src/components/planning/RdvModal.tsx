@@ -152,8 +152,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     if (!open) return;
     if (rdv) {
       const poste = postes.find(p => p.id === rdv.posteId);
-      setMetierId(poste?.metierId || 'lavage');
-      setPosteId(rdv.posteId);
+      setMetierId(poste?.metierId || '');
+      setPosteId(rdv.posteId || '');
       setDate(format(new Date(rdv.debut), 'yyyy-MM-dd'));
       setDateFin(format(new Date(rdv.fin), 'yyyy-MM-dd'));
       setHeureDebut(format(new Date(rdv.debut), 'HH:mm'));
