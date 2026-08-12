@@ -28,7 +28,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/store/AuthContext';
 
-const SLOT_WIDTH = 80; // px per 30-minute slot
+const MIN_SLOT_WIDTH = 26; // largeur mini d'un créneau de 30 min (tablette/mobile)
+const LABEL_WIDTH = 224; // largeur de la colonne intervenant (w-56)
 const SNAP_MINUTES = 15;
 const STORAGE_KEY = 'intervenants-planning-visible';
 
