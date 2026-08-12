@@ -90,6 +90,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   const [notes, setNotes] = useState('');
   const [statut, setStatut] = useState<StatutRdv>('prevu');
   const [conflict, setConflict] = useState<string | null>(null);
+  const [conflictAck, setConflictAck] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Responsable & Intervenant
