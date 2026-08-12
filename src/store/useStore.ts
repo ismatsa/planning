@@ -137,7 +137,7 @@ export function useAppStore() {
   const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }, responsibleIds?: string[], intervenantIds?: string[]) => {
     const { data: { session } } = await supabase.auth.getSession();
     const { data, error } = await supabase.from('rendez_vous').insert({
-      poste_id: rdv.posteId,
+      poste_id: rdv.posteId || null,
       debut: rdv.debut,
       fin: rdv.fin,
       client_nom: rdv.clientNom || null,
