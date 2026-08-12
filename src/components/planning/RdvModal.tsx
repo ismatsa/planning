@@ -257,10 +257,17 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   }, [profileOptions]);
 
   useEffect(() => {
-    if (!isEdit) {
-      const first = postes.find(p => p.metierId === metierId && p.actif);
-      if (first) setPosteId(first.id);
+    if (isEdit) return;
+    if (!metierId) {
+      setPosteId('');
+      return;
     }
+    // Keep an explicitly chosen poste if it still matches the métier
+    setPosteId(prev => {
+      const current = postes.find(p => p.id === prev);
+      if (current && current.metierId === metierId) return prev;
+      return '';
+    });
   }, [metierId, postes, isEdit]);
 
   function computeTotalMinutes(startDate: string, startTime: string, endDate: string, endTime: string): number {
