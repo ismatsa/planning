@@ -366,7 +366,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   }, [rdv, date, heureDebut, dateFin, heureFin]);
 
   async function handleSubmit() {
-    if (!posteId || !date || !heureDebut) return;
+    if (!date || !heureDebut) return;
 
     // Validate responsibles
     if (selectedResponsibles.length === 0) {
