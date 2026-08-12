@@ -379,7 +379,7 @@ export default function IntervenantsPlanning() {
       }
 
       const startMin = Math.round(prev.left / PX_PER_MINUTE) + minMinutes;
-      const endMin = Math.round((prev.left + prev.width + 2) / PX_PER_MINUTE) + minMinutes;
+      const endMin = Math.round((prev.left + prev.width) / PX_PER_MINUTE) + minMinutes;
       const debut = new Date(st.day);
       debut.setHours(Math.floor(startMin / 60), startMin % 60, 0, 0);
       const fin = new Date(st.day);
