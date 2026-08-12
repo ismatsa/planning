@@ -225,38 +225,33 @@ export default function IntervenantsPlanning() {
   }
 
   /**
-   * Répartition horizontale des événements simultanés d'une même ligne intervenant.
-   * Chaque groupe d'événements qui se chevauchent partage sa plage : index/total.
+   * Pistes verticales : chaque événement conserve sa position et sa durée réelles.
+   * Les événements qui se chevauchent sont empilés verticalement dans la même ligne.
    */
-  function overlapLayout(list: RendezVous[]) {
+  function laneLayout(list: RendezVous[]) {
     const sorted = [...list].sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime());
-    const map = new Map<string, { index: number; total: number }>();
-    let cluster: RendezVous[] = [];
-    let clusterEnd = 0;
-
-    const flush = () => {
-      cluster.forEach((r, i) => map.set(r.id, { index: i, total: cluster.length }));
-      cluster = [];
-    };
+    const map = new Map<string, number>();
+    const laneEnds: number[] = [];
 
     for (const r of sorted) {
       const start = new Date(r.debut).getTime();
       const end = new Date(r.fin).getTime();
-      if (cluster.length > 0 && start < clusterEnd) {
-        cluster.push(r);
-        clusterEnd = Math.max(clusterEnd, end);
+      let lane = laneEnds.findIndex(e => e <= start);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(end);
       } else {
-        flush();
-        cluster = [r];
-        clusterEnd = end;
+        laneEnds[lane] = end;
       }
+      map.set(r.id, lane);
     }
-    flush();
-    return map;
+    return { map, count: Math.max(1, laneEnds.length) };
   }
 
-
-
+  /**
+   * Position strictement temporelle : left/width calculés uniquement sur la zone horaire.
+   * left = ((débutMin - heureMin) / totalMinutes) × laneWidth
+   */
   function styleForDay(rdv: RendezVous, day: Date) {
     const rdvStart = new Date(rdv.debut);
     const rdvEnd = new Date(rdv.fin);
@@ -266,13 +261,14 @@ export default function IntervenantsPlanning() {
     dayEnd.setHours(Math.floor(maxMinutes / 60), maxMinutes % 60, 0, 0);
     const visibleStart = rdvStart < dayStart ? dayStart : rdvStart;
     const visibleEnd = rdvEnd > dayEnd ? dayEnd : rdvEnd;
-    const startMin = visibleStart.getHours() * 60 + visibleStart.getMinutes() - minMinutes;
+    const startMin = (visibleStart.getTime() - dayStart.getTime()) / 60000;
     const duration = (visibleEnd.getTime() - visibleStart.getTime()) / 60000;
     return {
-      left: startMin * PX_PER_MINUTE,
-      width: Math.max(0, duration * PX_PER_MINUTE - 2),
+      left: (startMin / totalMinutes) * laneWidth,
+      width: Math.max(2, (duration / totalMinutes) * laneWidth),
     };
   }
+
 
   // ---- Déplacement / redimensionnement ----
   const dragState = useRef<{
