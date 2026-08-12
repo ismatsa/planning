@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "./store/AuthContext";
 import AppLayout from "./components/AppLayout";
 import Index from "./pages/Index";
 import RendezVousList from "./pages/RendezVousList";
+import IntervenantsPlanning from "./pages/IntervenantsPlanning";
 import UserManagement from "./pages/UserManagement";
 import Creneaux from "./pages/Creneaux";
 import Parametres from "./pages/Parametres";
@@ -55,6 +56,7 @@ function AppRoutes() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/rendez-vous" element={<RendezVousList />} />
+            <Route path="/intervenants" element={<IntervenantsPlanning />} />
             <Route path="/creneaux" element={<Creneaux />} />
             <Route path="/parametres" element={<Parametres />} />
             <Route path="/utilisateurs" element={<UserManagement />} />

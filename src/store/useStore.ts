@@ -46,7 +46,7 @@ function mapException(row: any): ExceptionDisponibilite {
 function mapRdv(row: any): RendezVous {
   return {
     id: row.id,
-    posteId: row.poste_id,
+    posteId: row.poste_id || '',
     debut: row.debut,
     fin: row.fin,
     clientNom: row.client_nom || undefined,
@@ -137,7 +137,7 @@ export function useAppStore() {
   const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }, responsibleIds?: string[], intervenantIds?: string[]) => {
     const { data: { session } } = await supabase.auth.getSession();
     const { data, error } = await supabase.from('rendez_vous').insert({
-      poste_id: rdv.posteId,
+      poste_id: rdv.posteId || null,
       debut: rdv.debut,
       fin: rdv.fin,
       client_nom: rdv.clientNom || null,
@@ -179,7 +179,7 @@ export function useAppStore() {
 
   const updateRdv = useCallback(async (rdv: RendezVous, responsibleIds?: string[], intervenantIds?: string[]) => {
     const { data, error } = await supabase.from('rendez_vous').update({
-      poste_id: rdv.posteId,
+      poste_id: rdv.posteId || null,
       debut: rdv.debut,
       fin: rdv.fin,
       client_nom: rdv.clientNom || null,
@@ -230,6 +230,7 @@ export function useAppStore() {
   }, []);
 
   const checkConflict = useCallback((posteId: string, debut: string, fin: string, excludeId?: string): RendezVous | null => {
+    if (!posteId) return null;
     const start = new Date(debut).getTime();
     const end = new Date(fin).getTime();
     return rdvs.find(r => {
@@ -241,6 +242,32 @@ export function useAppStore() {
       return start < rEnd && end > rStart;
     }) || null;
   }, [rdvs]);
+
+  /** Non-blocking check: returns appointments of the same intervenants overlapping the slot. */
+  const checkIntervenantConflicts = useCallback((
+    intervenantIds: string[],
+    debut: string,
+    fin: string,
+    excludeId?: string,
+  ): { intervenantId: string; rdv: RendezVous }[] => {
+    if (!intervenantIds || intervenantIds.length === 0) return [];
+    const start = new Date(debut).getTime();
+    const end = new Date(fin).getTime();
+    const out: { intervenantId: string; rdv: RendezVous }[] = [];
+    for (const r of rdvs) {
+      if (r.id === excludeId) continue;
+      if (r.statut === 'annule') continue;
+      const rStart = new Date(r.debut).getTime();
+      const rEnd = new Date(r.fin).getTime();
+      if (!(start < rEnd && end > rStart)) continue;
+      const ints = appointmentIntervenants[r.id] || [];
+      for (const iid of intervenantIds) {
+        if (ints.includes(iid)) out.push({ intervenantId: iid, rdv: r });
+      }
+    }
+    return out;
+  }, [rdvs, appointmentIntervenants]);
+
 
   const updatePostes = useCallback(async (updater: (prev: Poste[]) => Poste[]) => {
     const newPostes = updater(postes);
@@ -316,7 +343,7 @@ export function useAppStore() {
   return {
     metiers, rdvs, postes, disponibilites, exceptions, settings, loaded,
     appointmentResponsibles, appointmentIntervenants,
-    addRdv, updateRdv, deleteRdv, checkConflict,
+    addRdv, updateRdv, deleteRdv, checkConflict, checkIntervenantConflicts,
     addMetier, renameMetier, deleteMetier,
     addPoste, renamePoste,
     setPostes: updatePostes,

@@ -46,6 +46,7 @@ interface Props {
   defaultDate?: Date;
   defaultPosteId?: string;
   defaultTime?: string;
+  defaultIntervenantId?: string;
   prefillFromDevis?: any;
 }
 
@@ -60,12 +61,14 @@ interface IntervenantOption {
   name: string;
 }
 
-export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime, prefillFromDevis }: Props) {
-  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
+const NONE = '__none__';
+
+export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime, defaultIntervenantId, prefillFromDevis }: Props) {
+  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, checkIntervenantConflicts, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
   const { user } = useAuth();
   const isEdit = !!rdv;
 
-  const [metierId, setMetierId] = useState<MetierType>('lavage');
+  const [metierId, setMetierId] = useState<MetierType>('');
   const [posteId, setPosteId] = useState('');
   const [date, setDate] = useState('');
   const [dateFin, setDateFin] = useState('');
@@ -87,6 +90,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   const [notes, setNotes] = useState('');
   const [statut, setStatut] = useState<StatutRdv>('prevu');
   const [conflict, setConflict] = useState<string | null>(null);
+  const [conflictAck, setConflictAck] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Responsable & Intervenant
@@ -148,8 +152,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     if (!open) return;
     if (rdv) {
       const poste = postes.find(p => p.id === rdv.posteId);
-      setMetierId(poste?.metierId || 'lavage');
-      setPosteId(rdv.posteId);
+      setMetierId(poste?.metierId || '');
+      setPosteId(rdv.posteId || '');
       setDate(format(new Date(rdv.debut), 'yyyy-MM-dd'));
       setDateFin(format(new Date(rdv.fin), 'yyyy-MM-dd'));
       setHeureDebut(format(new Date(rdv.debut), 'HH:mm'));
@@ -208,8 +212,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         setSelectedIntervenants(devis.intervenantIds || []);
         setBillingResponsible(devis.billingResponsibleUserId || '');
       } else {
-        setMetierId(poste?.metierId || 'lavage');
-        setPosteId(defaultPosteId || filteredPostes[0]?.id || '');
+        setMetierId(poste?.metierId || '');
+        setPosteId(defaultPosteId || '');
         setClientNom('');
         setClientTelCode('+212');
         setClientTelNum('');
@@ -228,7 +232,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         } else {
           setSelectedResponsibles([]);
         }
-        setSelectedIntervenants([]);
+        setSelectedIntervenants(defaultIntervenantId ? [defaultIntervenantId] : []);
       }
       setDate(defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
       setDateFin(defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
@@ -237,8 +241,9 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setStatut('prevu');
     }
     setConflict(null);
+    setConflictAck(false);
     setSaving(false);
-  }, [open, rdv, defaultDate, defaultPosteId, defaultTime, profileOptions, user, prefillFromDevis]);
+  }, [open, rdv, defaultDate, defaultPosteId, defaultTime, defaultIntervenantId, profileOptions, user, prefillFromDevis]);
 
   // When profileOptions load after modal opens (for new RDV), auto-prefill if not yet set
   useEffect(() => {
@@ -252,10 +257,17 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   }, [profileOptions]);
 
   useEffect(() => {
-    if (!isEdit) {
-      const first = postes.find(p => p.metierId === metierId && p.actif);
-      if (first) setPosteId(first.id);
+    if (isEdit) return;
+    if (!metierId) {
+      setPosteId('');
+      return;
     }
+    // Keep an explicitly chosen poste if it still matches the métier
+    setPosteId(prev => {
+      const current = postes.find(p => p.id === prev);
+      if (current && current.metierId === metierId) return prev;
+      return '';
+    });
   }, [metierId, postes, isEdit]);
 
   function computeTotalMinutes(startDate: string, startTime: string, endDate: string, endTime: string): number {
@@ -354,7 +366,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
   }, [rdv, date, heureDebut, dateFin, heureFin]);
 
   async function handleSubmit() {
-    if (!posteId || !date || !heureDebut) return;
+    if (!date || !heureDebut) return;
 
     // Validate responsibles
     if (selectedResponsibles.length === 0) {
@@ -375,11 +387,35 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     }
 
     const conflicting = checkConflict(posteId, debut.toISOString(), fin.toISOString(), rdv?.id);
-    if (conflicting) {
-      const conflictTime = `${format(new Date(conflicting.debut), 'HH:mm')} – ${format(new Date(conflicting.fin), 'HH:mm')}`;
-      setConflict(`Ce poste est occupé de ${conflictTime}. Essayez un autre créneau.`);
-      return;
+    const intervenantConflicts = checkIntervenantConflicts(selectedIntervenants, debut.toISOString(), fin.toISOString(), rdv?.id);
+
+    if (conflicting || intervenantConflicts.length > 0) {
+      const messages: string[] = [];
+      if (conflicting) {
+        const conflictTime = `${format(new Date(conflicting.debut), 'HH:mm')} – ${format(new Date(conflicting.fin), 'HH:mm')}`;
+        messages.push(`Ce poste est déjà occupé de ${conflictTime}.`);
+      }
+      const seen = new Set<string>();
+      for (const c of intervenantConflicts) {
+        const key = `${c.intervenantId}-${c.rdv.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const name = intervenantOptions.find(i => i.id === c.intervenantId)?.name || 'Intervenant';
+        const t = `${format(new Date(c.rdv.debut), 'dd/MM HH:mm')} – ${format(new Date(c.rdv.fin), 'HH:mm')}`;
+        messages.push(`${name} a déjà un événement sur ce créneau (${t}).`);
+      }
+      const message = messages.join(' ');
+      if (!conflictAck || message !== conflict) {
+        setConflict(message);
+        setConflictAck(true);
+        toast.warning('Conflit détecté — vérifiez puis confirmez pour enregistrer.');
+        return;
+      }
+    } else {
+      setConflict(null);
+      setConflictAck(false);
     }
+
 
     setSaving(true);
 
@@ -533,10 +569,15 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier</Label>
-              <Select value={metierId} onValueChange={v => setMetierId(v as MetierType)} disabled={readOnly}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier (optionnel)</Label>
+              <Select
+                value={metierId || NONE}
+                onValueChange={v => setMetierId((v === NONE ? '' : v) as MetierType)}
+                disabled={readOnly}
+              >
+                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={NONE}>Aucun</SelectItem>
                   {metiers.map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>
                   ))}
@@ -544,10 +585,15 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste</Label>
-              <Select value={posteId} onValueChange={setPosteId} disabled={readOnly}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste (optionnel)</Label>
+              <Select
+                value={posteId || NONE}
+                onValueChange={v => setPosteId(v === NONE ? '' : v)}
+                disabled={readOnly || !metierId}
+              >
+                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={NONE}>Aucun</SelectItem>
                   {filteredPostes.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.nom}</SelectItem>
                   ))}
@@ -608,9 +654,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
           </div>
 
           {conflict && (
-            <div className="flex items-start gap-2 rounded-lg bg-mecanique/10 p-3 text-sm text-foreground animate-slide-in">
-              <AlertCircle className="h-4 w-4 text-mecanique shrink-0 mt-0.5" />
-              <span>{conflict}</span>
+            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-foreground animate-slide-in">
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <span>
+                {conflict}
+                <span className="block text-xs text-muted-foreground mt-1">
+                  Vous pouvez modifier le créneau ou confirmer l'enregistrement malgré le conflit.
+                </span>
+              </span>
             </div>
           )}
 
@@ -663,7 +714,11 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               )}
               <Button variant="outline" onClick={onClose}>Annuler</Button>
               <Button onClick={handleSubmit} disabled={saving}>
-                {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
+                {saving
+                  ? 'Enregistrement…'
+                  : conflict && conflictAck
+                    ? 'Confirmer malgré le conflit'
+                    : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
               </Button>
             </>
           )}
