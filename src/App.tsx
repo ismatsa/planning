@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "./store/AuthContext";
 import AppLayout from "./components/AppLayout";
 import Index from "./pages/Index";
 import RendezVousList from "./pages/RendezVousList";
+import IntervenantsPlanning from "./pages/IntervenantsPlanning";
 import UserManagement from "./pages/UserManagement";
 import Creneaux from "./pages/Creneaux";
 import Parametres from "./pages/Parametres";
