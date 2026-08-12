@@ -46,6 +46,7 @@ interface Props {
   defaultDate?: Date;
   defaultPosteId?: string;
   defaultTime?: string;
+  defaultIntervenantId?: string;
   prefillFromDevis?: any;
 }
 
