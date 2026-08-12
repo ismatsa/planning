@@ -387,11 +387,35 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     }
 
     const conflicting = checkConflict(posteId, debut.toISOString(), fin.toISOString(), rdv?.id);
-    if (conflicting) {
-      const conflictTime = `${format(new Date(conflicting.debut), 'HH:mm')} – ${format(new Date(conflicting.fin), 'HH:mm')}`;
-      setConflict(`Ce poste est occupé de ${conflictTime}. Essayez un autre créneau.`);
-      return;
+    const intervenantConflicts = checkIntervenantConflicts(selectedIntervenants, debut.toISOString(), fin.toISOString(), rdv?.id);
+
+    if (conflicting || intervenantConflicts.length > 0) {
+      const messages: string[] = [];
+      if (conflicting) {
+        const conflictTime = `${format(new Date(conflicting.debut), 'HH:mm')} – ${format(new Date(conflicting.fin), 'HH:mm')}`;
+        messages.push(`Ce poste est déjà occupé de ${conflictTime}.`);
+      }
+      const seen = new Set<string>();
+      for (const c of intervenantConflicts) {
+        const key = `${c.intervenantId}-${c.rdv.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const name = intervenantOptions.find(i => i.id === c.intervenantId)?.name || 'Intervenant';
+        const t = `${format(new Date(c.rdv.debut), 'dd/MM HH:mm')} – ${format(new Date(c.rdv.fin), 'HH:mm')}`;
+        messages.push(`${name} a déjà un événement sur ce créneau (${t}).`);
+      }
+      const message = messages.join(' ');
+      if (!conflictAck || message !== conflict) {
+        setConflict(message);
+        setConflictAck(true);
+        toast.warning('Conflit détecté — vérifiez puis confirmez pour enregistrer.');
+        return;
+      }
+    } else {
+      setConflict(null);
+      setConflictAck(false);
     }
+
 
     setSaving(true);
 
