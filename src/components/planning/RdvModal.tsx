@@ -569,10 +569,15 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier</Label>
-              <Select value={metierId} onValueChange={v => setMetierId(v as MetierType)} disabled={readOnly}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier (optionnel)</Label>
+              <Select
+                value={metierId || NONE}
+                onValueChange={v => setMetierId((v === NONE ? '' : v) as MetierType)}
+                disabled={readOnly}
+              >
+                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={NONE}>Aucun</SelectItem>
                   {metiers.map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>
                   ))}
@@ -580,10 +585,15 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste</Label>
-              <Select value={posteId} onValueChange={setPosteId} disabled={readOnly}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste (optionnel)</Label>
+              <Select
+                value={posteId || NONE}
+                onValueChange={v => setPosteId(v === NONE ? '' : v)}
+                disabled={readOnly || !metierId}
+              >
+                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={NONE}>Aucun</SelectItem>
                   {filteredPostes.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.nom}</SelectItem>
                   ))}
