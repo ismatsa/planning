@@ -46,7 +46,7 @@ function mapException(row: any): ExceptionDisponibilite {
 function mapRdv(row: any): RendezVous {
   return {
     id: row.id,
-    posteId: row.poste_id,
+    posteId: row.poste_id || '',
     debut: row.debut,
     fin: row.fin,
     clientNom: row.client_nom || undefined,
