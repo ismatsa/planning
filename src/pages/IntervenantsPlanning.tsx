@@ -128,7 +128,30 @@ export default function IntervenantsPlanning() {
   const minMinutes = timeToMinutes(settings.heureMin);
   const maxMinutes = timeToMinutes(settings.heureMax);
   const totalMinutes = maxMinutes - minMinutes;
-  const PX_PER_MINUTE = SLOT_WIDTH / 30;
+
+  // Largeur disponible mesurée : les colonnes s'adaptent pour éviter tout scroll horizontal sur desktop
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setAvailableWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    setAvailableWidth(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
+  const slotWidth = useMemo(() => {
+    const usable = availableWidth - LABEL_WIDTH;
+    if (usable <= 0 || timeSlots.length === 0) return MIN_SLOT_WIDTH;
+    return Math.max(MIN_SLOT_WIDTH, usable / timeSlots.length);
+  }, [availableWidth, timeSlots.length]);
+
+  const laneWidth = slotWidth * timeSlots.length;
+  const PX_PER_MINUTE = slotWidth / 30;
+
 
   const visibleResources = useMemo(
     () => allResources.filter(r => visibleIds?.has(r.id)),
