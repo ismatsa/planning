@@ -710,8 +710,6 @@ export default function IntervenantsPlanning() {
                     </ul>
                     <p className="mt-1 text-xs">Simple avertissement de charge : l'enregistrement reste possible.</p>
                   </div>
-
-                  </div>
                 )}
               </div>
             </AlertDialogDescription>
