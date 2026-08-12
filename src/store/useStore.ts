@@ -230,6 +230,7 @@ export function useAppStore() {
   }, []);
 
   const checkConflict = useCallback((posteId: string, debut: string, fin: string, excludeId?: string): RendezVous | null => {
+    if (!posteId) return null;
     const start = new Date(debut).getTime();
     const end = new Date(fin).getTime();
     return rdvs.find(r => {
