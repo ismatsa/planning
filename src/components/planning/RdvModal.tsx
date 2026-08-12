@@ -654,9 +654,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
           </div>
 
           {conflict && (
-            <div className="flex items-start gap-2 rounded-lg bg-mecanique/10 p-3 text-sm text-foreground animate-slide-in">
-              <AlertCircle className="h-4 w-4 text-mecanique shrink-0 mt-0.5" />
-              <span>{conflict}</span>
+            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-foreground animate-slide-in">
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <span>
+                {conflict}
+                <span className="block text-xs text-muted-foreground mt-1">
+                  Vous pouvez modifier le créneau ou confirmer l'enregistrement malgré le conflit.
+                </span>
+              </span>
             </div>
           )}
 
