@@ -714,7 +714,11 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
               )}
               <Button variant="outline" onClick={onClose}>Annuler</Button>
               <Button onClick={handleSubmit} disabled={saving}>
-                {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
+                {saving
+                  ? 'Enregistrement…'
+                  : conflict && conflictAck
+                    ? 'Confirmer malgré le conflit'
+                    : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
               </Button>
             </>
           )}
