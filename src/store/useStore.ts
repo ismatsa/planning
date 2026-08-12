@@ -243,6 +243,32 @@ export function useAppStore() {
     }) || null;
   }, [rdvs]);
 
+  /** Non-blocking check: returns appointments of the same intervenants overlapping the slot. */
+  const checkIntervenantConflicts = useCallback((
+    intervenantIds: string[],
+    debut: string,
+    fin: string,
+    excludeId?: string,
+  ): { intervenantId: string; rdv: RendezVous }[] => {
+    if (!intervenantIds || intervenantIds.length === 0) return [];
+    const start = new Date(debut).getTime();
+    const end = new Date(fin).getTime();
+    const out: { intervenantId: string; rdv: RendezVous }[] = [];
+    for (const r of rdvs) {
+      if (r.id === excludeId) continue;
+      if (r.statut === 'annule') continue;
+      const rStart = new Date(r.debut).getTime();
+      const rEnd = new Date(r.fin).getTime();
+      if (!(start < rEnd && end > rStart)) continue;
+      const ints = appointmentIntervenants[r.id] || [];
+      for (const iid of intervenantIds) {
+        if (ints.includes(iid)) out.push({ intervenantId: iid, rdv: r });
+      }
+    }
+    return out;
+  }, [rdvs, appointmentIntervenants]);
+
+
   const updatePostes = useCallback(async (updater: (prev: Poste[]) => Poste[]) => {
     const newPostes = updater(postes);
     // Update changed postes in DB
