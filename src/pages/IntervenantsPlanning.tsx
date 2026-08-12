@@ -28,7 +28,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/store/AuthContext';
 
-const SLOT_WIDTH = 80; // px per 30-minute slot
+const MIN_SLOT_WIDTH = 26; // largeur mini d'un créneau de 30 min (tablette/mobile)
+const LABEL_WIDTH = 224; // largeur de la colonne intervenant (w-56)
 const SNAP_MINUTES = 15;
 const STORAGE_KEY = 'intervenants-planning-visible';
 
@@ -127,7 +128,30 @@ export default function IntervenantsPlanning() {
   const minMinutes = timeToMinutes(settings.heureMin);
   const maxMinutes = timeToMinutes(settings.heureMax);
   const totalMinutes = maxMinutes - minMinutes;
-  const PX_PER_MINUTE = SLOT_WIDTH / 30;
+
+  // Largeur disponible mesurée : les colonnes s'adaptent pour éviter tout scroll horizontal sur desktop
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setAvailableWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    setAvailableWidth(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
+  const slotWidth = useMemo(() => {
+    const usable = availableWidth - LABEL_WIDTH;
+    if (usable <= 0 || timeSlots.length === 0) return MIN_SLOT_WIDTH;
+    return Math.max(MIN_SLOT_WIDTH, usable / timeSlots.length);
+  }, [availableWidth, timeSlots.length]);
+
+  const laneWidth = slotWidth * timeSlots.length;
+  const PX_PER_MINUTE = slotWidth / 30;
+
 
   const visibleResources = useMemo(
     () => allResources.filter(r => visibleIds?.has(r.id)),
@@ -199,6 +223,39 @@ export default function IntervenantsPlanning() {
     }
     return ids;
   }
+
+  /**
+   * Répartition horizontale des événements simultanés d'une même ligne intervenant.
+   * Chaque groupe d'événements qui se chevauchent partage sa plage : index/total.
+   */
+  function overlapLayout(list: RendezVous[]) {
+    const sorted = [...list].sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime());
+    const map = new Map<string, { index: number; total: number }>();
+    let cluster: RendezVous[] = [];
+    let clusterEnd = 0;
+
+    const flush = () => {
+      cluster.forEach((r, i) => map.set(r.id, { index: i, total: cluster.length }));
+      cluster = [];
+    };
+
+    for (const r of sorted) {
+      const start = new Date(r.debut).getTime();
+      const end = new Date(r.fin).getTime();
+      if (cluster.length > 0 && start < clusterEnd) {
+        cluster.push(r);
+        clusterEnd = Math.max(clusterEnd, end);
+      } else {
+        flush();
+        cluster = [r];
+        clusterEnd = end;
+      }
+    }
+    flush();
+    return map;
+  }
+
+
 
   function styleForDay(rdv: RendezVous, day: Date) {
     const rdvStart = new Date(rdv.debut);
@@ -471,20 +528,22 @@ export default function IntervenantsPlanning() {
       </div>
 
       {/* Grille : lignes = intervenants, colonnes = horaires */}
-      <div className="flex-1 overflow-auto">
-        <div className="min-w-fit">
+      <div ref={gridRef} className="flex-1 overflow-y-auto overflow-x-auto">
+        <div style={{ minWidth: LABEL_WIDTH + laneWidth }}>
           {/* Bandeau horaires */}
-          <div className="sticky top-0 z-20 flex border-b bg-card">
-            <div className="w-56 shrink-0 border-r bg-card" />
+          <div className="sticky top-0 z-30 flex border-b bg-card">
+            <div className="shrink-0 border-r bg-card" style={{ width: LABEL_WIDTH }} />
             {timeSlots.map(slot => {
               const isFullHour = slot.endsWith(':00');
               return (
                 <div
                   key={slot}
-                  className={`text-center text-[10px] py-2 border-r ${isFullHour ? 'font-semibold text-foreground/70' : 'font-medium text-muted-foreground/50'}`}
-                  style={{ width: SLOT_WIDTH, minWidth: SLOT_WIDTH }}
+                  className={`text-center text-[11px] py-2 border-r whitespace-nowrap overflow-hidden ${
+                    isFullHour ? 'font-semibold text-foreground/70 border-foreground/20' : 'border-border/50'
+                  }`}
+                  style={{ width: slotWidth, minWidth: slotWidth }}
                 >
-                  {slot}
+                  {isFullHour ? slot : ''}
                 </div>
               );
             })}
@@ -507,12 +566,16 @@ export default function IntervenantsPlanning() {
               {visibleResources.map(res => {
                 const dayRdvs = rdvsFor(res.id, day);
                 const conflicts = conflictIdsOf(dayRdvs);
+                const layout = overlapLayout(dayRdvs);
                 const hue = avatarHue(res.id);
 
                 return (
                   <div key={res.id} className="flex border-b hover:bg-muted/20 transition-colors">
                     {/* Libellé intervenant */}
-                    <div className="w-56 shrink-0 flex items-center gap-2 px-3 py-2 border-r bg-card">
+                    <div
+                      className="shrink-0 flex items-center gap-2 px-3 py-2 border-r bg-card sticky left-0 z-20"
+                      style={{ width: LABEL_WIDTH }}
+                    >
                       <span
                         className="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
                         style={{ backgroundColor: res.id === UNASSIGNED ? 'hsl(var(--muted-foreground))' : `hsl(${hue} 55% 45%)` }}
@@ -528,18 +591,21 @@ export default function IntervenantsPlanning() {
                         )}
                       </span>
                       {conflicts.size > 0 && (
-                        <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0 ml-auto" />
+                        <AlertTriangle
+                          className="h-3.5 w-3.5 text-amber-500 shrink-0 ml-auto"
+                          aria-label="Plusieurs interventions sont affectées à cet intervenant sur ce créneau."
+                        />
                       )}
                     </div>
 
                     {/* Cellules horaires */}
                     <div
-                      className="relative flex-1 cursor-pointer"
-                      style={{ minWidth: timeSlots.length * SLOT_WIDTH, height: 48 }}
+                      className="relative cursor-pointer"
+                      style={{ width: laneWidth, minWidth: laneWidth, height: 52 }}
                       onClick={e => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const x = e.clientX - rect.left;
-                        const slotIndex = Math.floor(x / SLOT_WIDTH);
+                        const slotIndex = Math.floor(x / slotWidth);
                         openNewRdv(day, timeSlots[slotIndex] || settings.heureMin, res.id);
                       }}
                     >
@@ -549,18 +615,32 @@ export default function IntervenantsPlanning() {
                           <div
                             key={slot}
                             className={`absolute top-0 bottom-0 border-r ${isFullHour ? 'border-foreground/20' : 'border-border/50'}`}
-                            style={{ left: i * SLOT_WIDTH }}
+                            style={{ left: i * slotWidth, width: slotWidth }}
                           />
                         );
                       })}
 
                       {dayRdvs.map(r => {
-                        const pos = dragId === r.id && preview ? preview : styleForDay(r, day);
+                        const base = dragId === r.id && preview ? preview : styleForDay(r, day);
+                        const lane = layout.get(r.id) || { index: 0, total: 1 };
+                        const overlapped = lane.total > 1;
+                        const subWidth = overlapped ? Math.max(28, base.width / lane.total) : base.width;
+                        const left = overlapped && dragId !== r.id
+                          ? base.left + lane.index * (base.width / lane.total)
+                          : base.left;
                         return (
                           <div
                             key={r.id}
-                            className="absolute"
-                            style={{ left: pos.left, width: pos.width, top: 2, bottom: 2, cursor: dragId === r.id ? 'grabbing' : 'grab' }}
+                            className={`absolute rounded-md ${overlapped ? 'ring-1 ring-amber-500' : ''}`}
+                            title={overlapped ? 'Plusieurs interventions sont affectées à cet intervenant sur ce créneau.' : undefined}
+                            style={{
+                              left,
+                              width: subWidth,
+                              top: 3,
+                              bottom: 3,
+                              zIndex: dragId === r.id ? 40 : 10 + lane.index,
+                              cursor: dragId === r.id ? 'grabbing' : 'grab',
+                            }}
                             onMouseDown={e => startDrag(r, 'move', e, day, res.id)}
                             onClick={e => e.stopPropagation()}
                           >
@@ -568,15 +648,18 @@ export default function IntervenantsPlanning() {
                               rdv={r}
                               onClick={openEditRdv}
                               onResizeStart={(rdv, edge, e) => startDrag(rdv, edge, e, day, res.id)}
-                              hasConflict={conflicts.has(r.id)}
                               isResizing={dragId === r.id}
                               style={{ position: 'absolute', inset: 0 }}
                             />
+                            {overlapped && (
+                              <AlertTriangle className="absolute -top-1 -right-1 h-3 w-3 text-amber-500 pointer-events-none" />
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   </div>
+
                 );
               })}
             </div>
@@ -610,10 +693,12 @@ export default function IntervenantsPlanning() {
                   {pending ? `${Math.round((pending.fin.getTime() - pending.debut.getTime()) / 60000)} min` : ''}
                 </div>
                 {pending && pending.conflicts.length > 0 && (
-                  <div className="rounded-md bg-destructive/10 p-2 text-destructive">
+                  <div className="rounded-md bg-amber-500/10 p-2 text-amber-700">
                     <div className="flex items-center gap-1.5 font-medium">
                       <AlertTriangle className="h-4 w-4" />
-                      {pending.conflicts.length === 1 ? '1 conflit détecté' : `${pending.conflicts.length} conflits détectés`}
+                      {pending.conflicts.length === 1
+                        ? '1 intervention simultanée sur cet intervenant'
+                        : `${pending.conflicts.length} interventions simultanées sur cet intervenant`}
                     </div>
                     <ul className="mt-1 list-disc pl-5">
                       {pending.conflicts.map(c => (
@@ -623,7 +708,7 @@ export default function IntervenantsPlanning() {
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-1 text-xs">Vous pouvez confirmer malgré le conflit ou ajuster l'événement.</p>
+                    <p className="mt-1 text-xs">Simple avertissement de charge : l'enregistrement reste possible.</p>
                   </div>
                 )}
               </div>
