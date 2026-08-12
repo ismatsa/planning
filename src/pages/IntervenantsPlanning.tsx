@@ -333,7 +333,7 @@ export default function IntervenantsPlanning() {
 
       let left = st.origLeft;
       let width = st.origWidth;
-      const minWidth = SNAP_MINUTES * PX_PER_MINUTE - 2;
+      const minWidth = SNAP_MINUTES * PX_PER_MINUTE;
 
       if (st.mode === 'move') {
         left = st.origLeft + dx;
@@ -349,7 +349,7 @@ export default function IntervenantsPlanning() {
       }
 
       const startMin = snap(left / PX_PER_MINUTE);
-      const endMin = snap((left + width + 2) / PX_PER_MINUTE);
+      const endMin = snap((left + width) / PX_PER_MINUTE);
       const duration = Math.max(SNAP_MINUTES, endMin - startMin);
 
       let clampedStart = Math.max(0, startMin);
@@ -358,9 +358,10 @@ export default function IntervenantsPlanning() {
 
       setPreview({
         left: clampedStart * PX_PER_MINUTE,
-        width: (clampedEnd - clampedStart) * PX_PER_MINUTE - 2,
+        width: (clampedEnd - clampedStart) * PX_PER_MINUTE,
       });
     }
+
 
     function onUp() {
       const st = dragState.current;
