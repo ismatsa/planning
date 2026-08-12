@@ -179,7 +179,7 @@ export function useAppStore() {
 
   const updateRdv = useCallback(async (rdv: RendezVous, responsibleIds?: string[], intervenantIds?: string[]) => {
     const { data, error } = await supabase.from('rendez_vous').update({
-      poste_id: rdv.posteId,
+      poste_id: rdv.posteId || null,
       debut: rdv.debut,
       fin: rdv.fin,
       client_nom: rdv.clientNom || null,
