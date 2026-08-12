@@ -212,8 +212,8 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         setSelectedIntervenants(devis.intervenantIds || []);
         setBillingResponsible(devis.billingResponsibleUserId || '');
       } else {
-        setMetierId(poste?.metierId || 'lavage');
-        setPosteId(defaultPosteId || filteredPostes[0]?.id || '');
+        setMetierId(poste?.metierId || '');
+        setPosteId(defaultPosteId || '');
         setClientNom('');
         setClientTelCode('+212');
         setClientTelNum('');
