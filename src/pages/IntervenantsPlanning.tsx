@@ -693,10 +693,12 @@ export default function IntervenantsPlanning() {
                   {pending ? `${Math.round((pending.fin.getTime() - pending.debut.getTime()) / 60000)} min` : ''}
                 </div>
                 {pending && pending.conflicts.length > 0 && (
-                  <div className="rounded-md bg-destructive/10 p-2 text-destructive">
+                  <div className="rounded-md bg-amber-500/10 p-2 text-amber-700">
                     <div className="flex items-center gap-1.5 font-medium">
                       <AlertTriangle className="h-4 w-4" />
-                      {pending.conflicts.length === 1 ? '1 conflit détecté' : `${pending.conflicts.length} conflits détectés`}
+                      {pending.conflicts.length === 1
+                        ? '1 intervention simultanée sur cet intervenant'
+                        : `${pending.conflicts.length} interventions simultanées sur cet intervenant`}
                     </div>
                     <ul className="mt-1 list-disc pl-5">
                       {pending.conflicts.map(c => (
@@ -706,7 +708,9 @@ export default function IntervenantsPlanning() {
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-1 text-xs">Vous pouvez confirmer malgré le conflit ou ajuster l'événement.</p>
+                    <p className="mt-1 text-xs">Simple avertissement de charge : l'enregistrement reste possible.</p>
+                  </div>
+
                   </div>
                 )}
               </div>
