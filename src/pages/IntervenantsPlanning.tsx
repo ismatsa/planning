@@ -225,38 +225,33 @@ export default function IntervenantsPlanning() {
   }
 
   /**
-   * Répartition horizontale des événements simultanés d'une même ligne intervenant.
-   * Chaque groupe d'événements qui se chevauchent partage sa plage : index/total.
+   * Pistes verticales : chaque événement conserve sa position et sa durée réelles.
+   * Les événements qui se chevauchent sont empilés verticalement dans la même ligne.
    */
-  function overlapLayout(list: RendezVous[]) {
+  function laneLayout(list: RendezVous[]) {
     const sorted = [...list].sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime());
-    const map = new Map<string, { index: number; total: number }>();
-    let cluster: RendezVous[] = [];
-    let clusterEnd = 0;
-
-    const flush = () => {
-      cluster.forEach((r, i) => map.set(r.id, { index: i, total: cluster.length }));
-      cluster = [];
-    };
+    const map = new Map<string, number>();
+    const laneEnds: number[] = [];
 
     for (const r of sorted) {
       const start = new Date(r.debut).getTime();
       const end = new Date(r.fin).getTime();
-      if (cluster.length > 0 && start < clusterEnd) {
-        cluster.push(r);
-        clusterEnd = Math.max(clusterEnd, end);
+      let lane = laneEnds.findIndex(e => e <= start);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(end);
       } else {
-        flush();
-        cluster = [r];
-        clusterEnd = end;
+        laneEnds[lane] = end;
       }
+      map.set(r.id, lane);
     }
-    flush();
-    return map;
+    return { map, count: Math.max(1, laneEnds.length) };
   }
 
-
-
+  /**
+   * Position strictement temporelle : left/width calculés uniquement sur la zone horaire.
+   * left = ((débutMin - heureMin) / totalMinutes) × laneWidth
+   */
   function styleForDay(rdv: RendezVous, day: Date) {
     const rdvStart = new Date(rdv.debut);
     const rdvEnd = new Date(rdv.fin);
@@ -266,13 +261,14 @@ export default function IntervenantsPlanning() {
     dayEnd.setHours(Math.floor(maxMinutes / 60), maxMinutes % 60, 0, 0);
     const visibleStart = rdvStart < dayStart ? dayStart : rdvStart;
     const visibleEnd = rdvEnd > dayEnd ? dayEnd : rdvEnd;
-    const startMin = visibleStart.getHours() * 60 + visibleStart.getMinutes() - minMinutes;
+    const startMin = (visibleStart.getTime() - dayStart.getTime()) / 60000;
     const duration = (visibleEnd.getTime() - visibleStart.getTime()) / 60000;
     return {
-      left: startMin * PX_PER_MINUTE,
-      width: Math.max(0, duration * PX_PER_MINUTE - 2),
+      left: (startMin / totalMinutes) * laneWidth,
+      width: Math.max(2, (duration / totalMinutes) * laneWidth),
     };
   }
+
 
   // ---- Déplacement / redimensionnement ----
   const dragState = useRef<{
@@ -337,7 +333,7 @@ export default function IntervenantsPlanning() {
 
       let left = st.origLeft;
       let width = st.origWidth;
-      const minWidth = SNAP_MINUTES * PX_PER_MINUTE - 2;
+      const minWidth = SNAP_MINUTES * PX_PER_MINUTE;
 
       if (st.mode === 'move') {
         left = st.origLeft + dx;
@@ -353,7 +349,7 @@ export default function IntervenantsPlanning() {
       }
 
       const startMin = snap(left / PX_PER_MINUTE);
-      const endMin = snap((left + width + 2) / PX_PER_MINUTE);
+      const endMin = snap((left + width) / PX_PER_MINUTE);
       const duration = Math.max(SNAP_MINUTES, endMin - startMin);
 
       let clampedStart = Math.max(0, startMin);
@@ -362,9 +358,10 @@ export default function IntervenantsPlanning() {
 
       setPreview({
         left: clampedStart * PX_PER_MINUTE,
-        width: (clampedEnd - clampedStart) * PX_PER_MINUTE - 2,
+        width: (clampedEnd - clampedStart) * PX_PER_MINUTE,
       });
     }
+
 
     function onUp() {
       const st = dragState.current;
@@ -382,7 +379,7 @@ export default function IntervenantsPlanning() {
       }
 
       const startMin = Math.round(prev.left / PX_PER_MINUTE) + minMinutes;
-      const endMin = Math.round((prev.left + prev.width + 2) / PX_PER_MINUTE) + minMinutes;
+      const endMin = Math.round((prev.left + prev.width) / PX_PER_MINUTE) + minMinutes;
       const debut = new Date(st.day);
       debut.setHours(Math.floor(startMin / 60), startMin % 60, 0, 0);
       const fin = new Date(st.day);
@@ -566,7 +563,9 @@ export default function IntervenantsPlanning() {
               {visibleResources.map(res => {
                 const dayRdvs = rdvsFor(res.id, day);
                 const conflicts = conflictIdsOf(dayRdvs);
-                const layout = overlapLayout(dayRdvs);
+                const { map: laneOf, count: laneCount } = laneLayout(dayRdvs);
+                const laneHeight = laneCount > 1 ? 30 : 46;
+                const rowHeight = laneCount * laneHeight + 6;
                 const hue = avatarHue(res.id);
 
                 return (
@@ -591,17 +590,16 @@ export default function IntervenantsPlanning() {
                         )}
                       </span>
                       {conflicts.size > 0 && (
-                        <AlertTriangle
-                          className="h-3.5 w-3.5 text-amber-500 shrink-0 ml-auto"
-                          aria-label="Plusieurs interventions sont affectées à cet intervenant sur ce créneau."
-                        />
+                        <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
+                          {dayRdvs.length} év.
+                        </span>
                       )}
                     </div>
 
-                    {/* Cellules horaires */}
+                    {/* Zone horaire : référence unique pour la grille ET les événements */}
                     <div
                       className="relative cursor-pointer"
-                      style={{ width: laneWidth, minWidth: laneWidth, height: 52 }}
+                      style={{ width: laneWidth, minWidth: laneWidth, height: rowHeight }}
                       onClick={e => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const x = e.clientX - rect.left;
@@ -622,23 +620,17 @@ export default function IntervenantsPlanning() {
 
                       {dayRdvs.map(r => {
                         const base = dragId === r.id && preview ? preview : styleForDay(r, day);
-                        const lane = layout.get(r.id) || { index: 0, total: 1 };
-                        const overlapped = lane.total > 1;
-                        const subWidth = overlapped ? Math.max(28, base.width / lane.total) : base.width;
-                        const left = overlapped && dragId !== r.id
-                          ? base.left + lane.index * (base.width / lane.total)
-                          : base.left;
+                        const lane = laneOf.get(r.id) ?? 0;
                         return (
                           <div
                             key={r.id}
-                            className={`absolute rounded-md ${overlapped ? 'ring-1 ring-amber-500' : ''}`}
-                            title={overlapped ? 'Plusieurs interventions sont affectées à cet intervenant sur ce créneau.' : undefined}
+                            className="absolute rounded-md"
                             style={{
-                              left,
-                              width: subWidth,
-                              top: 3,
-                              bottom: 3,
-                              zIndex: dragId === r.id ? 40 : 10 + lane.index,
+                              left: base.left,
+                              width: base.width,
+                              top: 3 + lane * laneHeight,
+                              height: laneHeight - 4,
+                              zIndex: dragId === r.id ? 40 : 10 + lane,
                               cursor: dragId === r.id ? 'grabbing' : 'grab',
                             }}
                             onMouseDown={e => startDrag(r, 'move', e, day, res.id)}
@@ -651,14 +643,12 @@ export default function IntervenantsPlanning() {
                               isResizing={dragId === r.id}
                               style={{ position: 'absolute', inset: 0 }}
                             />
-                            {overlapped && (
-                              <AlertTriangle className="absolute -top-1 -right-1 h-3 w-3 text-amber-500 pointer-events-none" />
-                            )}
                           </div>
                         );
                       })}
                     </div>
                   </div>
+
 
                 );
               })}
