@@ -61,12 +61,14 @@ interface IntervenantOption {
   name: string;
 }
 
-export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime, prefillFromDevis }: Props) {
-  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
+const NONE = '__none__';
+
+export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime, defaultIntervenantId, prefillFromDevis }: Props) {
+  const { postes, addRdv, updateRdv, deleteRdv, checkConflict, checkIntervenantConflicts, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
   const { user } = useAuth();
   const isEdit = !!rdv;
 
-  const [metierId, setMetierId] = useState<MetierType>('lavage');
+  const [metierId, setMetierId] = useState<MetierType>('');
   const [posteId, setPosteId] = useState('');
   const [date, setDate] = useState('');
   const [dateFin, setDateFin] = useState('');
