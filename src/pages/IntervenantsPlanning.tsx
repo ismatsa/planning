@@ -224,6 +224,39 @@ export default function IntervenantsPlanning() {
     return ids;
   }
 
+  /**
+   * Répartition horizontale des événements simultanés d'une même ligne intervenant.
+   * Chaque groupe d'événements qui se chevauchent partage sa plage : index/total.
+   */
+  function overlapLayout(list: RendezVous[]) {
+    const sorted = [...list].sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime());
+    const map = new Map<string, { index: number; total: number }>();
+    let cluster: RendezVous[] = [];
+    let clusterEnd = 0;
+
+    const flush = () => {
+      cluster.forEach((r, i) => map.set(r.id, { index: i, total: cluster.length }));
+      cluster = [];
+    };
+
+    for (const r of sorted) {
+      const start = new Date(r.debut).getTime();
+      const end = new Date(r.fin).getTime();
+      if (cluster.length > 0 && start < clusterEnd) {
+        cluster.push(r);
+        clusterEnd = Math.max(clusterEnd, end);
+      } else {
+        flush();
+        cluster = [r];
+        clusterEnd = end;
+      }
+    }
+    flush();
+    return map;
+  }
+
+
+
   function styleForDay(rdv: RendezVous, day: Date) {
     const rdvStart = new Date(rdv.debut);
     const rdvEnd = new Date(rdv.fin);
