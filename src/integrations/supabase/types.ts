@@ -1151,7 +1151,7 @@ export type Database = {
           marque: string | null
           modele: string | null
           notes: string | null
-          poste_id: string
+          poste_id: string | null
           source_devis_id: string | null
           statut: string
           updated_at: string
@@ -1172,7 +1172,7 @@ export type Database = {
           marque?: string | null
           modele?: string | null
           notes?: string | null
-          poste_id: string
+          poste_id?: string | null
           source_devis_id?: string | null
           statut?: string
           updated_at?: string
@@ -1193,7 +1193,7 @@ export type Database = {
           marque?: string | null
           modele?: string | null
           notes?: string | null
-          poste_id?: string
+          poste_id?: string | null
           source_devis_id?: string | null
           statut?: string
           updated_at?: string

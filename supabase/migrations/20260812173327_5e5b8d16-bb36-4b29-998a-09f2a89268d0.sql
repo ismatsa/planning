@@ -1,0 +1,1 @@
+ALTER TABLE public.rendez_vous ALTER COLUMN poste_id DROP NOT NULL;
