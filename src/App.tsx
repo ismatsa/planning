@@ -56,6 +56,7 @@ function AppRoutes() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/rendez-vous" element={<RendezVousList />} />
+            <Route path="/intervenants" element={<IntervenantsPlanning />} />
             <Route path="/creneaux" element={<Creneaux />} />
             <Route path="/parametres" element={<Parametres />} />
             <Route path="/utilisateurs" element={<UserManagement />} />
