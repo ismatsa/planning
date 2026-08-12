@@ -241,8 +241,9 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
       setStatut('prevu');
     }
     setConflict(null);
+    setConflictAck(false);
     setSaving(false);
-  }, [open, rdv, defaultDate, defaultPosteId, defaultTime, profileOptions, user, prefillFromDevis]);
+  }, [open, rdv, defaultDate, defaultPosteId, defaultTime, defaultIntervenantId, profileOptions, user, prefillFromDevis]);
 
   // When profileOptions load after modal opens (for new RDV), auto-prefill if not yet set
   useEffect(() => {
