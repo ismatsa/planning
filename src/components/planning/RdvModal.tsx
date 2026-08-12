@@ -232,7 +232,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
         } else {
           setSelectedResponsibles([]);
         }
-        setSelectedIntervenants([]);
+        setSelectedIntervenants(defaultIntervenantId ? [defaultIntervenantId] : []);
       }
       setDate(defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
       setDateFin(defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
