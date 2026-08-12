@@ -50,6 +50,7 @@ export default function AppSidebar() {
       items: [
         { to: "/", icon: Calendar, label: "Planning" },
         { to: "/rendez-vous", icon: List, label: "Rendez-vous" },
+        { to: "/intervenants", icon: Users, label: "Intervenants" },
         { to: "/creneaux", icon: Clock, label: "Créneaux", adminOnly: true },
       ],
     },
