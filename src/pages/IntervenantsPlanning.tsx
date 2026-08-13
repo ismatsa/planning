@@ -75,6 +75,8 @@ export default function IntervenantsPlanning() {
 
   const [visibleIds, setVisibleIds] = useState<Set<string> | null>(null);
   const [resourceSearch, setResourceSearch] = useState('');
+  const [hoverId, setHoverId] = useState<string | null>(null);
+
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
