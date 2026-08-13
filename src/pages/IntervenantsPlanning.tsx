@@ -31,7 +31,11 @@ import { useAuth } from '@/store/AuthContext';
 const MIN_SLOT_WIDTH = 26; // largeur mini d'un créneau de 30 min (tablette/mobile)
 const LABEL_WIDTH = 224; // largeur de la colonne intervenant (w-56)
 const SNAP_MINUTES = 15;
+const ROW_HEIGHT = 58; // hauteur de ligne intervenant constante
+const STACK_OFFSET = 10; // décalage vertical par niveau de superposition
+const MAX_STACK = 3; // niveaux visuels max (au-delà : même décalage, z-index croissant)
 const STORAGE_KEY = 'intervenants-planning-visible';
+
 
 type Periode = 'jour' | 'semaine' | 'mois';
 
