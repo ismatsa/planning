@@ -225,28 +225,32 @@ export default function IntervenantsPlanning() {
   }
 
   /**
-   * Pistes verticales : chaque événement conserve sa position et sa durée réelles.
-   * Les événements qui se chevauchent sont empilés verticalement dans la même ligne.
+   * Empilement visuel : les événements qui se chevauchent réellement
+   * (A.debut < B.fin && B.debut < A.fin) restent sur la MÊME ligne intervenant
+   * et reçoivent un niveau de superposition (léger décalage vertical + z-index).
+   * La hauteur de ligne reste constante.
    */
-  function laneLayout(list: RendezVous[]) {
+  function stackLayout(list: RendezVous[]) {
     const sorted = [...list].sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime());
     const map = new Map<string, number>();
-    const laneEnds: number[] = [];
+    const levelEnds: number[] = [];
 
     for (const r of sorted) {
       const start = new Date(r.debut).getTime();
       const end = new Date(r.fin).getTime();
-      let lane = laneEnds.findIndex(e => e <= start);
-      if (lane === -1) {
-        lane = laneEnds.length;
-        laneEnds.push(end);
+      // un niveau est libre si son dernier événement se termine avant ou pile au début (contact ≠ chevauchement)
+      let level = levelEnds.findIndex(e => e <= start);
+      if (level === -1) {
+        level = levelEnds.length;
+        levelEnds.push(end);
       } else {
-        laneEnds[lane] = end;
+        levelEnds[level] = end;
       }
-      map.set(r.id, lane);
+      map.set(r.id, level);
     }
-    return { map, count: Math.max(1, laneEnds.length) };
+    return map;
   }
+
 
   /**
    * Position strictement temporelle : left/width calculés uniquement sur la zone horaire.
