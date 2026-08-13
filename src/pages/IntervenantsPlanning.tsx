@@ -567,9 +567,9 @@ export default function IntervenantsPlanning() {
               {visibleResources.map(res => {
                 const dayRdvs = rdvsFor(res.id, day);
                 const conflicts = conflictIdsOf(dayRdvs);
-                const { map: laneOf, count: laneCount } = laneLayout(dayRdvs);
-                const laneHeight = laneCount > 1 ? 30 : 46;
-                const rowHeight = laneCount * laneHeight + 6;
+                const levelOf = stackLayout(dayRdvs);
+                const rowHeight = ROW_HEIGHT;
+
                 const hue = avatarHue(res.id);
 
                 return (
