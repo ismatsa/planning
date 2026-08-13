@@ -450,6 +450,26 @@ export default function IntervenantsPlanning() {
     return `${formatDayHeader(displayDays[0])} — ${formatDayHeader(displayDays[displayDays.length - 1])}`;
   }, [displayDays, periode, startDate]);
 
+  /**
+   * Sous-lignes par (intervenant, jour), calculées jour après jour pour réutiliser
+   * le même laneIndex d'un jour à l'autre lorsque c'est possible.
+   */
+  const laneData = useMemo(() => {
+    const result = new Map<string, { map: Map<string, number>; count: number; rdvs: RendezVous[] }>();
+    for (const res of visibleResources) {
+      let previous: Map<string, number> | undefined;
+      for (const day of displayDays) {
+        const list = rdvsFor(res.id, day);
+        const { map, count } = laneLayout(list, previous);
+        result.set(`${res.id}|${day.toISOString()}`, { map, count, rdvs: list });
+        previous = map;
+      }
+    }
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleResources, displayDays, rdvs, appointmentIntervenants, minMinutes, maxMinutes]);
+
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
