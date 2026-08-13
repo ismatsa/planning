@@ -231,36 +231,42 @@ export default function IntervenantsPlanning() {
   }
 
   /**
-   * Empilement visuel : les événements qui se chevauchent réellement
-   * (A.debut < B.fin && B.debut < A.fin) restent sur la MÊME ligne intervenant
-   * et reçoivent un niveau de superposition (léger décalage vertical + z-index).
-   * La hauteur de ligne reste constante.
+   * Empilement vertical : les événements qui se chevauchent réellement
+   * (A.debut < B.fin && B.debut < A.fin ; contact 09:00/09:00 = pas de chevauchement)
+   * reçoivent une sous-ligne (laneIndex) distincte dans la même ligne intervenant.
+   * Ordre : début le plus tôt en haut ; à début égal, fin la plus tardive au-dessus.
+   * `preferred` permet de réutiliser la sous-ligne du jour précédent quand elle est libre.
    */
-  function stackLayout(list: RendezVous[]) {
-    const sorted = [...list].sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime());
+  function laneLayout(list: RendezVous[], preferred?: Map<string, number>) {
+    const sorted = [...list].sort((a, b) => {
+      const d = new Date(a.debut).getTime() - new Date(b.debut).getTime();
+      if (d !== 0) return d;
+      return new Date(b.fin).getTime() - new Date(a.fin).getTime();
+    });
     const map = new Map<string, number>();
-    const levelEnds: number[] = [];
+    const laneEnds: number[] = [];
 
     for (const r of sorted) {
       const start = new Date(r.debut).getTime();
       const end = new Date(r.fin).getTime();
-      // un niveau est libre si son dernier événement se termine avant ou pile au début (contact ≠ chevauchement)
-      let level = levelEnds.findIndex(e => e <= start);
-      if (level === -1) {
-        level = levelEnds.length;
-        levelEnds.push(end);
+      const wanted = preferred?.get(r.id);
+      let lane = -1;
+      if (wanted !== undefined && (laneEnds[wanted] === undefined || laneEnds[wanted] <= start)) {
+        lane = wanted;
       } else {
-        levelEnds[level] = end;
+        lane = laneEnds.findIndex(e => e !== undefined && e <= start);
       }
-      map.set(r.id, level);
+      if (lane === -1) lane = laneEnds.length;
+      laneEnds[lane] = end;
+      map.set(r.id, lane);
     }
-    return map;
+    return { map, count: Math.max(1, laneEnds.length) };
   }
 
-
   /**
-   * Position strictement temporelle : left/width calculés uniquement sur la zone horaire.
-   * left = ((débutMin - heureMin) / totalMinutes) × laneWidth
+   * Découpage journalier : le segment rendu est borné par la plage horaire du jour.
+   * segmentStart = max(debut, dayStart) ; segmentEnd = min(fin, dayEnd)
+   * left/width strictement proportionnels à la plage affichée.
    */
   function styleForDay(rdv: RendezVous, day: Date) {
     const rdvStart = new Date(rdv.debut);
@@ -272,12 +278,15 @@ export default function IntervenantsPlanning() {
     const visibleStart = rdvStart < dayStart ? dayStart : rdvStart;
     const visibleEnd = rdvEnd > dayEnd ? dayEnd : rdvEnd;
     const startMin = (visibleStart.getTime() - dayStart.getTime()) / 60000;
-    const duration = (visibleEnd.getTime() - visibleStart.getTime()) / 60000;
+    const duration = Math.max(0, (visibleEnd.getTime() - visibleStart.getTime()) / 60000);
+    const left = (startMin / totalMinutes) * laneWidth;
+    const width = (duration / totalMinutes) * laneWidth;
     return {
-      left: (startMin / totalMinutes) * laneWidth,
-      width: Math.max(2, (duration / totalMinutes) * laneWidth),
+      left,
+      width: Math.min(Math.max(4, width), laneWidth - left),
     };
   }
+
 
 
   // ---- Déplacement / redimensionnement ----
