@@ -681,7 +681,7 @@ export default function IntervenantsPlanning() {
                               width: base.width,
                               top,
                               height,
-                              zIndex: dragId === r.id ? 60 : isHovered ? 50 : 10 + level,
+                              zIndex: dragId === r.id ? 60 : isHovered ? 50 : 10 + lane,
                               cursor: dragId === r.id ? 'grabbing' : 'grab',
                             }}
                             onMouseEnter={() => setHoverId(r.id)}
