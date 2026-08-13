@@ -31,9 +31,11 @@ import { useAuth } from '@/store/AuthContext';
 const MIN_SLOT_WIDTH = 26; // largeur mini d'un créneau de 30 min (tablette/mobile)
 const LABEL_WIDTH = 224; // largeur de la colonne intervenant (w-56)
 const SNAP_MINUTES = 15;
-const ROW_HEIGHT = 58; // hauteur de ligne intervenant constante
-const STACK_OFFSET = 10; // décalage vertical par niveau de superposition
-const MAX_STACK = 3; // niveaux visuels max (au-delà : même décalage, z-index croissant)
+const ROW_HEIGHT = 44; // hauteur mini d'une ligne intervenant (1 sous-ligne)
+const LANE_HEIGHT = 28; // hauteur d'une sous-ligne (carte lisible)
+const LANE_GAP = 4; // espacement vertical entre sous-lignes
+const ROW_PAD = 4; // marge verticale interne de la ligne
+
 const STORAGE_KEY = 'intervenants-planning-visible';
 
 
@@ -231,36 +233,42 @@ export default function IntervenantsPlanning() {
   }
 
   /**
-   * Empilement visuel : les événements qui se chevauchent réellement
-   * (A.debut < B.fin && B.debut < A.fin) restent sur la MÊME ligne intervenant
-   * et reçoivent un niveau de superposition (léger décalage vertical + z-index).
-   * La hauteur de ligne reste constante.
+   * Empilement vertical : les événements qui se chevauchent réellement
+   * (A.debut < B.fin && B.debut < A.fin ; contact 09:00/09:00 = pas de chevauchement)
+   * reçoivent une sous-ligne (laneIndex) distincte dans la même ligne intervenant.
+   * Ordre : début le plus tôt en haut ; à début égal, fin la plus tardive au-dessus.
+   * `preferred` permet de réutiliser la sous-ligne du jour précédent quand elle est libre.
    */
-  function stackLayout(list: RendezVous[]) {
-    const sorted = [...list].sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime());
+  function laneLayout(list: RendezVous[], preferred?: Map<string, number>) {
+    const sorted = [...list].sort((a, b) => {
+      const d = new Date(a.debut).getTime() - new Date(b.debut).getTime();
+      if (d !== 0) return d;
+      return new Date(b.fin).getTime() - new Date(a.fin).getTime();
+    });
     const map = new Map<string, number>();
-    const levelEnds: number[] = [];
+    const laneEnds: number[] = [];
 
     for (const r of sorted) {
       const start = new Date(r.debut).getTime();
       const end = new Date(r.fin).getTime();
-      // un niveau est libre si son dernier événement se termine avant ou pile au début (contact ≠ chevauchement)
-      let level = levelEnds.findIndex(e => e <= start);
-      if (level === -1) {
-        level = levelEnds.length;
-        levelEnds.push(end);
+      const wanted = preferred?.get(r.id);
+      let lane = -1;
+      if (wanted !== undefined && (laneEnds[wanted] === undefined || laneEnds[wanted] <= start)) {
+        lane = wanted;
       } else {
-        levelEnds[level] = end;
+        lane = laneEnds.findIndex(e => e !== undefined && e <= start);
       }
-      map.set(r.id, level);
+      if (lane === -1) lane = laneEnds.length;
+      laneEnds[lane] = end;
+      map.set(r.id, lane);
     }
-    return map;
+    return { map, count: Math.max(1, laneEnds.length) };
   }
 
-
   /**
-   * Position strictement temporelle : left/width calculés uniquement sur la zone horaire.
-   * left = ((débutMin - heureMin) / totalMinutes) × laneWidth
+   * Découpage journalier : le segment rendu est borné par la plage horaire du jour.
+   * segmentStart = max(debut, dayStart) ; segmentEnd = min(fin, dayEnd)
+   * left/width strictement proportionnels à la plage affichée.
    */
   function styleForDay(rdv: RendezVous, day: Date) {
     const rdvStart = new Date(rdv.debut);
@@ -272,12 +280,15 @@ export default function IntervenantsPlanning() {
     const visibleStart = rdvStart < dayStart ? dayStart : rdvStart;
     const visibleEnd = rdvEnd > dayEnd ? dayEnd : rdvEnd;
     const startMin = (visibleStart.getTime() - dayStart.getTime()) / 60000;
-    const duration = (visibleEnd.getTime() - visibleStart.getTime()) / 60000;
+    const duration = Math.max(0, (visibleEnd.getTime() - visibleStart.getTime()) / 60000);
+    const left = (startMin / totalMinutes) * laneWidth;
+    const width = (duration / totalMinutes) * laneWidth;
     return {
-      left: (startMin / totalMinutes) * laneWidth,
-      width: Math.max(2, (duration / totalMinutes) * laneWidth),
+      left,
+      width: Math.min(Math.max(4, width), laneWidth - left),
     };
   }
+
 
 
   // ---- Déplacement / redimensionnement ----
@@ -441,6 +452,26 @@ export default function IntervenantsPlanning() {
     return `${formatDayHeader(displayDays[0])} — ${formatDayHeader(displayDays[displayDays.length - 1])}`;
   }, [displayDays, periode, startDate]);
 
+  /**
+   * Sous-lignes par (intervenant, jour), calculées jour après jour pour réutiliser
+   * le même laneIndex d'un jour à l'autre lorsque c'est possible.
+   */
+  const laneData = useMemo(() => {
+    const result = new Map<string, { map: Map<string, number>; count: number; rdvs: RendezVous[] }>();
+    for (const res of visibleResources) {
+      let previous: Map<string, number> | undefined;
+      for (const day of displayDays) {
+        const list = rdvsFor(res.id, day);
+        const { map, count } = laneLayout(list, previous);
+        result.set(`${res.id}|${day.toISOString()}`, { map, count, rdvs: list });
+        previous = map;
+      }
+    }
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleResources, displayDays, rdvs, appointmentIntervenants, minMinutes, maxMinutes]);
+
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -571,10 +602,16 @@ export default function IntervenantsPlanning() {
               </div>
 
               {visibleResources.map(res => {
-                const dayRdvs = rdvsFor(res.id, day);
+                const data = laneData.get(`${res.id}|${day.toISOString()}`);
+                const dayRdvs = data?.rdvs || [];
                 const conflicts = conflictIdsOf(dayRdvs);
-                const levelOf = stackLayout(dayRdvs);
-                const rowHeight = ROW_HEIGHT;
+                const levelOf = data?.map || new Map<string, number>();
+                const laneCount = data?.count || 1;
+                const rowHeight = Math.max(
+                  ROW_HEIGHT,
+                  ROW_PAD * 2 + laneCount * LANE_HEIGHT + (laneCount - 1) * LANE_GAP
+                );
+
 
                 const hue = avatarHue(res.id);
 
@@ -630,11 +667,11 @@ export default function IntervenantsPlanning() {
 
                       {dayRdvs.map(r => {
                         const base = dragId === r.id && preview ? preview : styleForDay(r, day);
-                        const level = levelOf.get(r.id) ?? 0;
-                        const depth = Math.min(level, MAX_STACK);
-                        const top = 3 + depth * STACK_OFFSET;
-                        const height = Math.max(22, ROW_HEIGHT - 6 - depth * STACK_OFFSET - 2);
+                        const lane = levelOf.get(r.id) ?? 0;
+                        const top = ROW_PAD + lane * (LANE_HEIGHT + LANE_GAP);
+                        const height = LANE_HEIGHT;
                         const isHovered = hoverId === r.id;
+
                         return (
                           <div
                             key={r.id}
@@ -644,7 +681,7 @@ export default function IntervenantsPlanning() {
                               width: base.width,
                               top,
                               height,
-                              zIndex: dragId === r.id ? 60 : isHovered ? 50 : 10 + level,
+                              zIndex: dragId === r.id ? 60 : isHovered ? 50 : 10 + lane,
                               cursor: dragId === r.id ? 'grabbing' : 'grab',
                             }}
                             onMouseEnter={() => setHoverId(r.id)}
