@@ -31,7 +31,11 @@ import { useAuth } from '@/store/AuthContext';
 const MIN_SLOT_WIDTH = 26; // largeur mini d'un créneau de 30 min (tablette/mobile)
 const LABEL_WIDTH = 224; // largeur de la colonne intervenant (w-56)
 const SNAP_MINUTES = 15;
+const ROW_HEIGHT = 58; // hauteur de ligne intervenant constante
+const STACK_OFFSET = 10; // décalage vertical par niveau de superposition
+const MAX_STACK = 3; // niveaux visuels max (au-delà : même décalage, z-index croissant)
 const STORAGE_KEY = 'intervenants-planning-visible';
+
 
 type Periode = 'jour' | 'semaine' | 'mois';
 
@@ -71,6 +75,8 @@ export default function IntervenantsPlanning() {
 
   const [visibleIds, setVisibleIds] = useState<Set<string> | null>(null);
   const [resourceSearch, setResourceSearch] = useState('');
+  const [hoverId, setHoverId] = useState<string | null>(null);
+
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editRdv, setEditRdv] = useState<RendezVous | null>(null);
@@ -225,28 +231,32 @@ export default function IntervenantsPlanning() {
   }
 
   /**
-   * Pistes verticales : chaque événement conserve sa position et sa durée réelles.
-   * Les événements qui se chevauchent sont empilés verticalement dans la même ligne.
+   * Empilement visuel : les événements qui se chevauchent réellement
+   * (A.debut < B.fin && B.debut < A.fin) restent sur la MÊME ligne intervenant
+   * et reçoivent un niveau de superposition (léger décalage vertical + z-index).
+   * La hauteur de ligne reste constante.
    */
-  function laneLayout(list: RendezVous[]) {
+  function stackLayout(list: RendezVous[]) {
     const sorted = [...list].sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime());
     const map = new Map<string, number>();
-    const laneEnds: number[] = [];
+    const levelEnds: number[] = [];
 
     for (const r of sorted) {
       const start = new Date(r.debut).getTime();
       const end = new Date(r.fin).getTime();
-      let lane = laneEnds.findIndex(e => e <= start);
-      if (lane === -1) {
-        lane = laneEnds.length;
-        laneEnds.push(end);
+      // un niveau est libre si son dernier événement se termine avant ou pile au début (contact ≠ chevauchement)
+      let level = levelEnds.findIndex(e => e <= start);
+      if (level === -1) {
+        level = levelEnds.length;
+        levelEnds.push(end);
       } else {
-        laneEnds[lane] = end;
+        levelEnds[level] = end;
       }
-      map.set(r.id, lane);
+      map.set(r.id, level);
     }
-    return { map, count: Math.max(1, laneEnds.length) };
+    return map;
   }
+
 
   /**
    * Position strictement temporelle : left/width calculés uniquement sur la zone horaire.
@@ -563,9 +573,9 @@ export default function IntervenantsPlanning() {
               {visibleResources.map(res => {
                 const dayRdvs = rdvsFor(res.id, day);
                 const conflicts = conflictIdsOf(dayRdvs);
-                const { map: laneOf, count: laneCount } = laneLayout(dayRdvs);
-                const laneHeight = laneCount > 1 ? 30 : 46;
-                const rowHeight = laneCount * laneHeight + 6;
+                const levelOf = stackLayout(dayRdvs);
+                const rowHeight = ROW_HEIGHT;
+
                 const hue = avatarHue(res.id);
 
                 return (
@@ -620,7 +630,11 @@ export default function IntervenantsPlanning() {
 
                       {dayRdvs.map(r => {
                         const base = dragId === r.id && preview ? preview : styleForDay(r, day);
-                        const lane = laneOf.get(r.id) ?? 0;
+                        const level = levelOf.get(r.id) ?? 0;
+                        const depth = Math.min(level, MAX_STACK);
+                        const top = 3 + depth * STACK_OFFSET;
+                        const height = Math.max(22, ROW_HEIGHT - 6 - depth * STACK_OFFSET - 2);
+                        const isHovered = hoverId === r.id;
                         return (
                           <div
                             key={r.id}
@@ -628,14 +642,17 @@ export default function IntervenantsPlanning() {
                             style={{
                               left: base.left,
                               width: base.width,
-                              top: 3 + lane * laneHeight,
-                              height: laneHeight - 4,
-                              zIndex: dragId === r.id ? 40 : 10 + lane,
+                              top,
+                              height,
+                              zIndex: dragId === r.id ? 60 : isHovered ? 50 : 10 + level,
                               cursor: dragId === r.id ? 'grabbing' : 'grab',
                             }}
+                            onMouseEnter={() => setHoverId(r.id)}
+                            onMouseLeave={() => setHoverId(id => (id === r.id ? null : id))}
                             onMouseDown={e => startDrag(r, 'move', e, day, res.id)}
                             onClick={e => e.stopPropagation()}
                           >
+
                             <RdvBlock
                               rdv={r}
                               onClick={openEditRdv}
