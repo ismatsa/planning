@@ -125,8 +125,22 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const isLong = durationMin >= 120;
 
 
-  const { position: pos, top, bottom, left, right, width, height, ...visualStyle } = style || {} as any;
-  const wrapperStyle: React.CSSProperties = { position: pos, top, bottom, left, right, width, height };
+  const { position: pos, top, bottom, left, right, width, height, inset, ...visualStyle } = style || {} as any;
+  // En positionnement absolu sans offsets ni dimensions, le wrapper se réduirait à
+  // la largeur du contenu (effet « capsule »). On force alors un remplissage total.
+  const isAbsolute = pos === 'absolute' || pos === 'fixed';
+  const hasBox = inset !== undefined || width !== undefined || left !== undefined || right !== undefined;
+  const wrapperStyle: React.CSSProperties = {
+    position: pos,
+    inset,
+    top,
+    bottom,
+    left,
+    right,
+    width,
+    height,
+    ...(isAbsolute && !hasBox ? { inset: 0 } : {}),
+  };
 
   const handleMouseEnter = () => { setHovered(true); if (!isResizing) setShowTooltip(true); };
   const handleMouseLeave = () => { setHovered(false); setShowTooltip(false); };
