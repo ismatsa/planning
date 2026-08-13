@@ -600,10 +600,16 @@ export default function IntervenantsPlanning() {
               </div>
 
               {visibleResources.map(res => {
-                const dayRdvs = rdvsFor(res.id, day);
+                const data = laneData.get(`${res.id}|${day.toISOString()}`);
+                const dayRdvs = data?.rdvs || [];
                 const conflicts = conflictIdsOf(dayRdvs);
-                const levelOf = stackLayout(dayRdvs);
-                const rowHeight = ROW_HEIGHT;
+                const levelOf = data?.map || new Map<string, number>();
+                const laneCount = data?.count || 1;
+                const rowHeight = Math.max(
+                  ROW_HEIGHT,
+                  ROW_PAD * 2 + laneCount * LANE_HEIGHT + (laneCount - 1) * LANE_GAP
+                );
+
 
                 const hue = avatarHue(res.id);
 
