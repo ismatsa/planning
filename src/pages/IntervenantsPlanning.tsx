@@ -624,7 +624,11 @@ export default function IntervenantsPlanning() {
 
                       {dayRdvs.map(r => {
                         const base = dragId === r.id && preview ? preview : styleForDay(r, day);
-                        const lane = laneOf.get(r.id) ?? 0;
+                        const level = levelOf.get(r.id) ?? 0;
+                        const depth = Math.min(level, MAX_STACK);
+                        const top = 3 + depth * STACK_OFFSET;
+                        const height = Math.max(22, ROW_HEIGHT - 6 - depth * STACK_OFFSET - 2);
+                        const isHovered = hoverId === r.id;
                         return (
                           <div
                             key={r.id}
@@ -632,14 +636,17 @@ export default function IntervenantsPlanning() {
                             style={{
                               left: base.left,
                               width: base.width,
-                              top: 3 + lane * laneHeight,
-                              height: laneHeight - 4,
-                              zIndex: dragId === r.id ? 40 : 10 + lane,
+                              top,
+                              height,
+                              zIndex: dragId === r.id ? 60 : isHovered ? 50 : 10 + level,
                               cursor: dragId === r.id ? 'grabbing' : 'grab',
                             }}
+                            onMouseEnter={() => setHoverId(r.id)}
+                            onMouseLeave={() => setHoverId(id => (id === r.id ? null : id))}
                             onMouseDown={e => startDrag(r, 'move', e, day, res.id)}
                             onClick={e => e.stopPropagation()}
                           >
+
                             <RdvBlock
                               rdv={r}
                               onClick={openEditRdv}
