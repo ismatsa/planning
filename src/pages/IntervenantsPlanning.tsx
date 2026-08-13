@@ -695,7 +695,7 @@ export default function IntervenantsPlanning() {
                               onClick={openEditRdv}
                               onResizeStart={(rdv, edge, e) => startDrag(rdv, edge, e, day, res.id)}
                               isResizing={dragId === r.id}
-                              style={{ position: 'absolute', inset: 0 }}
+                              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                             />
                           </div>
                         );
