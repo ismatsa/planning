@@ -667,11 +667,11 @@ export default function IntervenantsPlanning() {
 
                       {dayRdvs.map(r => {
                         const base = dragId === r.id && preview ? preview : styleForDay(r, day);
-                        const level = levelOf.get(r.id) ?? 0;
-                        const depth = Math.min(level, MAX_STACK);
-                        const top = 3 + depth * STACK_OFFSET;
-                        const height = Math.max(22, ROW_HEIGHT - 6 - depth * STACK_OFFSET - 2);
+                        const lane = levelOf.get(r.id) ?? 0;
+                        const top = ROW_PAD + lane * (LANE_HEIGHT + LANE_GAP);
+                        const height = LANE_HEIGHT;
                         const isHovered = hoverId === r.id;
+
                         return (
                           <div
                             key={r.id}
