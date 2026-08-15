@@ -328,22 +328,17 @@ export default function Parametres() {
     const patch: { nom?: string; colorHex: string } = { colorHex: color };
     if (isAdmin) {
       if (!nom) return;
-      const siblings = postes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
+      const siblings = draftPostes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
       if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
         toast.error('Ce nom est déjà utilisé dans cette catégorie.');
         return;
       }
       patch.nom = nom;
     }
-    setSavingPoste(true);
-    const ok = await updatePoste(editPoste.id, patch);
-    setSavingPoste(false);
-    if (ok) {
-      toast.success('Poste mis à jour.');
-      setEditPoste(null);
-    } else {
-      toast.error('Erreur lors de l\'enregistrement.');
-    }
+    setDraftPostes(prev => prev.map(p => p.id === editPoste.id ? { ...p, ...patch } : p));
+    setIsDirty(true);
+    setEditPoste(null);
+    toast.success('Modification prise en compte. N’oubliez pas d’enregistrer.');
   }
 
 
