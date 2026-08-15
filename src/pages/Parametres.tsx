@@ -437,15 +437,14 @@ export default function Parametres() {
                               style={{ backgroundColor: p.colorHex || DEFAULT_POSTE_COLOR }}
                             />
                             {p.nom}
-                            {isAdmin && (
-                              <Button
-                                size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
-                                onClick={(e) => { e.preventDefault(); openEditPoste(p); }}
-                                title="Modifier le poste"
-                              >
-                                <Pencil className="h-2.5 w-2.5" />
-                              </Button>
-                            )}
+                            <Button
+                              size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
+                              onClick={(e) => { e.preventDefault(); openEditPoste(p); }}
+                              title={isAdmin ? 'Modifier le poste' : 'Modifier la couleur'}
+                            >
+                              <Pencil className="h-2.5 w-2.5" />
+                            </Button>
+
                           </label>
                         </div>
                       ))}
