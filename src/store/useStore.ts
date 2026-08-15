@@ -396,7 +396,6 @@ export function useAppStore() {
     }).eq('id', 1);
     if (settingsError) return false;
 
-    const updates: Promise<any>[] = [];
     for (const p of newPostes) {
       const old = postes.find(op => op.id === p.id);
       if (!old) continue;
@@ -405,11 +404,10 @@ export function useAppStore() {
       if (old.colorHex !== p.colorHex) payload.color_hex = p.colorHex;
       if ((old.sortOrder ?? 0) !== (p.sortOrder ?? 0)) payload.sort_order = p.sortOrder;
       if (Object.keys(payload).length > 0) {
-        updates.push(supabase.from('postes').update(payload).eq('id', p.id) as Promise<any>);
+        const { error } = await supabase.from('postes').update(payload).eq('id', p.id);
+        if (error) return false;
       }
     }
-    const results = await Promise.all(updates);
-    if (results.some(r => r.error)) return false;
 
     _setSettings(newSettings);
     _setPostes(newPostes);
