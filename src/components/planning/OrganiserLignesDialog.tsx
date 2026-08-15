@@ -251,10 +251,28 @@ export default function OrganiserLignesDialog({ open, onClose }: Props) {
 
                             {row.type === 'poste' && poste && (
                               <>
-                                <span
-                                  className="h-3 w-3 rounded-full shrink-0 border"
-                                  style={{ backgroundColor: poste.colorHex || 'hsl(var(--muted-foreground))' }}
-                                />
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      draggable={false}
+                                      onDragStart={e => e.preventDefault()}
+                                      onClick={e => e.stopPropagation()}
+                                      title="Modifier la couleur de la ligne"
+                                      aria-label={`Couleur de ${poste.nom}`}
+                                      className="h-4 w-4 rounded-full shrink-0 border ring-offset-background transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                      style={{ backgroundColor: normalizeHex(colorOf(poste.id)) || 'hsl(var(--muted-foreground))' }}
+                                    />
+                                  </PopoverTrigger>
+                                  <PopoverContent align="start" className="w-72" onClick={e => e.stopPropagation()}>
+                                    <p className="text-xs font-medium mb-2">Couleur de la ligne — {poste.nom}</p>
+                                    <ColorPickerControl
+                                      compact
+                                      value={colorOf(poste.id)}
+                                      onChange={hex => setColorDrafts(prev => ({ ...prev, [poste.id]: hex }))}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
                                 <span className="text-sm font-medium truncate">{poste.nom}</span>
                                 <Badge variant="outline" className="text-[10px] shrink-0">
                                   {metier?.nom ?? group.metierId}
