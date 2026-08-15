@@ -15,8 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { GripVertical, Minus, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import ColorPickerControl from '@/components/ColorPickerControl';
+import { normalizeHex, DEFAULT_POSTE_COLOR } from '@/lib/colors';
 import {
   buildGroups, defaultGroups, flattenGroups, groupsToPayload, newRowKey,
   type LayoutGroup, type LayoutRow,
