@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react';
 import OrganiserLignesDialog from '@/components/planning/OrganiserLignesDialog';
+import ColorPickerControl from '@/components/ColorPickerControl';
 import { normalizeHex, contrastTextColor, HEX_ERROR, DEFAULT_POSTE_COLOR } from '@/lib/colors';
 import type { Poste } from '@/types';
 
@@ -701,35 +702,7 @@ export default function Parametres() {
             </div>
             <div className="grid gap-1.5">
               <Label>Couleur du poste</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  aria-label="Sélecteur de couleur"
-                  value={normalizeHex(editPosteColor) || DEFAULT_POSTE_COLOR}
-                  onChange={e => setEditPosteColor(e.target.value.toUpperCase())}
-                  className="h-9 w-12 cursor-pointer rounded border bg-background p-1"
-                />
-                <Input
-                  value={editPosteColor}
-                  onChange={e => setEditPosteColor(e.target.value)}
-                  placeholder="#F59E0B"
-                  className="font-mono uppercase"
-                />
-                <span
-                  className="h-9 w-9 shrink-0 rounded border flex items-center justify-center text-[10px] font-bold"
-                  style={
-                    normalizeHex(editPosteColor)
-                      ? { backgroundColor: normalizeHex(editPosteColor)!, color: contrastTextColor(editPosteColor) }
-                      : { background: 'transparent' }
-                  }
-                  title="Aperçu"
-                >
-                  Aa
-                </span>
-              </div>
-              {!normalizeHex(editPosteColor) && (
-                <p className="text-xs text-destructive">{HEX_ERROR}</p>
-              )}
+              <ColorPickerControl value={editPosteColor} onChange={setEditPosteColor} />
             </div>
           </div>
           <DialogFooter>

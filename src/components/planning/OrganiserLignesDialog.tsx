@@ -15,8 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { GripVertical, Minus, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import ColorPickerControl from '@/components/ColorPickerControl';
+import { normalizeHex, DEFAULT_POSTE_COLOR } from '@/lib/colors';
 import {
   buildGroups, defaultGroups, flattenGroups, groupsToPayload, newRowKey,
   type LayoutGroup, type LayoutRow,
@@ -33,7 +36,7 @@ type DragState =
   | null;
 
 export default function OrganiserLignesDialog({ open, onClose }: Props) {
-  const { postes, metiers, layoutItems, layoutVersion, savePlanningLayout } = useStore();
+  const { postes, metiers, layoutItems, layoutVersion, savePlanningLayout, updatePoste } = useStore();
 
   const [groups, setGroups] = useState<LayoutGroup[]>([]);
   const [baseVersion, setBaseVersion] = useState<string | null>(null);
@@ -41,17 +44,26 @@ export default function OrganiserLignesDialog({ open, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [conflictOpen, setConflictOpen] = useState(false);
+  // Couleurs en brouillon : appliquées uniquement à l'enregistrement
+  const [colorDrafts, setColorDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
     setGroups(buildGroups(postes, metiers, layoutItems));
     setBaseVersion(layoutVersion);
     setDrag(null);
+    setColorDrafts({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const posteById = useMemo(() => new Map(postes.map(p => [p.id, p])), [postes]);
   const metierById = useMemo(() => new Map(metiers.map(m => [m.id, m])), [metiers]);
+
+  function colorOf(posteId: string) {
+    const draft = colorDrafts[posteId];
+    if (draft !== undefined) return draft;
+    return posteById.get(posteId)?.colorHex || DEFAULT_POSTE_COLOR;
+  }
 
   function moveRow(fromGroup: number, fromRow: number, toGroup: number, toRow: number) {
     // Un poste ne peut jamais quitter sa catégorie
@@ -99,15 +111,30 @@ export default function OrganiserLignesDialog({ open, onClose }: Props) {
       : g));
   }
 
+  const invalidColors = Object.entries(colorDrafts).filter(([, v]) => !normalizeHex(v));
+
   async function handleSave() {
+    if (invalidColors.length > 0) {
+      toast.error('Une couleur saisie est invalide.');
+      return;
+    }
     setSaving(true);
     const res = await savePlanningLayout(groupsToPayload(groups), baseVersion);
-    setSaving(false);
     if (res.ok) {
-      toast.success('Organisation du planning enregistrée.');
+      let colorError = false;
+      for (const [posteId, value] of Object.entries(colorDrafts)) {
+        const hex = normalizeHex(value)!;
+        if ((posteById.get(posteId)?.colorHex || '') === hex) continue;
+        const ok = await updatePoste(posteId, { colorHex: hex });
+        if (!ok) colorError = true;
+      }
+      setSaving(false);
+      if (colorError) toast.error("Certaines couleurs n'ont pas pu être enregistrées.");
+      else toast.success('Organisation du planning enregistrée.');
       onClose();
       return;
     }
+    setSaving(false);
     if (res.conflict) { setConflictOpen(true); return; }
     toast.error(res.error || "Erreur lors de l'enregistrement.");
   }
@@ -224,10 +251,28 @@ export default function OrganiserLignesDialog({ open, onClose }: Props) {
 
                             {row.type === 'poste' && poste && (
                               <>
-                                <span
-                                  className="h-3 w-3 rounded-full shrink-0 border"
-                                  style={{ backgroundColor: poste.colorHex || 'hsl(var(--muted-foreground))' }}
-                                />
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      draggable={false}
+                                      onDragStart={e => e.preventDefault()}
+                                      onClick={e => e.stopPropagation()}
+                                      title="Modifier la couleur de la ligne"
+                                      aria-label={`Couleur de ${poste.nom}`}
+                                      className="h-4 w-4 rounded-full shrink-0 border ring-offset-background transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                      style={{ backgroundColor: normalizeHex(colorOf(poste.id)) || 'hsl(var(--muted-foreground))' }}
+                                    />
+                                  </PopoverTrigger>
+                                  <PopoverContent align="start" className="w-72" onClick={e => e.stopPropagation()}>
+                                    <p className="text-xs font-medium mb-2">Couleur de la ligne — {poste.nom}</p>
+                                    <ColorPickerControl
+                                      compact
+                                      value={colorOf(poste.id)}
+                                      onChange={hex => setColorDrafts(prev => ({ ...prev, [poste.id]: hex }))}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
                                 <span className="text-sm font-medium truncate">{poste.nom}</span>
                                 <Badge variant="outline" className="text-[10px] shrink-0">
                                   {metier?.nom ?? group.metierId}
@@ -310,7 +355,7 @@ export default function OrganiserLignesDialog({ open, onClose }: Props) {
                     <div key={row.key} className="flex items-center gap-2 text-xs py-1">
                       <span
                         className="h-2.5 w-2.5 rounded-full shrink-0 border"
-                        style={{ backgroundColor: poste.colorHex || 'hsl(var(--muted-foreground))' }}
+                        style={{ backgroundColor: normalizeHex(colorOf(poste.id)) || 'hsl(var(--muted-foreground))' }}
                       />
                       <span className="truncate">{poste.nom}</span>
                       <span className="ml-auto text-[10px] text-muted-foreground">
