@@ -271,6 +271,38 @@ export default function Parametres() {
     }
   }
 
+  function openEditPoste(p: Poste) {
+    if (!isAdmin) return;
+    setEditPoste(p);
+    setEditPosteNom(p.nom);
+    // Préremplissage : couleur existante, sinon valeur par défaut (non persistée)
+    setEditPosteColor(p.colorHex || DEFAULT_POSTE_COLOR);
+  }
+
+  async function handleSavePoste() {
+    if (!editPoste || !isAdmin) return;
+    const nom = editPosteNom.trim();
+    const color = normalizeHex(editPosteColor);
+    if (!nom) return;
+    if (!color) { toast.error(HEX_ERROR); return; }
+    const siblings = postes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
+    if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
+      toast.error('Ce nom est déjà utilisé dans cette catégorie.');
+      return;
+    }
+    setSavingPoste(true);
+    const ok = await updatePoste(editPoste.id, { nom, colorHex: color });
+    setSavingPoste(false);
+    if (ok) {
+      toast.success('Poste mis à jour.');
+      setEditPoste(null);
+    } else {
+      toast.error('Erreur lors de l\'enregistrement.');
+    }
+  }
+
+
+
   return (
     <div className="p-6 max-w-3xl">
       <div className="mb-6">
