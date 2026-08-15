@@ -278,7 +278,7 @@ export function useAppStore() {
         await supabase.from('postes').update({ actif: p.actif }).eq('id', p.id);
       }
     }
-    setPostes(newPostes);
+    _setPostes(newPostes);
   }, [postes]);
 
   const updateDisponibilites = useCallback(async (updater: (prev: DisponibilitePoste[]) => DisponibilitePoste[]) => {
