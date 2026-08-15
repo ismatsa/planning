@@ -111,15 +111,30 @@ export default function OrganiserLignesDialog({ open, onClose }: Props) {
       : g));
   }
 
+  const invalidColors = Object.entries(colorDrafts).filter(([, v]) => !normalizeHex(v));
+
   async function handleSave() {
+    if (invalidColors.length > 0) {
+      toast.error('Une couleur saisie est invalide.');
+      return;
+    }
     setSaving(true);
     const res = await savePlanningLayout(groupsToPayload(groups), baseVersion);
-    setSaving(false);
     if (res.ok) {
-      toast.success('Organisation du planning enregistrée.');
+      let colorError = false;
+      for (const [posteId, value] of Object.entries(colorDrafts)) {
+        const hex = normalizeHex(value)!;
+        if ((posteById.get(posteId)?.colorHex || '') === hex) continue;
+        const ok = await updatePoste(posteId, { colorHex: hex });
+        if (!ok) colorError = true;
+      }
+      setSaving(false);
+      if (colorError) toast.error("Certaines couleurs n'ont pas pu être enregistrées.");
+      else toast.success('Organisation du planning enregistrée.');
       onClose();
       return;
     }
+    setSaving(false);
     if (res.conflict) { setConflictOpen(true); return; }
     toast.error(res.error || "Erreur lors de l'enregistrement.");
   }
