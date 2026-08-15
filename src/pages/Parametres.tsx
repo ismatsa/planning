@@ -559,6 +559,67 @@ export default function Parametres() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Poste Dialog (nom + couleur) */}
+      <Dialog open={!!editPoste} onOpenChange={v => !v && setEditPoste(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Modifier le poste</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid gap-1.5">
+              <Label>Nom du poste</Label>
+              <Input
+                value={editPosteNom}
+                onChange={e => setEditPosteNom(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Couleur du poste</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  aria-label="Sélecteur de couleur"
+                  value={normalizeHex(editPosteColor) || DEFAULT_POSTE_COLOR}
+                  onChange={e => setEditPosteColor(e.target.value.toUpperCase())}
+                  className="h-9 w-12 cursor-pointer rounded border bg-background p-1"
+                />
+                <Input
+                  value={editPosteColor}
+                  onChange={e => setEditPosteColor(e.target.value)}
+                  placeholder="#F59E0B"
+                  className="font-mono uppercase"
+                />
+                <span
+                  className="h-9 w-9 shrink-0 rounded border flex items-center justify-center text-[10px] font-bold"
+                  style={
+                    normalizeHex(editPosteColor)
+                      ? { backgroundColor: normalizeHex(editPosteColor)!, color: contrastTextColor(editPosteColor) }
+                      : { background: 'transparent' }
+                  }
+                  title="Aperçu"
+                >
+                  Aa
+                </span>
+              </div>
+              {!normalizeHex(editPosteColor) && (
+                <p className="text-xs text-destructive">{HEX_ERROR}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPoste(null)}>Annuler</Button>
+            <Button
+              onClick={handleSavePoste}
+              disabled={!editPosteNom.trim() || !normalizeHex(editPosteColor) || savingPoste}
+            >
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       {/* Add Intervenant Dialog */}
       <Dialog open={addIntOpen} onOpenChange={v => !v && setAddIntOpen(false)}>
         <DialogContent className="sm:max-w-sm">
