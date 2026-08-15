@@ -357,7 +357,7 @@ export function useAppStore() {
     appointmentResponsibles, appointmentIntervenants,
     addRdv, updateRdv, deleteRdv, checkConflict, checkIntervenantConflicts,
     addMetier, renameMetier, deleteMetier,
-    addPoste, renamePoste,
+    addPoste, renamePoste, updatePoste,
     setPostes: updatePostes,
     setDisponibilites: updateDisponibilites,
     setExceptions,
