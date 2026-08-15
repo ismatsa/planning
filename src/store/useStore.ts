@@ -329,7 +329,7 @@ export function useAppStore() {
 
   // Poste CRUD
   const addPoste = useCallback(async (poste: Poste) => {
-    const { error } = await supabase.from('postes').insert({ id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif } as any);
+    const { error } = await supabase.from('postes').insert({ id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif, color_hex: poste.colorHex ?? null } as any);
     if (!error) setPostes(prev => [...prev, poste]);
     return !error;
   }, []);
@@ -339,6 +339,18 @@ export function useAppStore() {
     if (!error) setPostes(prev => prev.map(p => p.id === id ? { ...p, nom } : p));
     return !error;
   }, []);
+
+  /** Met à jour uniquement le poste ciblé (nom et/ou couleur). */
+  const updatePoste = useCallback(async (id: string, patch: { nom?: string; colorHex?: string | null }) => {
+    const payload: any = {};
+    if (patch.nom !== undefined) payload.nom = patch.nom;
+    if (patch.colorHex !== undefined) payload.color_hex = patch.colorHex;
+    if (Object.keys(payload).length === 0) return true;
+    const { error } = await supabase.from('postes').update(payload).eq('id', id);
+    if (!error) setPostes(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+    return !error;
+  }, []);
+
 
   return {
     metiers, rdvs, postes, disponibilites, exceptions, settings, loaded,
