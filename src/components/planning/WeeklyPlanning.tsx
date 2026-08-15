@@ -350,8 +350,9 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
                       <div className="w-48 shrink-0 flex items-center gap-2 px-4 py-2 border-r bg-card">
                         <span
                           className="h-2.5 w-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: `hsl(var(--${metier?.couleur || 'muted-foreground'}))` }}
+                          style={{ backgroundColor: poste.colorHex || 'hsl(var(--muted-foreground))' }}
                         />
+
                         <span className="text-xs font-medium truncate">{poste.nom}</span>
                       </div>
 
