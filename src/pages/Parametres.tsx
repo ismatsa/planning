@@ -57,7 +57,12 @@ export default function Parametres() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => { setDraftSettings(settings); }, [settings]);
-  useEffect(() => { setDraftPostes(postes); }, [postes]);
+  useEffect(() => {
+    setDraftPostes(prev => {
+      const byId = new Map(prev.map(p => [p.id, p]));
+      return postes.map(p => byId.get(p.id) ?? p);
+    });
+  }, [postes]);
 
   // Add category modal
   const [addCatOpen, setAddCatOpen] = useState(false);
