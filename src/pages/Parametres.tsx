@@ -17,7 +17,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react';
+import OrganiserLignesDialog from '@/components/planning/OrganiserLignesDialog';
 import { normalizeHex, contrastTextColor, HEX_ERROR, DEFAULT_POSTE_COLOR } from '@/lib/colors';
 import type { Poste } from '@/types';
 
@@ -85,6 +86,9 @@ export default function Parametres() {
   const [editPoste, setEditPoste] = useState<Poste | null>(null);
   const [editPosteNom, setEditPosteNom] = useState('');
   const [editPosteColor, setEditPosteColor] = useState(DEFAULT_POSTE_COLOR);
+
+  // Organisation des lignes du planning
+  const [organiserOpen, setOrganiserOpen] = useState(false);
 
 
   // --- Intervenants state ---
@@ -419,12 +423,18 @@ export default function Parametres() {
         <Card>
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold">Ressources / Postes</CardTitle>
+            <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={() => setOrganiserOpen(true)}>
+              <ListOrdered className="h-3.5 w-3.5" />
+              Organiser les lignes du planning
+            </Button>
             {isAdmin && (
               <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={() => { setNewCatNom(''); setAddCatOpen(true); }}>
                 <Plus className="h-3.5 w-3.5" />
                 Catégorie
               </Button>
             )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
