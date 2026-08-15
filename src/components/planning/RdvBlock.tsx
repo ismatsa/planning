@@ -5,6 +5,8 @@ import { useStore } from '@/store/StoreContext';
 import { CheckSquare } from 'lucide-react';
 import { isUnresolved } from '@/lib/planning';
 import { useAuth } from '@/store/AuthContext';
+import { normalizeHex, contrastTextColor } from '@/lib/colors';
+
 
 interface Props {
   rdv: RendezVous;
