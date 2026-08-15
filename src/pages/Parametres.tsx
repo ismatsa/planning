@@ -272,7 +272,6 @@ export default function Parametres() {
   }
 
   function openEditPoste(p: Poste) {
-    if (!isAdmin) return;
     setEditPoste(p);
     setEditPosteNom(p.nom);
     // Préremplissage : couleur existante, sinon valeur par défaut (non persistée)
@@ -280,18 +279,23 @@ export default function Parametres() {
   }
 
   async function handleSavePoste() {
-    if (!editPoste || !isAdmin) return;
+    if (!editPoste) return;
     const nom = editPosteNom.trim();
     const color = normalizeHex(editPosteColor);
-    if (!nom) return;
     if (!color) { toast.error(HEX_ERROR); return; }
-    const siblings = postes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
-    if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
-      toast.error('Ce nom est déjà utilisé dans cette catégorie.');
-      return;
+    // Le renommage reste réservé aux admins ; la couleur est modifiable par tout utilisateur authentifié.
+    const patch: { nom?: string; colorHex: string } = { colorHex: color };
+    if (isAdmin) {
+      if (!nom) return;
+      const siblings = postes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
+      if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
+        toast.error('Ce nom est déjà utilisé dans cette catégorie.');
+        return;
+      }
+      patch.nom = nom;
     }
     setSavingPoste(true);
-    const ok = await updatePoste(editPoste.id, { nom, colorHex: color });
+    const ok = await updatePoste(editPoste.id, patch);
     setSavingPoste(false);
     if (ok) {
       toast.success('Poste mis à jour.');
@@ -300,6 +304,7 @@ export default function Parametres() {
       toast.error('Erreur lors de l\'enregistrement.');
     }
   }
+
 
 
 
@@ -437,15 +442,14 @@ export default function Parametres() {
                               style={{ backgroundColor: p.colorHex || DEFAULT_POSTE_COLOR }}
                             />
                             {p.nom}
-                            {isAdmin && (
-                              <Button
-                                size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
-                                onClick={(e) => { e.preventDefault(); openEditPoste(p); }}
-                                title="Modifier le poste"
-                              >
-                                <Pencil className="h-2.5 w-2.5" />
-                              </Button>
-                            )}
+                            <Button
+                              size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
+                              onClick={(e) => { e.preventDefault(); openEditPoste(p); }}
+                              title={isAdmin ? 'Modifier le poste' : 'Modifier la couleur'}
+                            >
+                              <Pencil className="h-2.5 w-2.5" />
+                            </Button>
+
                           </label>
                         </div>
                       ))}
@@ -613,8 +617,10 @@ export default function Parametres() {
               <Input
                 value={editPosteNom}
                 onChange={e => setEditPosteNom(e.target.value)}
-                autoFocus
+                disabled={!isAdmin}
+                autoFocus={isAdmin}
               />
+
             </div>
             <div className="grid gap-1.5">
               <Label>Couleur du poste</Label>
@@ -653,7 +659,7 @@ export default function Parametres() {
             <Button variant="outline" onClick={() => setEditPoste(null)}>Annuler</Button>
             <Button
               onClick={handleSavePoste}
-              disabled={!editPosteNom.trim() || !normalizeHex(editPosteColor) || savingPoste}
+              disabled={(isAdmin && !editPosteNom.trim()) || !normalizeHex(editPosteColor) || savingPoste}
             >
               Enregistrer
             </Button>
