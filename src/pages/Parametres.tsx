@@ -617,8 +617,10 @@ export default function Parametres() {
               <Input
                 value={editPosteNom}
                 onChange={e => setEditPosteNom(e.target.value)}
-                autoFocus
+                disabled={!isAdmin}
+                autoFocus={isAdmin}
               />
+
             </div>
             <div className="grid gap-1.5">
               <Label>Couleur du poste</Label>
