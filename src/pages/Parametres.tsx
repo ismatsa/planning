@@ -18,6 +18,9 @@ import {
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { normalizeHex, contrastTextColor, HEX_ERROR, DEFAULT_POSTE_COLOR } from '@/lib/colors';
+import type { Poste } from '@/types';
+
 
 // ... keep existing code (JOURS_LABELS)
 const JOURS_LABELS = [
