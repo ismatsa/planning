@@ -346,9 +346,18 @@ export default function Parametres() {
 
   return (
     <div className="p-6 max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-xl font-display font-bold">Paramètres</h1>
-        <p className="text-sm text-muted-foreground">Configuration générale de l'atelier.</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-display font-bold">Paramètres</h1>
+          <p className="text-sm text-muted-foreground">Configuration générale de l'atelier.</p>
+        </div>
+        <Button
+          onClick={handleSave}
+          disabled={!isDirty || isSaving}
+          className="shrink-0"
+        >
+          {isSaving ? 'Enregistrement…' : 'Enregistrer'}
+        </Button>
       </div>
 
       <div className="grid gap-6">
