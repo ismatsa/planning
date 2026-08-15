@@ -351,13 +351,49 @@ export function useAppStore() {
     return !error;
   }, []);
 
+  /** Déplace un poste vers le haut/bas dans sa catégorie (ordre d'affichage). */
+  const movePoste = useCallback(async (id: string, direction: -1 | 1) => {
+    let a: Poste | undefined;
+    let b: Poste | undefined;
+
+    setPostes(prev => {
+      const current = prev.find(p => p.id === id);
+      if (!current) return prev;
+      const siblings = prev
+        .filter(p => p.metierId === current.metierId)
+        .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0));
+      const idx = siblings.findIndex(p => p.id === id);
+      const target = siblings[idx + direction];
+      if (!target) return prev;
+
+      a = { ...current, sortOrder: target.sortOrder ?? 0 };
+      b = { ...target, sortOrder: current.sortOrder ?? 0 };
+      return prev
+        .map(p => (p.id === a!.id ? a! : p.id === b!.id ? b! : p))
+        .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0));
+    });
+
+    // Laisse React appliquer le state avant l'appel réseau
+    await Promise.resolve();
+    if (!a || !b) return false;
+    if ((a.sortOrder ?? 0) === (b.sortOrder ?? 0)) {
+      // Ordres identiques : réindexe la catégorie
+      a = { ...a, sortOrder: (b.sortOrder ?? 0) + direction };
+    }
+    const [r1, r2] = await Promise.all([
+      supabase.from('postes').update({ sort_order: a.sortOrder } as any).eq('id', a.id),
+      supabase.from('postes').update({ sort_order: b.sortOrder } as any).eq('id', b.id),
+    ]);
+    return !r1.error && !r2.error;
+  }, []);
+
 
   return {
     metiers, rdvs, postes, disponibilites, exceptions, settings, loaded,
     appointmentResponsibles, appointmentIntervenants,
     addRdv, updateRdv, deleteRdv, checkConflict, checkIntervenantConflicts,
     addMetier, renameMetier, deleteMetier,
-    addPoste, renamePoste, updatePoste,
+    addPoste, renamePoste, updatePoste, movePoste,
     setPostes: updatePostes,
     setDisponibilites: updateDisponibilites,
     setExceptions,
