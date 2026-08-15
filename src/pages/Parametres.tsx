@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { normalizeHex, contrastTextColor, HEX_ERROR, DEFAULT_POSTE_COLOR } from '@/lib/colors';
 import type { Poste } from '@/types';
 
@@ -47,7 +47,7 @@ interface ProfileOption {
 }
 
 export default function Parametres() {
-  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste } = useStore();
+  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste, movePoste } = useStore();
   const { isAdmin } = useAuth();
 
   // Add category modal
@@ -429,7 +429,7 @@ export default function Parametres() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {mPostes.map(p => (
+                      {mPostes.map((p, i) => (
                         <div key={p.id} className="flex items-center gap-1.5">
                           <label className="flex items-center gap-1.5 text-sm cursor-pointer">
                             <Checkbox
@@ -449,10 +449,27 @@ export default function Parametres() {
                             >
                               <Pencil className="h-2.5 w-2.5" />
                             </Button>
+                            <Button
+                              size="icon" variant="ghost" className="h-5 w-5"
+                              disabled={i === 0}
+                              onClick={(e) => { e.preventDefault(); movePoste(p.id, -1); }}
+                              title="Déplacer avant"
+                            >
+                              <ChevronLeft className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="icon" variant="ghost" className="h-5 w-5"
+                              disabled={i === mPostes.length - 1}
+                              onClick={(e) => { e.preventDefault(); movePoste(p.id, 1); }}
+                              title="Déplacer après"
+                            >
+                              <ChevronRight className="h-3 w-3" />
+                            </Button>
 
                           </label>
                         </div>
                       ))}
+
 
                       {isAdmin && (
                         <Button size="sm" variant="ghost" className="gap-1 h-7 text-xs text-muted-foreground" onClick={() => openAddPoste(m.id)}>
