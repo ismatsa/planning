@@ -168,16 +168,49 @@ export default function Parametres() {
 
   // ... keep existing code (toggleJour, togglePosteActif, category CRUD, poste CRUD)
   function toggleJour(jour: number) {
-    setSettings(prev => ({
+    setDraftSettings(prev => ({
       ...prev,
       joursOuvres: prev.joursOuvres.includes(jour)
         ? prev.joursOuvres.filter(j => j !== jour)
         : [...prev.joursOuvres, jour].sort(),
     }));
+    setIsDirty(true);
   }
 
   function togglePosteActif(posteId: string) {
-    setPostes(prev => prev.map(p => p.id === posteId ? { ...p, actif: !p.actif } : p));
+    setDraftPostes(prev => prev.map(p => p.id === posteId ? { ...p, actif: !p.actif } : p));
+    setIsDirty(true);
+  }
+
+  function moveDraftPoste(id: string, direction: -1 | 1) {
+    setDraftPostes(prev => {
+      const current = prev.find(p => p.id === id);
+      if (!current) return prev;
+      const siblings = prev
+        .filter(p => p.metierId === current.metierId)
+        .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0));
+      const idx = siblings.findIndex(p => p.id === id);
+      const target = siblings[idx + direction];
+      if (!target) return prev;
+      const a = { ...current, sortOrder: target.sortOrder ?? 0 };
+      const b = { ...target, sortOrder: current.sortOrder ?? 0 };
+      return prev
+        .map(p => (p.id === a.id ? a : p.id === b.id ? b : p))
+        .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0));
+    });
+    setIsDirty(true);
+  }
+
+  async function handleSave() {
+    setIsSaving(true);
+    const ok = await saveParametres(draftSettings, draftPostes);
+    setIsSaving(false);
+    if (ok) {
+      setIsDirty(false);
+      toast.success('Paramètres enregistrés.');
+    } else {
+      toast.error('Erreur lors de l\'enregistrement.');
+    }
   }
 
   async function handleAddCategory() {
