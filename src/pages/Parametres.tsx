@@ -488,7 +488,7 @@ export default function Parametres() {
                             <Button
                               size="icon" variant="ghost" className="h-5 w-5"
                               disabled={i === 0}
-                              onClick={(e) => { e.preventDefault(); movePoste(p.id, -1); }}
+                              onClick={(e) => { e.preventDefault(); moveDraftPoste(p.id, -1); }}
                               title="Déplacer avant"
                             >
                               <ChevronLeft className="h-3 w-3" />
@@ -496,7 +496,7 @@ export default function Parametres() {
                             <Button
                               size="icon" variant="ghost" className="h-5 w-5"
                               disabled={i === mPostes.length - 1}
-                              onClick={(e) => { e.preventDefault(); movePoste(p.id, 1); }}
+                              onClick={(e) => { e.preventDefault(); moveDraftPoste(p.id, 1); }}
                               title="Déplacer après"
                             >
                               <ChevronRight className="h-3 w-3" />
