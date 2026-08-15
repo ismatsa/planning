@@ -381,8 +381,8 @@ export default function Parametres() {
               <Label className="text-xs text-muted-foreground">Heure min</Label>
               <Input
                 type="time"
-                value={settings.heureMin}
-                onChange={e => setSettings(prev => ({ ...prev, heureMin: e.target.value }))}
+                value={draftSettings.heureMin}
+                onChange={e => { setDraftSettings(prev => ({ ...prev, heureMin: e.target.value })); setIsDirty(true); }}
                 className="w-32"
                 disabled={!isAdmin}
               />
