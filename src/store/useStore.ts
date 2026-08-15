@@ -405,7 +405,7 @@ export function useAppStore() {
       if (old.colorHex !== p.colorHex) payload.color_hex = p.colorHex;
       if ((old.sortOrder ?? 0) !== (p.sortOrder ?? 0)) payload.sort_order = p.sortOrder;
       if (Object.keys(payload).length > 0) {
-        updates.push(supabase.from('postes').update(payload).eq('id', p.id));
+        updates.push(supabase.from('postes').update(payload).eq('id', p.id) as Promise<any>);
       }
     }
     const results = await Promise.all(updates);
