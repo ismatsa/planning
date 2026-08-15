@@ -67,6 +67,13 @@ export default function Parametres() {
   const [renamingPosteId, setRenamingPosteId] = useState<string | null>(null);
   const [renamingPosteValue, setRenamingPosteValue] = useState('');
 
+  // Edit poste modal (nom + couleur)
+  const [editPoste, setEditPoste] = useState<Poste | null>(null);
+  const [editPosteNom, setEditPosteNom] = useState('');
+  const [editPosteColor, setEditPosteColor] = useState(DEFAULT_POSTE_COLOR);
+  const [savingPoste, setSavingPoste] = useState(false);
+
+
   // --- Intervenants state ---
   const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
   const [addIntOpen, setAddIntOpen] = useState(false);
