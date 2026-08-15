@@ -103,11 +103,11 @@ export function useAppStore() {
       ]);
 
       if (metiersRes.data) setMetiers(metiersRes.data.map(mapMetier));
-      if (postesRes.data) setPostes(postesRes.data.map(mapPoste).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
+      if (postesRes.data) _setPostes(postesRes.data.map(mapPoste).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
       if (disposRes.data) setDisponibilites(disposRes.data.map(mapDispo));
       if (exceptionsRes.data) setExceptions(exceptionsRes.data.map(mapException));
       if (rdvsRes.data) setRdvs(rdvsRes.data.map(mapRdv));
-      if (settingsRes.data) setSettings(mapSettings(settingsRes.data));
+      if (settingsRes.data) _setSettings(mapSettings(settingsRes.data));
 
       // Build pivot maps
       if (respRes.data) {
