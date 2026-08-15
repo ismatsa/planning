@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { normalizeHex, contrastTextColor, HEX_ERROR, DEFAULT_POSTE_COLOR } from '@/lib/colors';
 import type { Poste } from '@/types';
 
@@ -47,7 +47,7 @@ interface ProfileOption {
 }
 
 export default function Parametres() {
-  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste } = useStore();
+  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste, movePoste } = useStore();
   const { isAdmin } = useAuth();
 
   // Add category modal
