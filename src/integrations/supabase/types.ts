@@ -1042,6 +1042,7 @@ export type Database = {
       postes: {
         Row: {
           actif: boolean
+          color_hex: string | null
           created_at: string
           id: string
           metier_id: string
@@ -1049,6 +1050,7 @@ export type Database = {
         }
         Insert: {
           actif?: boolean
+          color_hex?: string | null
           created_at?: string
           id: string
           metier_id: string
@@ -1056,6 +1058,7 @@ export type Database = {
         }
         Update: {
           actif?: boolean
+          color_hex?: string | null
           created_at?: string
           id?: string
           metier_id?: string
