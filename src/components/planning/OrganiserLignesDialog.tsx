@@ -355,7 +355,7 @@ export default function OrganiserLignesDialog({ open, onClose }: Props) {
                     <div key={row.key} className="flex items-center gap-2 text-xs py-1">
                       <span
                         className="h-2.5 w-2.5 rounded-full shrink-0 border"
-                        style={{ backgroundColor: poste.colorHex || 'hsl(var(--muted-foreground))' }}
+                        style={{ backgroundColor: normalizeHex(colorOf(poste.id)) || 'hsl(var(--muted-foreground))' }}
                       />
                       <span className="truncate">{poste.nom}</span>
                       <span className="ml-auto text-[10px] text-muted-foreground">
