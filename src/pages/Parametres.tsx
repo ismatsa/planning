@@ -803,6 +803,7 @@ export default function Parametres() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <OrganiserLignesDialog open={organiserOpen} onClose={() => setOrganiserOpen(false)} />
     </div>
   );
 }
