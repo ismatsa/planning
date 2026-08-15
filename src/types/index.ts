@@ -13,6 +13,8 @@ export interface Poste {
   actif: boolean;
   /** Couleur propre au poste, format `#RRGGBB`. Null si non définie. */
   colorHex?: string | null;
+  /** Ordre d'affichage au sein de la catégorie. */
+  sortOrder?: number;
 }
 
 
