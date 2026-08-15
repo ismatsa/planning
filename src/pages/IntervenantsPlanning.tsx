@@ -68,7 +68,7 @@ function initials(name: string) {
 
 export default function IntervenantsPlanning() {
   const { rdvs, settings, updateRdv, appointmentIntervenants, appointmentResponsibles } = useStore();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { collapsed } = useSidebarState();
 
   const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
@@ -314,9 +314,10 @@ export default function IntervenantsPlanning() {
   } | null>(null);
 
   const canEdit = useCallback((rdv: RendezVous) => {
+    if (isAdmin) return true;
     const responsibles = appointmentResponsibles[rdv.id] || [];
     return responsibles.length === 0 || responsibles.includes(user?.id || '');
-  }, [appointmentResponsibles, user?.id]);
+  }, [appointmentResponsibles, user?.id, isAdmin]);
 
   const startDrag = useCallback((
     rdv: RendezVous,
