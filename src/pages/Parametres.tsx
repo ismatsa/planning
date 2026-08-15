@@ -392,8 +392,8 @@ export default function Parametres() {
               <Label className="text-xs text-muted-foreground">Heure max</Label>
               <Input
                 type="time"
-                value={settings.heureMax}
-                onChange={e => setSettings(prev => ({ ...prev, heureMax: e.target.value }))}
+                value={draftSettings.heureMax}
+                onChange={e => { setDraftSettings(prev => ({ ...prev, heureMax: e.target.value })); setIsDirty(true); }}
                 className="w-32"
                 disabled={!isAdmin}
               />
