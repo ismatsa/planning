@@ -361,7 +361,7 @@ export default function Parametres() {
             {JOURS_LABELS.map(j => (
               <label key={j.value} className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
-                  checked={settings.joursOuvres.includes(j.value)}
+                  checked={draftSettings.joursOuvres.includes(j.value)}
                   onCheckedChange={() => toggleJour(j.value)}
                   disabled={!isAdmin}
                 />
