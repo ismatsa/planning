@@ -78,10 +78,10 @@ function mapSettings(row: any): AppSettings {
 export function useAppStore() {
   const [metiers, setMetiers] = useState<Metier[]>(DEFAULT_METIERS);
   const [rdvs, setRdvs] = useState<RendezVous[]>([]);
-  const [postes, setPostes] = useState<Poste[]>(DEFAULT_POSTES);
+  const [postes, _setPostes] = useState<Poste[]>(DEFAULT_POSTES);
   const [disponibilites, setDisponibilites] = useState<DisponibilitePoste[]>([]);
   const [exceptions, setExceptions] = useState<ExceptionDisponibilite[]>([]);
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settings, _setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
   // Pivot data: responsibles & intervenants per appointment
@@ -103,11 +103,11 @@ export function useAppStore() {
       ]);
 
       if (metiersRes.data) setMetiers(metiersRes.data.map(mapMetier));
-      if (postesRes.data) setPostes(postesRes.data.map(mapPoste).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
+      if (postesRes.data) _setPostes(postesRes.data.map(mapPoste).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
       if (disposRes.data) setDisponibilites(disposRes.data.map(mapDispo));
       if (exceptionsRes.data) setExceptions(exceptionsRes.data.map(mapException));
       if (rdvsRes.data) setRdvs(rdvsRes.data.map(mapRdv));
-      if (settingsRes.data) setSettings(mapSettings(settingsRes.data));
+      if (settingsRes.data) _setSettings(mapSettings(settingsRes.data));
 
       // Build pivot maps
       if (respRes.data) {
@@ -278,7 +278,7 @@ export function useAppStore() {
         await supabase.from('postes').update({ actif: p.actif }).eq('id', p.id);
       }
     }
-    setPostes(newPostes);
+    _setPostes(newPostes);
   }, [postes]);
 
   const updateDisponibilites = useCallback(async (updater: (prev: DisponibilitePoste[]) => DisponibilitePoste[]) => {
@@ -305,7 +305,7 @@ export function useAppStore() {
       heure_min: newSettings.heureMin,
       heure_max: newSettings.heureMax,
     }).eq('id', 1);
-    setSettings(newSettings);
+    _setSettings(newSettings);
   }, [settings]);
 
   // Metier CRUD
@@ -330,13 +330,13 @@ export function useAppStore() {
   // Poste CRUD
   const addPoste = useCallback(async (poste: Poste) => {
     const { error } = await supabase.from('postes').insert({ id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif, color_hex: poste.colorHex ?? null } as any);
-    if (!error) setPostes(prev => [...prev, poste]);
+    if (!error) _setPostes(prev => [...prev, poste]);
     return !error;
   }, []);
 
   const renamePoste = useCallback(async (id: string, nom: string) => {
     const { error } = await supabase.from('postes').update({ nom }).eq('id', id);
-    if (!error) setPostes(prev => prev.map(p => p.id === id ? { ...p, nom } : p));
+    if (!error) _setPostes(prev => prev.map(p => p.id === id ? { ...p, nom } : p));
     return !error;
   }, []);
 
@@ -347,7 +347,7 @@ export function useAppStore() {
     if (patch.colorHex !== undefined) payload.color_hex = patch.colorHex;
     if (Object.keys(payload).length === 0) return true;
     const { error } = await supabase.from('postes').update(payload).eq('id', id);
-    if (!error) setPostes(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+    if (!error) _setPostes(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
     return !error;
   }, []);
 
@@ -356,7 +356,7 @@ export function useAppStore() {
     let a: Poste | undefined;
     let b: Poste | undefined;
 
-    setPostes(prev => {
+    _setPostes(prev => {
       const current = prev.find(p => p.id === id);
       if (!current) return prev;
       const siblings = prev
@@ -387,6 +387,33 @@ export function useAppStore() {
     return !r1.error && !r2.error;
   }, []);
 
+  /** Enregistre en une seule fois les paramètres généraux et les postes modifiés. */
+  const saveParametres = useCallback(async (newSettings: AppSettings, newPostes: Poste[]) => {
+    const { error: settingsError } = await supabase.from('app_settings').update({
+      jours_ouvres: newSettings.joursOuvres as any,
+      heure_min: newSettings.heureMin,
+      heure_max: newSettings.heureMax,
+    }).eq('id', 1);
+    if (settingsError) return false;
+
+    for (const p of newPostes) {
+      const old = postes.find(op => op.id === p.id);
+      if (!old) continue;
+      const payload: any = {};
+      if (old.actif !== p.actif) payload.actif = p.actif;
+      if (old.colorHex !== p.colorHex) payload.color_hex = p.colorHex;
+      if ((old.sortOrder ?? 0) !== (p.sortOrder ?? 0)) payload.sort_order = p.sortOrder;
+      if (Object.keys(payload).length > 0) {
+        const { error } = await supabase.from('postes').update(payload).eq('id', p.id);
+        if (error) return false;
+      }
+    }
+
+    _setSettings(newSettings);
+    _setPostes(newPostes);
+    return true;
+  }, [postes]);
+
 
   return {
     metiers, rdvs, postes, disponibilites, exceptions, settings, loaded,
@@ -398,5 +425,6 @@ export function useAppStore() {
     setDisponibilites: updateDisponibilites,
     setExceptions,
     setSettings: updateSettings,
+    saveParametres,
   };
 }

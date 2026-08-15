@@ -47,8 +47,22 @@ interface ProfileOption {
 }
 
 export default function Parametres() {
-  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste, movePoste } = useStore();
+  const { postes, metiers, settings, saveParametres, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste } = useStore();
   const { isAdmin } = useAuth();
+
+  // Draft state for batch save
+  const [draftSettings, setDraftSettings] = useState(settings);
+  const [draftPostes, setDraftPostes] = useState(postes);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => { setDraftSettings(settings); }, [settings]);
+  useEffect(() => {
+    setDraftPostes(prev => {
+      const byId = new Map(prev.map(p => [p.id, p]));
+      return postes.map(p => byId.get(p.id) ?? p);
+    });
+  }, [postes]);
 
   // Add category modal
   const [addCatOpen, setAddCatOpen] = useState(false);
@@ -71,7 +85,6 @@ export default function Parametres() {
   const [editPoste, setEditPoste] = useState<Poste | null>(null);
   const [editPosteNom, setEditPosteNom] = useState('');
   const [editPosteColor, setEditPosteColor] = useState(DEFAULT_POSTE_COLOR);
-  const [savingPoste, setSavingPoste] = useState(false);
 
 
   // --- Intervenants state ---
@@ -160,16 +173,49 @@ export default function Parametres() {
 
   // ... keep existing code (toggleJour, togglePosteActif, category CRUD, poste CRUD)
   function toggleJour(jour: number) {
-    setSettings(prev => ({
+    setDraftSettings(prev => ({
       ...prev,
       joursOuvres: prev.joursOuvres.includes(jour)
         ? prev.joursOuvres.filter(j => j !== jour)
         : [...prev.joursOuvres, jour].sort(),
     }));
+    setIsDirty(true);
   }
 
   function togglePosteActif(posteId: string) {
-    setPostes(prev => prev.map(p => p.id === posteId ? { ...p, actif: !p.actif } : p));
+    setDraftPostes(prev => prev.map(p => p.id === posteId ? { ...p, actif: !p.actif } : p));
+    setIsDirty(true);
+  }
+
+  function moveDraftPoste(id: string, direction: -1 | 1) {
+    setDraftPostes(prev => {
+      const current = prev.find(p => p.id === id);
+      if (!current) return prev;
+      const siblings = prev
+        .filter(p => p.metierId === current.metierId)
+        .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0));
+      const idx = siblings.findIndex(p => p.id === id);
+      const target = siblings[idx + direction];
+      if (!target) return prev;
+      const a = { ...current, sortOrder: target.sortOrder ?? 0 };
+      const b = { ...target, sortOrder: current.sortOrder ?? 0 };
+      return prev
+        .map(p => (p.id === a.id ? a : p.id === b.id ? b : p))
+        .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0));
+    });
+    setIsDirty(true);
+  }
+
+  async function handleSave() {
+    setIsSaving(true);
+    const ok = await saveParametres(draftSettings, draftPostes);
+    setIsSaving(false);
+    if (ok) {
+      setIsDirty(false);
+      toast.success('Paramètres enregistrés.');
+    } else {
+      toast.error('Erreur lors de l\'enregistrement.');
+    }
   }
 
   async function handleAddCategory() {
@@ -287,22 +333,17 @@ export default function Parametres() {
     const patch: { nom?: string; colorHex: string } = { colorHex: color };
     if (isAdmin) {
       if (!nom) return;
-      const siblings = postes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
+      const siblings = draftPostes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
       if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
         toast.error('Ce nom est déjà utilisé dans cette catégorie.');
         return;
       }
       patch.nom = nom;
     }
-    setSavingPoste(true);
-    const ok = await updatePoste(editPoste.id, patch);
-    setSavingPoste(false);
-    if (ok) {
-      toast.success('Poste mis à jour.');
-      setEditPoste(null);
-    } else {
-      toast.error('Erreur lors de l\'enregistrement.');
-    }
+    setDraftPostes(prev => prev.map(p => p.id === editPoste.id ? { ...p, ...patch } : p));
+    setIsDirty(true);
+    setEditPoste(null);
+    toast.success('Modification prise en compte. N’oubliez pas d’enregistrer.');
   }
 
 
@@ -310,9 +351,18 @@ export default function Parametres() {
 
   return (
     <div className="p-6 max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-xl font-display font-bold">Paramètres</h1>
-        <p className="text-sm text-muted-foreground">Configuration générale de l'atelier.</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-display font-bold">Paramètres</h1>
+          <p className="text-sm text-muted-foreground">Configuration générale de l'atelier.</p>
+        </div>
+        <Button
+          onClick={handleSave}
+          disabled={!isDirty || isSaving}
+          className="shrink-0"
+        >
+          {isSaving ? 'Enregistrement…' : 'Enregistrer'}
+        </Button>
       </div>
 
       <div className="grid gap-6">
@@ -325,7 +375,7 @@ export default function Parametres() {
             {JOURS_LABELS.map(j => (
               <label key={j.value} className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
-                  checked={settings.joursOuvres.includes(j.value)}
+                  checked={draftSettings.joursOuvres.includes(j.value)}
                   onCheckedChange={() => toggleJour(j.value)}
                   disabled={!isAdmin}
                 />
@@ -345,8 +395,8 @@ export default function Parametres() {
               <Label className="text-xs text-muted-foreground">Heure min</Label>
               <Input
                 type="time"
-                value={settings.heureMin}
-                onChange={e => setSettings(prev => ({ ...prev, heureMin: e.target.value }))}
+                value={draftSettings.heureMin}
+                onChange={e => { setDraftSettings(prev => ({ ...prev, heureMin: e.target.value })); setIsDirty(true); }}
                 className="w-32"
                 disabled={!isAdmin}
               />
@@ -356,8 +406,8 @@ export default function Parametres() {
               <Label className="text-xs text-muted-foreground">Heure max</Label>
               <Input
                 type="time"
-                value={settings.heureMax}
-                onChange={e => setSettings(prev => ({ ...prev, heureMax: e.target.value }))}
+                value={draftSettings.heureMax}
+                onChange={e => { setDraftSettings(prev => ({ ...prev, heureMax: e.target.value })); setIsDirty(true); }}
                 className="w-32"
                 disabled={!isAdmin}
               />
@@ -379,7 +429,7 @@ export default function Parametres() {
           <CardContent>
             <div className="grid gap-4">
               {metiers.map(m => {
-                const mPostes = postes.filter(p => p.metierId === m.id);
+                const mPostes = draftPostes.filter(p => p.metierId === m.id);
                 return (
                   <div key={m.id} className="border rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
@@ -452,7 +502,7 @@ export default function Parametres() {
                             <Button
                               size="icon" variant="ghost" className="h-5 w-5"
                               disabled={i === 0}
-                              onClick={(e) => { e.preventDefault(); movePoste(p.id, -1); }}
+                              onClick={(e) => { e.preventDefault(); moveDraftPoste(p.id, -1); }}
                               title="Déplacer avant"
                             >
                               <ChevronLeft className="h-3 w-3" />
@@ -460,7 +510,7 @@ export default function Parametres() {
                             <Button
                               size="icon" variant="ghost" className="h-5 w-5"
                               disabled={i === mPostes.length - 1}
-                              onClick={(e) => { e.preventDefault(); movePoste(p.id, 1); }}
+                              onClick={(e) => { e.preventDefault(); moveDraftPoste(p.id, 1); }}
                               title="Déplacer après"
                             >
                               <ChevronRight className="h-3 w-3" />
@@ -676,9 +726,9 @@ export default function Parametres() {
             <Button variant="outline" onClick={() => setEditPoste(null)}>Annuler</Button>
             <Button
               onClick={handleSavePoste}
-              disabled={(isAdmin && !editPosteNom.trim()) || !normalizeHex(editPosteColor) || savingPoste}
+              disabled={(isAdmin && !editPosteNom.trim()) || !normalizeHex(editPosteColor)}
             >
-              Enregistrer
+              OK
             </Button>
           </DialogFooter>
         </DialogContent>
