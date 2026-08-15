@@ -272,7 +272,6 @@ export default function Parametres() {
   }
 
   function openEditPoste(p: Poste) {
-    if (!isAdmin) return;
     setEditPoste(p);
     setEditPosteNom(p.nom);
     // Préremplissage : couleur existante, sinon valeur par défaut (non persistée)
@@ -280,18 +279,23 @@ export default function Parametres() {
   }
 
   async function handleSavePoste() {
-    if (!editPoste || !isAdmin) return;
+    if (!editPoste) return;
     const nom = editPosteNom.trim();
     const color = normalizeHex(editPosteColor);
-    if (!nom) return;
     if (!color) { toast.error(HEX_ERROR); return; }
-    const siblings = postes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
-    if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
-      toast.error('Ce nom est déjà utilisé dans cette catégorie.');
-      return;
+    // Le renommage reste réservé aux admins ; la couleur est modifiable par tout utilisateur authentifié.
+    const patch: { nom?: string; colorHex: string } = { colorHex: color };
+    if (isAdmin) {
+      if (!nom) return;
+      const siblings = postes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
+      if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
+        toast.error('Ce nom est déjà utilisé dans cette catégorie.');
+        return;
+      }
+      patch.nom = nom;
     }
     setSavingPoste(true);
-    const ok = await updatePoste(editPoste.id, { nom, colorHex: color });
+    const ok = await updatePoste(editPoste.id, patch);
     setSavingPoste(false);
     if (ok) {
       toast.success('Poste mis à jour.');
@@ -300,6 +304,7 @@ export default function Parametres() {
       toast.error('Erreur lors de l\'enregistrement.');
     }
   }
+
 
 
 
