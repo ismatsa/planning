@@ -1047,6 +1047,7 @@ export type Database = {
           id: string
           metier_id: string
           nom: string
+          sort_order: number
         }
         Insert: {
           actif?: boolean
@@ -1055,6 +1056,7 @@ export type Database = {
           id: string
           metier_id: string
           nom: string
+          sort_order?: number
         }
         Update: {
           actif?: boolean
@@ -1063,6 +1065,7 @@ export type Database = {
           id?: string
           metier_id?: string
           nom?: string
+          sort_order?: number
         }
         Relationships: [
           {
