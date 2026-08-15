@@ -19,7 +19,7 @@ function mapMetier(row: any): Metier {
 }
 
 function mapPoste(row: any): Poste {
-  return { id: row.id, metierId: row.metier_id, nom: row.nom, actif: row.actif };
+  return { id: row.id, metierId: row.metier_id, nom: row.nom, actif: row.actif, colorHex: row.color_hex ?? null };
 }
 
 function mapDispo(row: any): DisponibilitePoste {
