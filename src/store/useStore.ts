@@ -330,13 +330,13 @@ export function useAppStore() {
   // Poste CRUD
   const addPoste = useCallback(async (poste: Poste) => {
     const { error } = await supabase.from('postes').insert({ id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif, color_hex: poste.colorHex ?? null } as any);
-    if (!error) setPostes(prev => [...prev, poste]);
+    if (!error) _setPostes(prev => [...prev, poste]);
     return !error;
   }, []);
 
   const renamePoste = useCallback(async (id: string, nom: string) => {
     const { error } = await supabase.from('postes').update({ nom }).eq('id', id);
-    if (!error) setPostes(prev => prev.map(p => p.id === id ? { ...p, nom } : p));
+    if (!error) _setPostes(prev => prev.map(p => p.id === id ? { ...p, nom } : p));
     return !error;
   }, []);
 
