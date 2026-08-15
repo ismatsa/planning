@@ -47,7 +47,7 @@ interface ProfileOption {
 }
 
 export default function Parametres() {
-  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste } = useStore();
+  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste } = useStore();
   const { isAdmin } = useAuth();
 
   // Add category modal
