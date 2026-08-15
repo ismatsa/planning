@@ -47,8 +47,17 @@ interface ProfileOption {
 }
 
 export default function Parametres() {
-  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste, movePoste } = useStore();
+  const { postes, metiers, settings, saveParametres, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste } = useStore();
   const { isAdmin } = useAuth();
+
+  // Draft state for batch save
+  const [draftSettings, setDraftSettings] = useState(settings);
+  const [draftPostes, setDraftPostes] = useState(postes);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => { setDraftSettings(settings); }, [settings]);
+  useEffect(() => { setDraftPostes(postes); }, [postes]);
 
   // Add category modal
   const [addCatOpen, setAddCatOpen] = useState(false);
@@ -71,7 +80,6 @@ export default function Parametres() {
   const [editPoste, setEditPoste] = useState<Poste | null>(null);
   const [editPosteNom, setEditPosteNom] = useState('');
   const [editPosteColor, setEditPosteColor] = useState(DEFAULT_POSTE_COLOR);
-  const [savingPoste, setSavingPoste] = useState(false);
 
 
   // --- Intervenants state ---
