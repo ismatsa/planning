@@ -305,7 +305,7 @@ export function useAppStore() {
       heure_min: newSettings.heureMin,
       heure_max: newSettings.heureMax,
     }).eq('id', 1);
-    setSettings(newSettings);
+    _setSettings(newSettings);
   }, [settings]);
 
   // Metier CRUD
