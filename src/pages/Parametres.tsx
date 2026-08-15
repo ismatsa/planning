@@ -18,6 +18,9 @@ import {
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { normalizeHex, contrastTextColor, HEX_ERROR, DEFAULT_POSTE_COLOR } from '@/lib/colors';
+import type { Poste } from '@/types';
+
 
 // ... keep existing code (JOURS_LABELS)
 const JOURS_LABELS = [
@@ -44,7 +47,7 @@ interface ProfileOption {
 }
 
 export default function Parametres() {
-  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste } = useStore();
+  const { postes, metiers, settings, setSettings, setPostes, addMetier, renameMetier, deleteMetier, addPoste, renamePoste, updatePoste } = useStore();
   const { isAdmin } = useAuth();
 
   // Add category modal
@@ -63,6 +66,13 @@ export default function Parametres() {
   // Rename poste inline
   const [renamingPosteId, setRenamingPosteId] = useState<string | null>(null);
   const [renamingPosteValue, setRenamingPosteValue] = useState('');
+
+  // Edit poste modal (nom + couleur)
+  const [editPoste, setEditPoste] = useState<Poste | null>(null);
+  const [editPosteNom, setEditPosteNom] = useState('');
+  const [editPosteColor, setEditPosteColor] = useState(DEFAULT_POSTE_COLOR);
+  const [savingPoste, setSavingPoste] = useState(false);
+
 
   // --- Intervenants state ---
   const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
@@ -261,6 +271,38 @@ export default function Parametres() {
     }
   }
 
+  function openEditPoste(p: Poste) {
+    if (!isAdmin) return;
+    setEditPoste(p);
+    setEditPosteNom(p.nom);
+    // Préremplissage : couleur existante, sinon valeur par défaut (non persistée)
+    setEditPosteColor(p.colorHex || DEFAULT_POSTE_COLOR);
+  }
+
+  async function handleSavePoste() {
+    if (!editPoste || !isAdmin) return;
+    const nom = editPosteNom.trim();
+    const color = normalizeHex(editPosteColor);
+    if (!nom) return;
+    if (!color) { toast.error(HEX_ERROR); return; }
+    const siblings = postes.filter(p => p.metierId === editPoste.metierId && p.id !== editPoste.id);
+    if (siblings.some(p => p.nom.toLowerCase() === nom.toLowerCase())) {
+      toast.error('Ce nom est déjà utilisé dans cette catégorie.');
+      return;
+    }
+    setSavingPoste(true);
+    const ok = await updatePoste(editPoste.id, { nom, colorHex: color });
+    setSavingPoste(false);
+    if (ok) {
+      toast.success('Poste mis à jour.');
+      setEditPoste(null);
+    } else {
+      toast.error('Erreur lors de l\'enregistrement.');
+    }
+  }
+
+
+
   return (
     <div className="p-6 max-w-3xl">
       <div className="mb-6">
@@ -384,46 +426,30 @@ export default function Parametres() {
                     <div className="flex flex-wrap gap-2">
                       {mPostes.map(p => (
                         <div key={p.id} className="flex items-center gap-1.5">
-                          {renamingPosteId === p.id ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                value={renamingPosteValue}
-                                onChange={e => setRenamingPosteValue(e.target.value)}
-                                className="h-7 text-xs w-28"
-                                autoFocus
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') handleRenamePoste(p.id);
-                                  if (e.key === 'Escape') setRenamingPosteId(null);
-                                }}
-                              />
-                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => handleRenamePoste(p.id)}>
-                                <Check className="h-3 w-3" />
+                          <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={p.actif}
+                              onCheckedChange={() => togglePosteActif(p.id)}
+                              disabled={!isAdmin}
+                            />
+                            <span
+                              className="h-2.5 w-2.5 rounded-full shrink-0 border"
+                              style={{ backgroundColor: p.colorHex || DEFAULT_POSTE_COLOR }}
+                            />
+                            {p.nom}
+                            {isAdmin && (
+                              <Button
+                                size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
+                                onClick={(e) => { e.preventDefault(); openEditPoste(p); }}
+                                title="Modifier le poste"
+                              >
+                                <Pencil className="h-2.5 w-2.5" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setRenamingPosteId(null)}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                              <Checkbox
-                                checked={p.actif}
-                                onCheckedChange={() => togglePosteActif(p.id)}
-                                disabled={!isAdmin}
-                              />
-                              {p.nom}
-                              {isAdmin && (
-                                <Button
-                                  size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
-                                  onClick={(e) => { e.preventDefault(); setRenamingPosteId(p.id); setRenamingPosteValue(p.nom); }}
-                                  title="Renommer"
-                                >
-                                  <Pencil className="h-2.5 w-2.5" />
-                                </Button>
-                              )}
-                            </label>
-                          )}
+                            )}
+                          </label>
                         </div>
                       ))}
+
                       {isAdmin && (
                         <Button size="sm" variant="ghost" className="gap-1 h-7 text-xs text-muted-foreground" onClick={() => openAddPoste(m.id)}>
                           <Plus className="h-3 w-3" />
@@ -574,6 +600,67 @@ export default function Parametres() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Poste Dialog (nom + couleur) */}
+      <Dialog open={!!editPoste} onOpenChange={v => !v && setEditPoste(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Modifier le poste</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid gap-1.5">
+              <Label>Nom du poste</Label>
+              <Input
+                value={editPosteNom}
+                onChange={e => setEditPosteNom(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Couleur du poste</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  aria-label="Sélecteur de couleur"
+                  value={normalizeHex(editPosteColor) || DEFAULT_POSTE_COLOR}
+                  onChange={e => setEditPosteColor(e.target.value.toUpperCase())}
+                  className="h-9 w-12 cursor-pointer rounded border bg-background p-1"
+                />
+                <Input
+                  value={editPosteColor}
+                  onChange={e => setEditPosteColor(e.target.value)}
+                  placeholder="#F59E0B"
+                  className="font-mono uppercase"
+                />
+                <span
+                  className="h-9 w-9 shrink-0 rounded border flex items-center justify-center text-[10px] font-bold"
+                  style={
+                    normalizeHex(editPosteColor)
+                      ? { backgroundColor: normalizeHex(editPosteColor)!, color: contrastTextColor(editPosteColor) }
+                      : { background: 'transparent' }
+                  }
+                  title="Aperçu"
+                >
+                  Aa
+                </span>
+              </div>
+              {!normalizeHex(editPosteColor) && (
+                <p className="text-xs text-destructive">{HEX_ERROR}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPoste(null)}>Annuler</Button>
+            <Button
+              onClick={handleSavePoste}
+              disabled={!editPosteNom.trim() || !normalizeHex(editPosteColor) || savingPoste}
+            >
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Add Intervenant Dialog */}
       <Dialog open={addIntOpen} onOpenChange={v => !v && setAddIntOpen(false)}>

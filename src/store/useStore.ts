@@ -19,7 +19,7 @@ function mapMetier(row: any): Metier {
 }
 
 function mapPoste(row: any): Poste {
-  return { id: row.id, metierId: row.metier_id, nom: row.nom, actif: row.actif };
+  return { id: row.id, metierId: row.metier_id, nom: row.nom, actif: row.actif, colorHex: row.color_hex ?? null };
 }
 
 function mapDispo(row: any): DisponibilitePoste {
@@ -329,7 +329,7 @@ export function useAppStore() {
 
   // Poste CRUD
   const addPoste = useCallback(async (poste: Poste) => {
-    const { error } = await supabase.from('postes').insert({ id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif } as any);
+    const { error } = await supabase.from('postes').insert({ id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif, color_hex: poste.colorHex ?? null } as any);
     if (!error) setPostes(prev => [...prev, poste]);
     return !error;
   }, []);
@@ -340,12 +340,24 @@ export function useAppStore() {
     return !error;
   }, []);
 
+  /** Met à jour uniquement le poste ciblé (nom et/ou couleur). */
+  const updatePoste = useCallback(async (id: string, patch: { nom?: string; colorHex?: string | null }) => {
+    const payload: any = {};
+    if (patch.nom !== undefined) payload.nom = patch.nom;
+    if (patch.colorHex !== undefined) payload.color_hex = patch.colorHex;
+    if (Object.keys(payload).length === 0) return true;
+    const { error } = await supabase.from('postes').update(payload).eq('id', id);
+    if (!error) setPostes(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+    return !error;
+  }, []);
+
+
   return {
     metiers, rdvs, postes, disponibilites, exceptions, settings, loaded,
     appointmentResponsibles, appointmentIntervenants,
     addRdv, updateRdv, deleteRdv, checkConflict, checkIntervenantConflicts,
     addMetier, renameMetier, deleteMetier,
-    addPoste, renamePoste,
+    addPoste, renamePoste, updatePoste,
     setPostes: updatePostes,
     setDisponibilites: updateDisponibilites,
     setExceptions,

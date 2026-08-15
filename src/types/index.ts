@@ -11,7 +11,10 @@ export interface Poste {
   metierId: MetierType;
   nom: string;
   actif: boolean;
+  /** Couleur propre au poste, format `#RRGGBB`. Null si non définie. */
+  colorHex?: string | null;
 }
+
 
 export interface PlageHoraire {
   debut: string; // "HH:mm"
