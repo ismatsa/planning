@@ -712,9 +712,9 @@ export default function Parametres() {
             <Button variant="outline" onClick={() => setEditPoste(null)}>Annuler</Button>
             <Button
               onClick={handleSavePoste}
-              disabled={(isAdmin && !editPosteNom.trim()) || !normalizeHex(editPosteColor) || savingPoste}
+              disabled={(isAdmin && !editPosteNom.trim()) || !normalizeHex(editPosteColor)}
             >
-              Enregistrer
+              OK
             </Button>
           </DialogFooter>
         </DialogContent>
