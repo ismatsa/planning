@@ -78,10 +78,10 @@ function mapSettings(row: any): AppSettings {
 export function useAppStore() {
   const [metiers, setMetiers] = useState<Metier[]>(DEFAULT_METIERS);
   const [rdvs, setRdvs] = useState<RendezVous[]>([]);
-  const [postes, setPostes] = useState<Poste[]>(DEFAULT_POSTES);
+  const [postes, _setPostes] = useState<Poste[]>(DEFAULT_POSTES);
   const [disponibilites, setDisponibilites] = useState<DisponibilitePoste[]>([]);
   const [exceptions, setExceptions] = useState<ExceptionDisponibilite[]>([]);
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settings, _setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
   // Pivot data: responsibles & intervenants per appointment
