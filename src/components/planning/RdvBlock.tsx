@@ -53,6 +53,9 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
   const unresolved = isUnresolved(rdv.debut, rdv.fin, rdv.statut);
 
 
+  // Source de vérité : la couleur du poste (color_hex). Fallback neutre sinon.
+  const posteColor = poste?.colorHex && normalizeHex(poste.colorHex) ? normalizeHex(poste.colorHex)! : null;
+
   const bgColor = hasConflict
     ? 'hsl(var(--destructive))'
     : isNoShow
@@ -61,17 +64,18 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
         ? 'hsl(var(--destructive))'
         : isTermine
           ? 'hsl(142 71% 35%)'
-          : metier
-            ? `hsl(var(--${metier.couleur}))`
+          : posteColor
+            ? posteColor
             : 'hsl(var(--muted))';
 
   const textColor = hasConflict
     ? 'hsl(var(--destructive-foreground))'
     : (isNoShow || isTermine || unresolved)
       ? '#ffffff'
-      : metier
-        ? `hsl(var(--${metier.couleur}-foreground))`
+      : posteColor
+        ? contrastTextColor(posteColor)
         : 'hsl(var(--muted-foreground))';
+
 
   const [showTooltip, setShowTooltip] = useState(false);
   const [hovered, setHovered] = useState(false);
