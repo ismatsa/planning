@@ -415,7 +415,7 @@ export default function Parametres() {
           <CardContent>
             <div className="grid gap-4">
               {metiers.map(m => {
-                const mPostes = postes.filter(p => p.metierId === m.id);
+                const mPostes = draftPostes.filter(p => p.metierId === m.id);
                 return (
                   <div key={m.id} className="border rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
