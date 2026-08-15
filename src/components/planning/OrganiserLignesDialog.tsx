@@ -36,7 +36,7 @@ type DragState =
   | null;
 
 export default function OrganiserLignesDialog({ open, onClose }: Props) {
-  const { postes, metiers, layoutItems, layoutVersion, savePlanningLayout } = useStore();
+  const { postes, metiers, layoutItems, layoutVersion, savePlanningLayout, updatePoste } = useStore();
 
   const [groups, setGroups] = useState<LayoutGroup[]>([]);
   const [baseVersion, setBaseVersion] = useState<string | null>(null);
@@ -44,17 +44,26 @@ export default function OrganiserLignesDialog({ open, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [conflictOpen, setConflictOpen] = useState(false);
+  // Couleurs en brouillon : appliquées uniquement à l'enregistrement
+  const [colorDrafts, setColorDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
     setGroups(buildGroups(postes, metiers, layoutItems));
     setBaseVersion(layoutVersion);
     setDrag(null);
+    setColorDrafts({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const posteById = useMemo(() => new Map(postes.map(p => [p.id, p])), [postes]);
   const metierById = useMemo(() => new Map(metiers.map(m => [m.id, m])), [metiers]);
+
+  function colorOf(posteId: string) {
+    const draft = colorDrafts[posteId];
+    if (draft !== undefined) return draft;
+    return posteById.get(posteId)?.colorHex || DEFAULT_POSTE_COLOR;
+  }
 
   function moveRow(fromGroup: number, fromRow: number, toGroup: number, toRow: number) {
     // Un poste ne peut jamais quitter sa catégorie
