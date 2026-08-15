@@ -1039,6 +1039,75 @@ export type Database = {
         }
         Relationships: []
       }
+      planning_layout_items: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          metier_id: string | null
+          position: number
+          poste_id: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          metier_id?: string | null
+          position: number
+          poste_id?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          metier_id?: string | null
+          position?: number
+          poste_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_layout_items_metier_id_fkey"
+            columns: ["metier_id"]
+            isOneToOne: false
+            referencedRelation: "metiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_layout_items_poste_id_fkey"
+            columns: ["poste_id"]
+            isOneToOne: false
+            referencedRelation: "postes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_layout_meta: {
+        Row: {
+          created_at: string
+          id: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       postes: {
         Row: {
           actif: boolean
@@ -1444,6 +1513,10 @@ export type Database = {
         }
       }
       hermes_purge_expired: { Args: never; Returns: number }
+      save_planning_layout: {
+        Args: { p_expected_version?: string; p_items: Json }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "administrateur" | "contributeur"

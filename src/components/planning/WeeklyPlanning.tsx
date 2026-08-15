@@ -6,7 +6,9 @@ import { getWorkingDays, formatDayHeader, getTimeSlots, timeToMinutes } from '@/
 import { format, isSameDay, addDays, addMinutes } from 'date-fns';
 import RdvBlock from './RdvBlock';
 import RdvModal from './RdvModal';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react';
+import OrganiserLignesDialog from './OrganiserLignesDialog';
+import { buildGroups, flattenGroups } from '@/lib/planningLayout';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -22,7 +24,7 @@ interface WeeklyPlanningProps {
 }
 
 export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps = {}) {
-  const { rdvs, postes, settings, updateRdv, checkConflict, metiers, appointmentResponsibles } = useStore();
+  const { rdvs, postes, settings, updateRdv, checkConflict, metiers, appointmentResponsibles, layoutItems } = useStore();
   const { user, isAdmin, permissions } = useAuth();
   const { collapsed } = useSidebarState();
   const [startDate, setStartDate] = useState(new Date());
@@ -31,6 +33,7 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
   const [newRdvDefaults, setNewRdvDefaults] = useState<{ date?: Date; posteId?: string; time?: string }>({});
   const [devisConversion, setDevisConversion] = useState<any>(null);
   const [visibleMetiers, setVisibleMetiers] = useState<Set<string>>(new Set(metiers.map(m => m.id)));
+  const [organiserOpen, setOrganiserOpen] = useState(false);
 
   // Open modal from devis conversion
   useEffect(() => {
@@ -56,6 +59,23 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
   const displayDays = useMemo(() => getWorkingDays(startDate, settings.joursOuvres, DAYS_SHOWN), [startDate, settings.joursOuvres]);
   const timeSlots = useMemo(() => getTimeSlots(settings.heureMin, settings.heureMax, 30), [settings]);
   const activePostes = useMemo(() => postes.filter(p => p.actif && visibleMetiers.has(p.metierId) && (isAdmin || permissions.includes(p.id))), [postes, visibleMetiers, isAdmin, permissions]);
+
+  /** Lignes du planning issues strictement du layout enregistré (postes + séparateurs). */
+  const displayRows = useMemo(() => {
+    const flat = flattenGroups(buildGroups(postes, metiers, layoutItems));
+    const allowed = new Set(activePostes.map(p => p.id));
+    const filtered = flat.filter(({ row }) => row.type !== 'poste' || (row.posteId && allowed.has(row.posteId)));
+    const out: typeof filtered = [];
+    for (const r of filtered) {
+      if (r.row.type !== 'poste') {
+        if (out.length === 0) continue;
+        if (out[out.length - 1].row.type !== 'poste') { out[out.length - 1] = r; continue; }
+      }
+      out.push(r);
+    }
+    while (out.length > 0 && out[out.length - 1].row.type !== 'poste') out.pop();
+    return out;
+  }, [postes, metiers, layoutItems, activePostes]);
 
   const minMinutes = timeToMinutes(settings.heureMin);
   const maxMinutes = timeToMinutes(settings.heureMax);
@@ -245,6 +265,10 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
               {formatDayHeader(displayDays[0])} — {formatDayHeader(displayDays[displayDays.length - 1])}
             </span>
           )}
+          <Button variant="outline" className="gap-2" onClick={() => setOrganiserOpen(true)}>
+            <ListOrdered className="h-4 w-4" />
+            <span className="hidden sm:inline">Organiser les lignes</span>
+          </Button>
           <Button onClick={() => openNewRdv()} className="gap-2">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Nouveau RDV</span>
@@ -302,8 +326,7 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
 
           {/* Day groups */}
           {displayDays.map(day => {
-            const dayPostes = activePostes;
-            if (dayPostes.length === 0) return null;
+            if (displayRows.length === 0) return null;
 
             return (
               <div key={day.toISOString()}>
@@ -314,7 +337,19 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
                 </div>
 
                 {/* Poste rows */}
-                {dayPostes.map(poste => {
+                {displayRows.map(({ row }) => {
+                  if (row.type === 'small_separator') {
+                    return <div key={`${day.toISOString()}-${row.key}`} className="h-1.5 bg-muted/60 border-b" />;
+                  }
+                  if (row.type === 'large_separator') {
+                    return (
+                      <div key={`${day.toISOString()}-${row.key}`} className="sticky left-0 h-8 flex items-center px-4 bg-muted/40 border-b text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {row.label?.trim() || ''}
+                      </div>
+                    );
+                  }
+                  const poste = postes.find(p => p.id === row.posteId);
+                  if (!poste) return null;
                   const metier = metiers.find(m => m.id === poste.metierId);
                   const dayRdvs = rdvs.filter(r => {
                     if (r.posteId !== poste.id || r.statut === 'annule') return false;
@@ -345,7 +380,7 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
                   }
 
                   return (
-                    <div key={poste.id} className="flex border-b hover:bg-muted/20 transition-colors">
+                    <div key={`${day.toISOString()}-${row.key}`} className="flex border-b hover:bg-muted/20 transition-colors">
                       {/* Poste label */}
                       <div className="w-48 shrink-0 flex items-center gap-2 px-4 py-2 border-r bg-card">
                         <span
@@ -405,6 +440,8 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
           })}
         </div>
       </div>
+
+      <OrganiserLignesDialog open={organiserOpen} onClose={() => setOrganiserOpen(false)} />
 
       <RdvModal
         open={modalOpen}
