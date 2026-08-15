@@ -384,46 +384,30 @@ export default function Parametres() {
                     <div className="flex flex-wrap gap-2">
                       {mPostes.map(p => (
                         <div key={p.id} className="flex items-center gap-1.5">
-                          {renamingPosteId === p.id ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                value={renamingPosteValue}
-                                onChange={e => setRenamingPosteValue(e.target.value)}
-                                className="h-7 text-xs w-28"
-                                autoFocus
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') handleRenamePoste(p.id);
-                                  if (e.key === 'Escape') setRenamingPosteId(null);
-                                }}
-                              />
-                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => handleRenamePoste(p.id)}>
-                                <Check className="h-3 w-3" />
+                          <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={p.actif}
+                              onCheckedChange={() => togglePosteActif(p.id)}
+                              disabled={!isAdmin}
+                            />
+                            <span
+                              className="h-2.5 w-2.5 rounded-full shrink-0 border"
+                              style={{ backgroundColor: p.colorHex || DEFAULT_POSTE_COLOR }}
+                            />
+                            {p.nom}
+                            {isAdmin && (
+                              <Button
+                                size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
+                                onClick={(e) => { e.preventDefault(); openEditPoste(p); }}
+                                title="Modifier le poste"
+                              >
+                                <Pencil className="h-2.5 w-2.5" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setRenamingPosteId(null)}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                              <Checkbox
-                                checked={p.actif}
-                                onCheckedChange={() => togglePosteActif(p.id)}
-                                disabled={!isAdmin}
-                              />
-                              {p.nom}
-                              {isAdmin && (
-                                <Button
-                                  size="icon" variant="ghost" className="h-5 w-5 ml-0.5"
-                                  onClick={(e) => { e.preventDefault(); setRenamingPosteId(p.id); setRenamingPosteValue(p.nom); }}
-                                  title="Renommer"
-                                >
-                                  <Pencil className="h-2.5 w-2.5" />
-                                </Button>
-                              )}
-                            </label>
-                          )}
+                            )}
+                          </label>
                         </div>
                       ))}
+
                       {isAdmin && (
                         <Button size="sm" variant="ghost" className="gap-1 h-7 text-xs text-muted-foreground" onClick={() => openAddPoste(m.id)}>
                           <Plus className="h-3 w-3" />
