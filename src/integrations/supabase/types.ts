@@ -1420,7 +1420,7 @@ export type Database = {
           notes: string | null
           statut: Database["public"]["Enums"]["vehicule_statut"]
           updated_at: string
-          vin: string
+          vin: string | null
         }
         Insert: {
           annee?: number | null
@@ -1440,7 +1440,7 @@ export type Database = {
           notes?: string | null
           statut?: Database["public"]["Enums"]["vehicule_statut"]
           updated_at?: string
-          vin: string
+          vin?: string | null
         }
         Update: {
           annee?: number | null
@@ -1460,7 +1460,7 @@ export type Database = {
           notes?: string | null
           statut?: Database["public"]["Enums"]["vehicule_statut"]
           updated_at?: string
-          vin?: string
+          vin?: string | null
         }
         Relationships: [
           {
