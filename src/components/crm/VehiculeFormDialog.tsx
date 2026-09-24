@@ -21,7 +21,7 @@ import {
 const NONE = '__none__';
 
 const schema = z.object({
-  vin: z.string().trim().min(5, 'Le VIN est obligatoire').max(32, 'VIN trop long'),
+  vin: z.string().trim().max(32, 'VIN trop long').optional(),
   immatriculation: z.string().trim().max(20).optional(),
   marque: z.string().trim().min(1, 'La marque est obligatoire').max(60),
   modele: z.string().trim().min(1, 'Le modèle est obligatoire').max(80),
