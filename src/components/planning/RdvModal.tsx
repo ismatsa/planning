@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
-import { AlertCircle, Eye, X, History } from 'lucide-react';
+import { AlertCircle, Eye, X, History, Copy } from 'lucide-react';
 import RdvHistoryDialog from '@/components/planning/RdvHistoryDialog';
 import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
 import ClientVehiculeSelector, { ClientVehiculeValue } from '@/components/crm/ClientVehiculeSelector';
@@ -70,6 +70,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
   const { user } = useAuth();
   const isEdit = !!rdv;
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const [metierId, setMetierId] = useState<MetierType>('');
   const [posteId, setPosteId] = useState('');
