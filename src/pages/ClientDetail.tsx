@@ -20,7 +20,7 @@ import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import ClientFormDialog from '@/components/crm/ClientFormDialog';
 import VehiculeFormDialog from '@/components/crm/VehiculeFormDialog';
 import {
-  clientDisplayName, CLIENT_TYPE_LABELS, VEHICULE_STATUT_LABELS,
+  clientDisplayName, CLIENT_TYPE_LABELS, VEHICULE_STATUT_LABELS, normalizeVin,
 } from '@/types/crm';
 import { STATUT_DEVIS_LABELS } from '@/types/devis';
 
