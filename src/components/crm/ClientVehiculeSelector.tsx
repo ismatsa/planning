@@ -44,6 +44,7 @@ function digits(s?: string) {
 }
 
 function maskVin(vin: string) {
+  if (!vin) return "VIN non renseigné";
   if (vin.length <= 6) return vin;
   return `${vin.slice(0, 3)}••••${vin.slice(-4)}`;
 }

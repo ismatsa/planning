@@ -20,7 +20,7 @@ import { parsePhone, toWhatsAppNumber } from '@/components/ui/phone-input';
 import ClientFormDialog from '@/components/crm/ClientFormDialog';
 import VehiculeFormDialog from '@/components/crm/VehiculeFormDialog';
 import {
-  clientDisplayName, CLIENT_TYPE_LABELS, VEHICULE_STATUT_LABELS,
+  clientDisplayName, CLIENT_TYPE_LABELS, VEHICULE_STATUT_LABELS, normalizeVin,
 } from '@/types/crm';
 import { STATUT_DEVIS_LABELS } from '@/types/devis';
 
@@ -53,7 +53,7 @@ export default function ClientDetail() {
   }, [crm.proprietaires, crm.vehicules, id]);
 
   const vins = useMemo(
-    () => new Set([...ownedVehicules, ...pastVehicules].map(v => v.vin.toUpperCase())),
+    () => new Set([...ownedVehicules, ...pastVehicules].filter(v => v.vin).map(v => normalizeVin(v.vin))),
     [ownedVehicules, pastVehicules],
   );
 

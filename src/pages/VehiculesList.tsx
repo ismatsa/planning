@@ -53,7 +53,7 @@ export default function VehiculesList() {
       .filter(v => filterMarque === 'all' || v.marque === filterMarque)
       .filter(v => {
         if (!q) return true;
-        return [v.vin, v.immatriculation || '', v.marque, v.modele, v.clientId ? clientById[v.clientId] || '' : '']
+        return [v.vin || '', v.immatriculation || '', v.marque, v.modele, v.clientId ? clientById[v.clientId] || '' : '']
           .join(' ')
           .toLowerCase()
           .includes(q);
@@ -125,7 +125,7 @@ export default function VehiculesList() {
                 </Badge>
               </div>
               <div className="text-xs text-muted-foreground truncate font-mono">
-                VIN {v.vin}{v.immatriculation ? ` • ${v.immatriculation}` : ''}
+                VIN {v.vin || '—'}{v.immatriculation ? ` • ${v.immatriculation}` : ''}
               </div>
             </div>
             <div className="text-xs text-muted-foreground shrink-0 truncate max-w-[160px]">
