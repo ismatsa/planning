@@ -24,7 +24,7 @@ const schema = z.object({
   prenom: z.string().trim().max(100).optional(),
   raisonSociale: z.string().trim().max(150).optional(),
   ice: z.string().trim().max(30).optional(),
-  telephone: z.string().trim().min(1, 'Le téléphone est obligatoire'),
+  telephone: z.string().trim().optional(),
   telephoneSecondaire: z.string().trim().optional(),
   email: z.string().trim().max(255).email('Adresse e-mail invalide').optional().or(z.literal('')),
   adresse: z.string().trim().max(500).optional(),
