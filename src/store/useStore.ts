@@ -178,7 +178,7 @@ export function useAppStore() {
   }, []);
 
   const updateRdv = useCallback(async (rdv: RendezVous, responsibleIds?: string[], intervenantIds?: string[]) => {
-    const { data, error } = await supabase.from('rendez_vous').update({
+    const payload: Record<string, any> = {
       poste_id: rdv.posteId || null,
       debut: rdv.debut,
       fin: rdv.fin,
@@ -193,32 +193,50 @@ export function useAppStore() {
       billing_responsible_user_id: rdv.billingResponsibleUserId || null,
       client_id: rdv.clientId || null,
       vehicule_id: rdv.vehiculeId || null,
-    } as any).eq('id', rdv.id).select().single();
+    };
 
-    if (data && !error) {
-      setRdvs(prev => prev.map(r => r.id === rdv.id ? mapRdv(data) : r));
+    // Compare with stored values, send only real changes
+    const { data: current } = await supabase.from('rendez_vous').select('*').eq('id', rdv.id).single();
+    const norm = (k: string, v: any) => {
+      if (v === undefined || v === null || v === '') return null;
+      if (k === 'debut' || k === 'fin') return new Date(v).getTime();
+      return typeof v === 'string' ? v.trim() : v;
+    };
+    const diff: Record<string, any> = {};
+    for (const [k, v] of Object.entries(payload)) {
+      if (!current || norm(k, (current as any)[k]) !== norm(k, v)) diff[k] = v;
+    }
 
-      // Update responsibles if provided
-      if (responsibleIds !== undefined) {
-        await supabase.from('appointment_responsibles').delete().eq('appointment_id', rdv.id);
-        if (responsibleIds.length > 0) {
-          await supabase.from('appointment_responsibles').insert(
-            responsibleIds.map(uid => ({ appointment_id: rdv.id, user_id: uid })) as any
-          );
-        }
-        setAppointmentResponsibles(prev => ({ ...prev, [rdv.id]: responsibleIds }));
-      }
+    let row: any = current;
+    if (Object.keys(diff).length > 0) {
+      const { data, error } = await supabase.from('rendez_vous').update(diff as any).eq('id', rdv.id).select().single();
+      if (error || !data) return;
+      row = data;
+    }
+    if (row) setRdvs(prev => prev.map(r => r.id === rdv.id ? mapRdv(row) : r));
 
-      // Update intervenants if provided
-      if (intervenantIds !== undefined) {
-        await supabase.from('appointment_intervenants').delete().eq('appointment_id', rdv.id);
-        if (intervenantIds.length > 0) {
-          await supabase.from('appointment_intervenants').insert(
-            intervenantIds.map(iid => ({ appointment_id: rdv.id, intervenant_id: iid })) as any
-          );
-        }
-        setAppointmentIntervenants(prev => ({ ...prev, [rdv.id]: intervenantIds }));
-      }
+    const syncSet = async (
+      table: 'appointment_responsibles' | 'appointment_intervenants',
+      col: 'user_id' | 'intervenant_id',
+      next: string[],
+    ) => {
+      const { data: existing } = await (supabase as any).from(table).select(col).eq('appointment_id', rdv.id);
+      const before = new Set(((existing as any[]) || []).map(e => e[col] as string));
+      const after = new Set(next.filter(Boolean));
+      const toRemove = [...before].filter(id => !after.has(id));
+      const toAdd = [...after].filter(id => !before.has(id));
+      if (toRemove.length) await (supabase as any).from(table).delete().eq('appointment_id', rdv.id).in(col, toRemove);
+      if (toAdd.length) await (supabase as any).from(table).insert(toAdd.map(id => ({ appointment_id: rdv.id, [col]: id })) as any);
+      return [...after];
+    };
+
+    if (responsibleIds !== undefined) {
+      const ids = await syncSet('appointment_responsibles', 'user_id', responsibleIds);
+      setAppointmentResponsibles(prev => ({ ...prev, [rdv.id]: ids }));
+    }
+    if (intervenantIds !== undefined) {
+      const ids = await syncSet('appointment_intervenants', 'intervenant_id', intervenantIds);
+      setAppointmentIntervenants(prev => ({ ...prev, [rdv.id]: ids }));
     }
   }, []);
 
