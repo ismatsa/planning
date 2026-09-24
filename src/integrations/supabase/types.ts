@@ -1211,6 +1211,39 @@ export type Database = {
           },
         ]
       }
+      rdv_history: {
+        Row: {
+          action: string
+          changes: Json
+          created_at: string
+          id: string
+          rdv_id: string
+          snapshot: Json | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          rdv_id: string
+          snapshot?: Json | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          rdv_id?: string
+          snapshot?: Json | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       rendez_vous: {
         Row: {
           annee: string | null
@@ -1513,6 +1546,11 @@ export type Database = {
         }
       }
       hermes_purge_expired: { Args: never; Returns: number }
+      rdv_history_actor_name: { Args: { _uid: string }; Returns: string }
+      rdv_history_record: {
+        Args: { _action: string; _changes: Json; _rdv: string; _snapshot: Json }
+        Returns: undefined
+      }
       save_planning_layout: {
         Args: { p_expected_version?: string; p_items: Json }
         Returns: Json
