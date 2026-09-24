@@ -138,12 +138,12 @@ export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defau
 
         <div className="space-y-4">
           <div>
-            <Label>VIN *</Label>
+            <Label>VIN</Label>
             <Input
               className="mt-1 uppercase"
               value={vin}
               onChange={e => setVin(e.target.value.toUpperCase())}
-              placeholder="Identifiant principal du véhicule"
+              placeholder="Numéro de châssis (optionnel)"
             />
             {vinConflict && (
               <p className="mt-1 text-xs text-destructive">
