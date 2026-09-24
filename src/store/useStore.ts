@@ -220,13 +220,13 @@ export function useAppStore() {
       col: 'user_id' | 'intervenant_id',
       next: string[],
     ) => {
-      const { data: existing } = await supabase.from(table).select(col).eq('appointment_id', rdv.id);
+      const { data: existing } = await (supabase as any).from(table).select(col).eq('appointment_id', rdv.id);
       const before = new Set(((existing as any[]) || []).map(e => e[col] as string));
       const after = new Set(next.filter(Boolean));
       const toRemove = [...before].filter(id => !after.has(id));
       const toAdd = [...after].filter(id => !before.has(id));
-      if (toRemove.length) await supabase.from(table).delete().eq('appointment_id', rdv.id).in(col, toRemove);
-      if (toAdd.length) await supabase.from(table).insert(toAdd.map(id => ({ appointment_id: rdv.id, [col]: id })) as any);
+      if (toRemove.length) await (supabase as any).from(table).delete().eq('appointment_id', rdv.id).in(col, toRemove);
+      if (toAdd.length) await (supabase as any).from(table).insert(toAdd.map(id => ({ appointment_id: rdv.id, [col]: id })) as any);
       return [...after];
     };
 
