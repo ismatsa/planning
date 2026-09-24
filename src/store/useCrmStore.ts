@@ -46,7 +46,7 @@ function clientToRow(c: Partial<Client>) {
 function mapVehicule(row: any): Vehicule {
   return {
     id: row.id,
-    vin: row.vin,
+    vin: row.vin ?? '',
     immatriculation: row.immatriculation || undefined,
     marque: row.marque,
     modele: row.modele,
