@@ -201,7 +201,7 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved, 
           )}
 
           <div>
-            <Label>Téléphone *</Label>
+            <Label>Téléphone</Label>
             <div className="mt-1">
               <PhoneInput countryCode={telCode} number={telNum} onCountryCodeChange={setTelCode} onNumberChange={setTelNum} />
             </div>
