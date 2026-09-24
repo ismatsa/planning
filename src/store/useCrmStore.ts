@@ -66,7 +66,7 @@ function mapVehicule(row: any): Vehicule {
 
 function vehiculeToRow(v: Partial<Vehicule>) {
   const row: Record<string, any> = {};
-  if (v.vin !== undefined) row.vin = normalizeVin(v.vin);
+  if (v.vin !== undefined) row.vin = v.vin ? normalizeVin(v.vin) : null;
   if (v.immatriculation !== undefined) row.immatriculation = v.immatriculation ? v.immatriculation.trim().toUpperCase() : null;
   if (v.marque !== undefined) row.marque = v.marque;
   if (v.modele !== undefined) row.modele = v.modele;

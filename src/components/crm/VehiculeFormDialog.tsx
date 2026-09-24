@@ -21,7 +21,7 @@ import {
 const NONE = '__none__';
 
 const schema = z.object({
-  vin: z.string().trim().min(5, 'Le VIN est obligatoire').max(32, 'VIN trop long'),
+  vin: z.string().trim().max(32, 'VIN trop long').optional(),
   immatriculation: z.string().trim().max(20).optional(),
   marque: z.string().trim().min(1, 'La marque est obligatoire').max(60),
   modele: z.string().trim().min(1, 'Le modèle est obligatoire').max(80),
@@ -138,12 +138,12 @@ export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defau
 
         <div className="space-y-4">
           <div>
-            <Label>VIN *</Label>
+            <Label>VIN</Label>
             <Input
               className="mt-1 uppercase"
               value={vin}
               onChange={e => setVin(e.target.value.toUpperCase())}
-              placeholder="Identifiant principal du véhicule"
+              placeholder="Numéro de châssis (optionnel)"
             />
             {vinConflict && (
               <p className="mt-1 text-xs text-destructive">
