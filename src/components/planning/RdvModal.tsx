@@ -507,10 +507,16 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
         <DialogHeader className="shrink-0">
           <div className="flex items-center gap-2 pr-8">
             <DialogTitle className="font-display text-lg">
-              {readOnly ? 'Détails du rendez-vous' : isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
+              {readOnly ? 'Détails du rendez-vous' : duplicating ? 'Dupliquer le rendez-vous' : isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
             </DialogTitle>
+            {isEdit && rdv && !duplicating && (
+              <Button type="button" variant="outline" size="sm" className="ml-auto h-8 gap-1.5" onClick={() => { setDuplicating(true); setPosteId(''); setConflict(null); setConflictAck(false); }}>
+                <Copy className="h-4 w-4" />
+                <span className="hidden sm:inline">Dupliquer</span>
+              </Button>
+            )}
             {isEdit && rdv && (
-              <Button type="button" variant="outline" size="sm" className="ml-auto h-8 gap-1.5" onClick={() => setHistoryOpen(true)}>
+              <Button type="button" variant="outline" size="sm" className={`h-8 gap-1.5 ${duplicating ? 'ml-auto' : ''}`} onClick={() => setHistoryOpen(true)}>
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">Historique</span>
               </Button>
@@ -592,15 +598,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier (optionnel)</Label>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier *</Label>
               <Select
-                value={metierId || NONE}
-                onValueChange={v => setMetierId((v === NONE ? '' : v) as MetierType)}
+                value={metierId || undefined}
+                onValueChange={v => setMetierId(v as MetierType)}
                 disabled={readOnly}
               >
-                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE}>Aucun</SelectItem>
                   {metiers.map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>
                   ))}
@@ -608,15 +613,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste (optionnel)</Label>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste *</Label>
               <Select
-                value={posteId || NONE}
-                onValueChange={v => setPosteId(v === NONE ? '' : v)}
+                value={posteId || undefined}
+                onValueChange={setPosteId}
                 disabled={readOnly || !metierId}
               >
-                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE}>Aucun</SelectItem>
                   {filteredPostes.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.nom}</SelectItem>
                   ))}
