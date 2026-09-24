@@ -154,6 +154,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
 
   useEffect(() => {
     if (!open) return;
+    setDuplicating(false);
     if (rdv) {
       const poste = postes.find(p => p.id === rdv.posteId);
       setMetierId(poste?.metierId || '');
@@ -261,7 +262,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
   }, [profileOptions]);
 
   useEffect(() => {
-    if (isEdit) return;
+    if (isEdit && !duplicating) return;
     if (!metierId) {
       setPosteId('');
       return;
