@@ -734,7 +734,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
             <Button variant="outline" onClick={onClose}>Fermer</Button>
           ) : (
             <>
-              {isEdit && canDelete && (
+              {isEdit && !duplicating && canDelete && (
                 <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
                   Supprimer
                 </Button>
@@ -745,7 +745,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
                   ? 'Enregistrement…'
                   : conflict && conflictAck
                     ? 'Confirmer malgré le conflit'
-                    : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
+                    : duplicating ? 'Créer la copie' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
               </Button>
             </>
           )}
