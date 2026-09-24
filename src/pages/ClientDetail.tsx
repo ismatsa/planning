@@ -53,7 +53,7 @@ export default function ClientDetail() {
   }, [crm.proprietaires, crm.vehicules, id]);
 
   const vins = useMemo(
-    () => new Set([...ownedVehicules, ...pastVehicules].map(v => v.vin.toUpperCase())),
+    () => new Set([...ownedVehicules, ...pastVehicules].filter(v => v.vin).map(v => normalizeVin(v.vin))),
     [ownedVehicules, pastVehicules],
   );
 

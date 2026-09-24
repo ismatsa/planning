@@ -56,7 +56,7 @@ export default function VehiculeDetail() {
     [crm.entretiens, id],
   );
 
-  const vin = vehicule?.vin.toUpperCase();
+  const vin = vehicule?.vin ? vehicule.vin.trim().toUpperCase() : undefined;
 
   const vehiculeRdvs = useMemo(
     () => rdvs
@@ -119,7 +119,7 @@ export default function VehiculeDetail() {
                 <Badge variant="secondary">{VEHICULE_STATUT_LABELS[vehicule.statut]}</Badge>
               </div>
               <div className="mt-1 text-sm text-muted-foreground space-y-0.5">
-                <div className="font-mono">VIN {vehicule.vin}</div>
+                <div className="font-mono">VIN {vehicule.vin || "—"}</div>
                 {vehicule.immatriculation && <div>Immatriculation : {vehicule.immatriculation}</div>}
                 <div>
                   {[

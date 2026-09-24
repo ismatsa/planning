@@ -125,6 +125,6 @@ export function clientDisplayName(c?: Client | null): string {
   return [c.nom, c.prenom].filter(Boolean).join(' ') || '—';
 }
 
-export function normalizeVin(vin: string): string {
-  return vin.trim().toUpperCase();
+export function normalizeVin(vin?: string | null): string {
+  return (vin ?? "").trim().toUpperCase();
 }
