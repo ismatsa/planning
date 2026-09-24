@@ -373,6 +373,15 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
   async function handleSubmit() {
     if (!date || !heureDebut) return;
 
+    if (!metierId) {
+      toast.error('Veuillez sélectionner un métier.');
+      return;
+    }
+    if (!posteId) {
+      toast.error('Veuillez sélectionner un poste.');
+      return;
+    }
+
     // Validate responsibles
     if (selectedResponsibles.length === 0) {
       toast.error('Veuillez sélectionner au moins un responsable.');
@@ -391,8 +400,9 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
       debut = new Date(rdv.debut);
     }
 
-    const conflicting = checkConflict(posteId, debut.toISOString(), fin.toISOString(), rdv?.id);
-    const intervenantConflicts = checkIntervenantConflicts(selectedIntervenants, debut.toISOString(), fin.toISOString(), rdv?.id);
+    const excludeId = duplicating ? undefined : rdv?.id;
+    const conflicting = checkConflict(posteId, debut.toISOString(), fin.toISOString(), excludeId);
+    const intervenantConflicts = checkIntervenantConflicts(selectedIntervenants, debut.toISOString(), fin.toISOString(), excludeId);
 
     if (conflicting || intervenantConflicts.length > 0) {
       const messages: string[] = [];
