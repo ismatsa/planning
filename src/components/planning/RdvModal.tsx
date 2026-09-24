@@ -434,7 +434,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
 
     setSaving(true);
 
-    if (isEdit) {
+    if (isEdit && !duplicating) {
       const effectiveBilling = selectedResponsibles.length >= 2 ? (billingResponsible || undefined) : undefined;
       await updateRdv({
         ...rdv!,
@@ -471,9 +471,9 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
         notes: notes || undefined,
         statut,
         billingResponsibleUserId: effectiveBilling,
-        sourceDevisId: prefillFromDevis?.sourceDevisId || undefined,
+        sourceDevisId: duplicating ? undefined : (prefillFromDevis?.sourceDevisId || undefined),
       } as any, selectedResponsibles, selectedIntervenants);
-      toast.success('Rendez-vous ajouté.');
+      toast.success(duplicating ? 'Rendez-vous dupliqué.' : 'Rendez-vous ajouté.');
     }
     setSaving(false);
     onClose();
