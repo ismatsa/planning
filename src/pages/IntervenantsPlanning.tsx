@@ -313,7 +313,8 @@ export default function IntervenantsPlanning() {
     conflicts: RendezVous[];
   } | null>(null);
 
-  const canEdit = useCallback((rdv: RendezVous) => {
+  const canEdit = useCallback((_rdv: RendezVous) => true, []);
+  const canDelete = useCallback((rdv: RendezVous) => {
     if (isAdmin) return true;
     const responsibles = appointmentResponsibles[rdv.id] || [];
     return responsibles.length === 0 || responsibles.includes(user?.id || '');
@@ -770,7 +771,7 @@ export default function IntervenantsPlanning() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         rdv={editRdv}
-        readOnly={!!editRdv && !canEdit(editRdv)}
+        canDelete={!editRdv || canDelete(editRdv)}
         defaultDate={newRdvDefaults.date}
         defaultTime={newRdvDefaults.time}
         defaultIntervenantId={newRdvDefaults.intervenantId}

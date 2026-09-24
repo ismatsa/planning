@@ -140,10 +140,6 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
   // --- Resize handlers ---
   const handleResizeStart = useCallback((rdv: RendezVous, edge: 'left' | 'right', e: React.MouseEvent) => {
     const responsibles = appointmentResponsibles[rdv.id] || [];
-    if (!isAdmin && !responsibles.includes(user?.id || '')) {
-      toast.error("Seuls les responsables peuvent modifier ce rendez-vous.");
-      return;
-    }
     const start = new Date(rdv.debut);
     const end = new Date(rdv.fin);
     const startMin = start.getHours() * 60 + start.getMinutes() - minMinutes;
@@ -447,7 +443,7 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
         open={modalOpen}
         onClose={() => { setModalOpen(false); setDevisConversion(null); }}
         rdv={editRdv}
-        readOnly={!!editRdv && !isAdmin && (appointmentResponsibles[editRdv.id] || []).length > 0 && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
+        canDelete={!editRdv || isAdmin || (appointmentResponsibles[editRdv.id] || []).length === 0 || (appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
         defaultDate={newRdvDefaults.date}
         defaultPosteId={newRdvDefaults.posteId}
         defaultTime={newRdvDefaults.time}

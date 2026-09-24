@@ -291,7 +291,7 @@ export default function RendezVousList() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                      {(isAdmin || (appointmentResponsibles[r.id] || []).includes(user?.id || '')) ? (
+                      {true ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-7 w-7">
@@ -328,7 +328,7 @@ export default function RendezVousList() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         rdv={editRdv}
-        readOnly={!!editRdv && !isAdmin && (appointmentResponsibles[editRdv.id] || []).length > 0 && !(appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
+        canDelete={!editRdv || isAdmin || (appointmentResponsibles[editRdv.id] || []).length === 0 || (appointmentResponsibles[editRdv.id] || []).includes(user?.id || '')}
       />
     </div>
   );
