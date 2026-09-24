@@ -29,7 +29,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
-import { AlertCircle, Eye, X } from 'lucide-react';
+import { AlertCircle, Eye, X, History } from 'lucide-react';
+import RdvHistoryDialog from '@/components/planning/RdvHistoryDialog';
 import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
 import ClientVehiculeSelector, { ClientVehiculeValue } from '@/components/crm/ClientVehiculeSelector';
 import {
@@ -43,6 +44,7 @@ interface Props {
   onClose: () => void;
   rdv?: RendezVous | null;
   readOnly?: boolean;
+  canDelete?: boolean;
   defaultDate?: Date;
   defaultPosteId?: string;
   defaultTime?: string;
@@ -63,10 +65,11 @@ interface IntervenantOption {
 
 const NONE = '__none__';
 
-export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, defaultPosteId, defaultTime, defaultIntervenantId, prefillFromDevis }: Props) {
+export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = true, defaultDate, defaultPosteId, defaultTime, defaultIntervenantId, prefillFromDevis }: Props) {
   const { postes, addRdv, updateRdv, deleteRdv, checkConflict, checkIntervenantConflicts, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
   const { user } = useAuth();
   const isEdit = !!rdv;
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const [metierId, setMetierId] = useState<MetierType>('');
   const [posteId, setPosteId] = useState('');
@@ -490,9 +493,17 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="sm:max-w-xl animate-slide-in max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
-          <DialogTitle className="font-display text-lg">
-            {readOnly ? 'Détails du rendez-vous' : isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
-          </DialogTitle>
+          <div className="flex items-center gap-2 pr-8">
+            <DialogTitle className="font-display text-lg">
+              {readOnly ? 'Détails du rendez-vous' : isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
+            </DialogTitle>
+            {isEdit && rdv && (
+              <Button type="button" variant="outline" size="sm" className="ml-auto h-8 gap-1.5" onClick={() => setHistoryOpen(true)}>
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">Historique</span>
+              </Button>
+            )}
+          </div>
           {readOnly && (
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
               <Eye className="h-3.5 w-3.5" />
@@ -707,7 +718,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
             <Button variant="outline" onClick={onClose}>Fermer</Button>
           ) : (
             <>
-              {isEdit && (
+              {isEdit && canDelete && (
                 <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
                   Supprimer
                 </Button>
@@ -724,6 +735,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, defaultDate, de
           )}
         </DialogFooter>
       </DialogContent>
+      {rdv && <RdvHistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} rdvId={rdv.id} />}
     </Dialog>
   );
 }
