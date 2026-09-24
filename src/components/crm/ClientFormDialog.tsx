@@ -24,7 +24,7 @@ const schema = z.object({
   prenom: z.string().trim().max(100).optional(),
   raisonSociale: z.string().trim().max(150).optional(),
   ice: z.string().trim().max(30).optional(),
-  telephone: z.string().trim().min(1, 'Le téléphone est obligatoire'),
+  telephone: z.string().trim().optional(),
   telephoneSecondaire: z.string().trim().optional(),
   email: z.string().trim().max(255).email('Adresse e-mail invalide').optional().or(z.literal('')),
   adresse: z.string().trim().max(500).optional(),
@@ -135,7 +135,7 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved, 
         prenom: prenom.trim() || undefined,
         raisonSociale: typeClient === 'societe' ? raisonSociale.trim() : (raisonSociale.trim() || undefined),
         ice: typeClient === 'societe' ? (ice.trim() || undefined) : undefined,
-        telephone: serializePhone(telCode, telNum.trim()),
+        telephone: telNum.trim() ? serializePhone(telCode, telNum.trim()) : undefined,
         telephoneSecondaire: tel2Num.trim() ? serializePhone(tel2Code, tel2Num.trim()) : undefined,
         email: email.trim() || undefined,
         adresse: adresse.trim() || undefined,
@@ -201,7 +201,7 @@ export default function ClientFormDialog({ open, onOpenChange, client, onSaved, 
           )}
 
           <div>
-            <Label>Téléphone *</Label>
+            <Label>Téléphone</Label>
             <div className="mt-1">
               <PhoneInput countryCode={telCode} number={telNum} onCountryCodeChange={setTelCode} onNumberChange={setTelNum} />
             </div>
