@@ -395,7 +395,7 @@ export type Database = {
           prenom: string | null
           raison_sociale: string | null
           statut: Database["public"]["Enums"]["client_statut"]
-          telephone: string
+          telephone: string | null
           telephone_secondaire: string | null
           type_client: Database["public"]["Enums"]["client_type"]
           updated_at: string
@@ -413,7 +413,7 @@ export type Database = {
           prenom?: string | null
           raison_sociale?: string | null
           statut?: Database["public"]["Enums"]["client_statut"]
-          telephone: string
+          telephone?: string | null
           telephone_secondaire?: string | null
           type_client?: Database["public"]["Enums"]["client_type"]
           updated_at?: string
@@ -431,7 +431,7 @@ export type Database = {
           prenom?: string | null
           raison_sociale?: string | null
           statut?: Database["public"]["Enums"]["client_statut"]
-          telephone?: string
+          telephone?: string | null
           telephone_secondaire?: string | null
           type_client?: Database["public"]["Enums"]["client_type"]
           updated_at?: string
