@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
-import { AlertCircle, Eye, X, History } from 'lucide-react';
+import { AlertCircle, Eye, X, History, Copy } from 'lucide-react';
 import RdvHistoryDialog from '@/components/planning/RdvHistoryDialog';
 import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
 import ClientVehiculeSelector, { ClientVehiculeValue } from '@/components/crm/ClientVehiculeSelector';
@@ -70,6 +70,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
   const { user } = useAuth();
   const isEdit = !!rdv;
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const [metierId, setMetierId] = useState<MetierType>('');
   const [posteId, setPosteId] = useState('');
@@ -153,6 +154,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
 
   useEffect(() => {
     if (!open) return;
+    setDuplicating(false);
     if (rdv) {
       const poste = postes.find(p => p.id === rdv.posteId);
       setMetierId(poste?.metierId || '');
@@ -260,7 +262,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
   }, [profileOptions]);
 
   useEffect(() => {
-    if (isEdit) return;
+    if (isEdit && !duplicating) return;
     if (!metierId) {
       setPosteId('');
       return;
@@ -371,6 +373,15 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
   async function handleSubmit() {
     if (!date || !heureDebut) return;
 
+    if (!metierId) {
+      toast.error('Veuillez sélectionner un métier.');
+      return;
+    }
+    if (!posteId) {
+      toast.error('Veuillez sélectionner un poste.');
+      return;
+    }
+
     // Validate responsibles
     if (selectedResponsibles.length === 0) {
       toast.error('Veuillez sélectionner au moins un responsable.');
@@ -389,8 +400,9 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
       debut = new Date(rdv.debut);
     }
 
-    const conflicting = checkConflict(posteId, debut.toISOString(), fin.toISOString(), rdv?.id);
-    const intervenantConflicts = checkIntervenantConflicts(selectedIntervenants, debut.toISOString(), fin.toISOString(), rdv?.id);
+    const excludeId = duplicating ? undefined : rdv?.id;
+    const conflicting = checkConflict(posteId, debut.toISOString(), fin.toISOString(), excludeId);
+    const intervenantConflicts = checkIntervenantConflicts(selectedIntervenants, debut.toISOString(), fin.toISOString(), excludeId);
 
     if (conflicting || intervenantConflicts.length > 0) {
       const messages: string[] = [];
@@ -422,7 +434,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
 
     setSaving(true);
 
-    if (isEdit) {
+    if (isEdit && !duplicating) {
       const effectiveBilling = selectedResponsibles.length >= 2 ? (billingResponsible || undefined) : undefined;
       await updateRdv({
         ...rdv!,
@@ -459,9 +471,9 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
         notes: notes || undefined,
         statut,
         billingResponsibleUserId: effectiveBilling,
-        sourceDevisId: prefillFromDevis?.sourceDevisId || undefined,
+        sourceDevisId: duplicating ? undefined : (prefillFromDevis?.sourceDevisId || undefined),
       } as any, selectedResponsibles, selectedIntervenants);
-      toast.success('Rendez-vous ajouté.');
+      toast.success(duplicating ? 'Rendez-vous dupliqué.' : 'Rendez-vous ajouté.');
     }
     setSaving(false);
     onClose();
@@ -495,10 +507,16 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
         <DialogHeader className="shrink-0">
           <div className="flex items-center gap-2 pr-8">
             <DialogTitle className="font-display text-lg">
-              {readOnly ? 'Détails du rendez-vous' : isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
+              {readOnly ? 'Détails du rendez-vous' : duplicating ? 'Dupliquer le rendez-vous' : isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
             </DialogTitle>
+            {isEdit && rdv && !duplicating && (
+              <Button type="button" variant="outline" size="sm" className="ml-auto h-8 gap-1.5" onClick={() => { setDuplicating(true); setPosteId(''); setConflict(null); setConflictAck(false); }}>
+                <Copy className="h-4 w-4" />
+                <span className="hidden sm:inline">Dupliquer</span>
+              </Button>
+            )}
             {isEdit && rdv && (
-              <Button type="button" variant="outline" size="sm" className="ml-auto h-8 gap-1.5" onClick={() => setHistoryOpen(true)}>
+              <Button type="button" variant="outline" size="sm" className={`h-8 gap-1.5 ${duplicating ? 'ml-auto' : ''}`} onClick={() => setHistoryOpen(true)}>
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">Historique</span>
               </Button>
@@ -580,15 +598,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier (optionnel)</Label>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Métier *</Label>
               <Select
-                value={metierId || NONE}
-                onValueChange={v => setMetierId((v === NONE ? '' : v) as MetierType)}
+                value={metierId || undefined}
+                onValueChange={v => setMetierId(v as MetierType)}
                 disabled={readOnly}
               >
-                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE}>Aucun</SelectItem>
                   {metiers.map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>
                   ))}
@@ -596,15 +613,14 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste (optionnel)</Label>
+              <Label className="text-xs font-medium text-muted-foreground mb-1.5">Poste *</Label>
               <Select
-                value={posteId || NONE}
-                onValueChange={v => setPosteId(v === NONE ? '' : v)}
+                value={posteId || undefined}
+                onValueChange={setPosteId}
                 disabled={readOnly || !metierId}
               >
-                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE}>Aucun</SelectItem>
                   {filteredPostes.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.nom}</SelectItem>
                   ))}
@@ -718,7 +734,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
             <Button variant="outline" onClick={onClose}>Fermer</Button>
           ) : (
             <>
-              {isEdit && canDelete && (
+              {isEdit && !duplicating && canDelete && (
                 <Button variant="destructive" size="sm" onClick={handleDelete} className="mr-auto" disabled={saving}>
                   Supprimer
                 </Button>
@@ -729,7 +745,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
                   ? 'Enregistrement…'
                   : conflict && conflictAck
                     ? 'Confirmer malgré le conflit'
-                    : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
+                    : duplicating ? 'Créer la copie' : isEdit ? 'Enregistrer' : 'Créer le rendez-vous'}
               </Button>
             </>
           )}
