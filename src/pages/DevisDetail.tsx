@@ -4,7 +4,6 @@ import { useBackNavigation } from '@/lib/returnNav';
 import { useStore } from '@/store/StoreContext';
 import DevisForm from '@/components/devis/DevisForm';
 import DevisCommentFeed from '@/components/devis/DevisCommentFeed';
-import DevisAttachments from '@/components/devis/DevisAttachments';
 import DevisLines from '@/components/devis/DevisLines';
 import { Button } from '@/components/ui/button';
 import {
@@ -141,10 +140,6 @@ export default function DevisDetail() {
             <DevisCommentFeed devisId={devis.id} />
           </div>
 
-          {/* Attachments */}
-          <div className="rounded-lg border bg-card p-5">
-            <DevisAttachments devisId={devis.id} />
-          </div>
         </div>
       </div>
 

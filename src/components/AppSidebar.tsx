@@ -10,11 +10,9 @@ import {
   PanelLeft,
   FileText,
   FilePlus,
-  KeyRound,
   Send,
   Contact,
   Car,
-  ClipboardList,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/store/AuthContext";
@@ -23,7 +21,6 @@ import { useSidebarState } from "./AppLayout";
 import logo from "@/assets/powertech-short.png";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useActionItems } from "@/store/ActionItemsContext";
 import { useMemo } from "react";
 
 export default function AppSidebar() {
@@ -31,7 +28,6 @@ export default function AppSidebar() {
   const { logout, user, isAdmin } = useAuth();
   const { collapsed, toggle } = useSidebarState();
   const { devis: devisStore } = useStore();
-  const { totalCount } = useActionItems();
 
   const TERMINAL_STATUTS = ['valide', 'refuse', 'annule'];
   const assignedCount = useMemo(() => {
@@ -69,13 +65,6 @@ export default function AppSidebar() {
           icon: Send,
           label: "Devis envoyés",
         },
-        {
-          to: "/devis/points-a-traiter",
-          icon: ClipboardList,
-          label: "Points à traiter",
-          badge: totalCount > 0 ? totalCount : undefined,
-          badgeTooltip: true,
-        },
       ],
     },
     {
@@ -90,7 +79,6 @@ export default function AppSidebar() {
       items: [
         { to: "/parametres", icon: Settings, label: "Paramètres", adminOnly: true },
         { to: "/utilisateurs", icon: Users, label: "Utilisateurs", adminOnly: true },
-        { to: "/integrations-api", icon: KeyRound, label: "Intégrations API", adminOnly: true },
       ],
     },
   ];

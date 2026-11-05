@@ -187,6 +187,19 @@ function handle_request(): void
             audit((int)$u['id'], 'update', 'user', $m[1]);
             json_out(public_user(one('SELECT * FROM users WHERE id = ?', [(int)$m[1]])));
         }
+        if (preg_match('#^/users/(\d+)$#', $path, $m) && $method === 'DELETE') {
+            require_admin();
+            $target = one('SELECT * FROM users WHERE id = ?', [(int)$m[1]]);
+            if (!$target) throw new HttpError(404, 'Utilisateur introuvable.');
+            if ((int)$target['id'] === (int)$u['id']) throw new HttpError(422, 'Vous ne pouvez pas supprimer votre propre compte.');
+            if ($target['role'] === 'admin') {
+                $admins = (int)one("SELECT COUNT(*) c FROM users WHERE role = 'admin'")['c'];
+                if ($admins <= 1) throw new HttpError(422, 'Impossible : il doit rester au moins un administrateur.');
+            }
+            q('DELETE FROM users WHERE id = ?', [(int)$m[1]]);
+            audit((int)$u['id'], 'delete', 'user', $m[1], $target['login']);
+            json_out(['ok' => true]);
+        }
 
         // ----- Référentiels -----
         if ($path === '/metiers' && $method === 'GET') json_out(array_map('PT\metier_out', all('SELECT * FROM metiers ORDER BY nom')));
@@ -336,6 +349,18 @@ function handle_request(): void
             if (!$nom) throw new HttpError(422, 'Nom obligatoire.');
             q('INSERT INTO intervenants (nom, responsable_id) VALUES (?,?)', [$nom, $b['responsable_id'] ?? null]);
             json_out(['id' => (int)db()->lastInsertId()], 201);
+        }
+        if (preg_match('#^/intervenants/(\d+)$#', $path, $m)) {
+            if ($method === 'PATCH') {
+                $b = body();
+                [$sets, $params] = build_update($b, ['nom', 'responsable_id', 'actif']);
+                if ($sets) { $params[] = (int)$m[1]; q('UPDATE intervenants SET ' . implode(', ', $sets) . ' WHERE id = ?', $params); }
+                json_out(['ok' => true]);
+            }
+            if ($method === 'DELETE') {
+                q('DELETE FROM intervenants WHERE id = ?', [(int)$m[1]]);
+                json_out(['ok' => true]);
+            }
         }
 
         // ----- Clients -----

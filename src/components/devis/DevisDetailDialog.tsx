@@ -8,7 +8,6 @@ import {
 import { AlertCircle, ExternalLink, UserCheck } from 'lucide-react';
 import DevisForm from './DevisForm';
 import DevisCommentFeed from './DevisCommentFeed';
-import DevisAttachments from './DevisAttachments';
 import DevisLines from './DevisLines';
 import { fetchProfiles } from '@/lib/profiles';
 import { useStore } from '@/store/StoreContext';
@@ -125,9 +124,6 @@ export default function DevisDetailDialog({ devis, open, onOpenChange }: Props) 
               <DevisCommentFeed devisId={devis.id} />
             </div>
 
-            <div className="rounded-lg border bg-card p-5">
-              <DevisAttachments devisId={devis.id} />
-            </div>
           </div>
         </div>
 

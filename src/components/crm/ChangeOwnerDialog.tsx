@@ -43,7 +43,7 @@ export default function ChangeOwnerDialog({ open, onOpenChange, vehicule }: Prop
     }
     setSaving(true);
     try {
-      await crm.transferVehicule(vehicule.id, clientId, motif, new Date(date).toISOString());
+      await crm.transferVehicule(vehicule.id, clientId, motif);
       toast.success('Propriétaire mis à jour, historique conservé');
       onOpenChange(false);
       setConfirmed(false);

@@ -6,8 +6,7 @@ import { getWorkingDays, formatDayHeader, getTimeSlots, timeToMinutes } from '@/
 import { format, isSameDay, addDays, addMinutes } from 'date-fns';
 import RdvBlock from './RdvBlock';
 import RdvModal from './RdvModal';
-import { Plus, ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react';
-import OrganiserLignesDialog from './OrganiserLignesDialog';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { buildGroups, flattenGroups } from '@/lib/planningLayout';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -33,7 +32,6 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
   const [newRdvDefaults, setNewRdvDefaults] = useState<{ date?: Date; posteId?: string; time?: string }>({});
   const [devisConversion, setDevisConversion] = useState<any>(null);
   const [visibleMetiers, setVisibleMetiers] = useState<Set<string>>(new Set(metiers.map(m => m.id)));
-  const [organiserOpen, setOrganiserOpen] = useState(false);
 
   // Open modal from devis conversion
   useEffect(() => {
@@ -261,10 +259,6 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
               {formatDayHeader(displayDays[0])} — {formatDayHeader(displayDays[displayDays.length - 1])}
             </span>
           )}
-          <Button variant="outline" className="gap-2" onClick={() => setOrganiserOpen(true)}>
-            <ListOrdered className="h-4 w-4" />
-            <span className="hidden sm:inline">Organiser les lignes</span>
-          </Button>
           <Button onClick={() => openNewRdv()} className="gap-2">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Nouveau RDV</span>
@@ -436,8 +430,6 @@ export default function WeeklyPlanning({ convertFromDevis }: WeeklyPlanningProps
           })}
         </div>
       </div>
-
-      <OrganiserLignesDialog open={organiserOpen} onClose={() => setOrganiserOpen(false)} />
 
       <RdvModal
         open={modalOpen}

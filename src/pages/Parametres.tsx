@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/store/StoreContext';
 import { useAuth } from '@/store/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
+import { fetchProfiles } from '@/lib/profiles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,8 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react';
-import OrganiserLignesDialog from '@/components/planning/OrganiserLignesDialog';
+import { Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import ColorPickerControl from '@/components/ColorPickerControl';
 import { normalizeHex, contrastTextColor, HEX_ERROR, DEFAULT_POSTE_COLOR } from '@/lib/colors';
 import type { Poste } from '@/types';
@@ -89,7 +89,6 @@ export default function Parametres() {
   const [editPosteColor, setEditPosteColor] = useState(DEFAULT_POSTE_COLOR);
 
   // Organisation des lignes du planning
-  const [organiserOpen, setOrganiserOpen] = useState(false);
 
 
   // --- Intervenants state ---
@@ -105,19 +104,25 @@ export default function Parametres() {
 
   // Load intervenants + profiles
   async function loadIntervenants() {
-    const { data } = await supabase.from('intervenants').select('*').order('name');
-    if (data) setIntervenants(data as Intervenant[]);
+    try {
+      const data = await api.get<any[]>('/intervenants');
+      setIntervenants(data.map(i => ({
+        id: String(i.id),
+        name: i.nom ?? i.name,
+        responsable_user_id: i.responsable_id != null ? String(i.responsable_id) : null,
+      })) as Intervenant[]);
+    } catch { /* silencieux */ }
   }
 
   async function loadProfiles() {
-    const { data } = await supabase.from('profiles').select('id, email, company');
-    if (data) {
+    try {
+      const profiles = await fetchProfiles();
       setProfileOptions(
-        (data as any[])
+        profiles
           .filter(p => p.company && p.company.trim() !== '')
-          .map(p => ({ id: p.id, email: p.email, company: p.company }))
+          .map(p => ({ id: p.id, email: p.email, company: p.company! }))
       );
-    }
+    } catch { /* silencieux */ }
   }
 
   useEffect(() => { loadIntervenants(); loadProfiles(); }, []);
@@ -131,11 +136,14 @@ export default function Parametres() {
       return;
     }
     setSavingInt(true);
-    const insertData: any = { name };
-    if (newIntResponsable) insertData.responsable_user_id = newIntResponsable;
-    const { error } = await supabase.from('intervenants').insert(insertData);
+    try {
+      await api.post('/intervenants', { nom: name, responsable_id: newIntResponsable ? Number(newIntResponsable) : null });
+    } catch {
+      setSavingInt(false);
+      toast.error('Erreur lors de l\'ajout.');
+      return;
+    }
     setSavingInt(false);
-    if (error) { toast.error('Erreur lors de l\'ajout.'); return; }
     toast.success(`Intervenant « ${name} » ajouté.`);
     setAddIntOpen(false);
     setNewIntName('');
@@ -145,8 +153,9 @@ export default function Parametres() {
 
   // Update responsable for intervenant
   async function handleChangeResponsable(intervenantId: string, userId: string | null) {
-    const { error } = await supabase.from('intervenants').update({ responsable_user_id: userId }).eq('id', intervenantId);
-    if (error) { toast.error('Erreur lors de la mise à jour.'); return; }
+    try {
+      await api.patch(`/intervenants/${intervenantId}`, { responsable_id: userId ? Number(userId) : null });
+    } catch { toast.error('Erreur lors de la mise à jour.'); return; }
     toast.success('Responsable mis à jour.');
     loadIntervenants();
   }
@@ -159,8 +168,9 @@ export default function Parametres() {
       toast.error('Ce nom est déjà utilisé.');
       return;
     }
-    const { error } = await supabase.from('intervenants').update({ name }).eq('id', id);
-    if (error) { toast.error('Erreur lors du renommage.'); return; }
+    try {
+      await api.patch(`/intervenants/${id}`, { nom: name });
+    } catch { toast.error('Erreur lors du renommage.'); return; }
     toast.success('Intervenant renommé.');
     setRenamingIntId(null);
     loadIntervenants();
@@ -169,8 +179,9 @@ export default function Parametres() {
   // Delete intervenant
   async function handleDeleteIntervenant() {
     if (!deleteIntTarget) return;
-    const { error } = await supabase.from('intervenants').delete().eq('id', deleteIntTarget.id);
-    if (error) { toast.error('Erreur lors de la suppression.'); return; }
+    try {
+      await api.del(`/intervenants/${deleteIntTarget.id}`);
+    } catch { toast.error('Erreur lors de la suppression.'); return; }
     toast.success('Intervenant supprimé.');
     setDeleteIntTarget(null);
     loadIntervenants();
@@ -425,10 +436,6 @@ export default function Parametres() {
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold">Ressources / Postes</CardTitle>
             <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={() => setOrganiserOpen(true)}>
-              <ListOrdered className="h-3.5 w-3.5" />
-              Organiser les lignes du planning
-            </Button>
             {isAdmin && (
               <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={() => { setNewCatNom(''); setAddCatOpen(true); }}>
                 <Plus className="h-3.5 w-3.5" />
@@ -776,7 +783,6 @@ export default function Parametres() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <OrganiserLignesDialog open={organiserOpen} onClose={() => setOrganiserOpen(false)} />
     </div>
   );
 }

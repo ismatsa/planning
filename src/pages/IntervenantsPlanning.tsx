@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { RendezVous } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchIntervenants } from '@/lib/profiles';
 import { toast } from 'sonner';
 import { useAuth } from '@/store/AuthContext';
 
@@ -86,17 +86,14 @@ export default function IntervenantsPlanning() {
 
   // Chargement des intervenants
   useEffect(() => {
-    supabase
-      .from('intervenants')
-      .select('*')
-      .order('name')
-      .then(({ data }) => {
+    fetchIntervenants()
+      .then((data) => {
         if (!data) return;
-        const list: Intervenant[] = (data as any[]).map(i => ({
+        const list: Intervenant[] = data.map(i => ({
           id: i.id,
           name: i.name,
-          metier: i.metier ?? null,
-          poste: i.poste ?? null,
+          metier: null,
+          poste: null,
         }));
         setIntervenants(list);
         // Restauration de la sélection de session

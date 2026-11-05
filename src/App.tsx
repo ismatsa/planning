@@ -23,9 +23,7 @@ import ClientsList from "./pages/ClientsList";
 import ClientDetail from "./pages/ClientDetail";
 import VehiculesList from "./pages/VehiculesList";
 import VehiculeDetail from "./pages/VehiculeDetail";
-import ApiIntegrations from "./pages/ApiIntegrations";
-import PointsATraiter from "./pages/PointsATraiter";
-import { ActionItemsProvider } from "./store/ActionItemsContext";
+
 
 
 const queryClient = new QueryClient();
@@ -51,7 +49,6 @@ function AppRoutes() {
 
   return (
     <StoreProvider>
-      <ActionItemsProvider>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
@@ -60,11 +57,9 @@ function AppRoutes() {
             <Route path="/creneaux" element={<Creneaux />} />
             <Route path="/parametres" element={<Parametres />} />
             <Route path="/utilisateurs" element={<UserManagement />} />
-            <Route path="/integrations-api" element={<ApiIntegrations />} />
             <Route path="/profil" element={<Profil />} />
             <Route path="/devis" element={<DevisList />} />
             <Route path="/devis/envoyes" element={<DevisEnvoyes />} />
-            <Route path="/devis/points-a-traiter" element={<PointsATraiter />} />
             <Route path="/devis/creer" element={<CreerDevis />} />
             <Route path="/devis/:id" element={<DevisDetail />} />
             <Route path="/clients" element={<ClientsList />} />
@@ -74,7 +69,6 @@ function AppRoutes() {
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </ActionItemsProvider>
     </StoreProvider>
 
   );

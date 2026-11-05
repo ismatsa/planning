@@ -1,0 +1,41 @@
+BOOKING POWERTECH — booking.powertech.ma
+=========================================
+
+Contenu du ZIP (à décompresser DANS le dossier booking.powertech.ma) :
+  index.html, assets/, icônes   -> l'application (écrans)
+  .htaccess                     -> sécurité + HTTPS + redirections
+  api/                          -> point d'entrée de l'API PHP
+  app/                          -> code PHP privé, schema.sql
+  VERSION.txt                   -> numéro de la livraison
+
+LE ZIP NE CONTIENT JAMAIS : app/.env (vos mots de passe).
+Décompresser une nouvelle version ne l'efface donc pas.
+
+
+PREMIÈRE INSTALLATION (une seule fois)
+--------------------------------------
+1. cPanel > Gestionnaire MultiPHP : booking.powertech.ma en PHP 8.3.
+   Extensions : pdo_mysql, mbstring, fileinfo.
+2. cPanel > Bases de données MySQL : créer la base + l'utilisateur, tous les privilèges.
+3. phpMyAdmin > la base > Importer > app/schema.sql
+4. Gestionnaire de fichiers > booking.powertech.ma : téléverser le ZIP, clic droit > Extraire.
+   (Afficher les fichiers cachés : Paramètres > "Show Hidden Files", pour voir .htaccess)
+5. Dans app/ : copier .env.example en .env, puis le modifier :
+     DB_NAME, DB_USER, DB_PASS
+6. Terminal cPanel :
+     php ~/booking.powertech.ma/app/cli/create-admin.php "Administrateur" admin "MotDePasseFort"
+7. cPanel > SSL/TLS Status > Run AutoSSL. Tester https://booking.powertech.ma
+   Vérifier que https://booking.powertech.ma/app/.env affiche "Forbidden".
+
+
+MISE À JOUR (chaque nouvelle livraison)
+---------------------------------------
+1. Sauvegarde : phpMyAdmin > Exporter (ou JetBackup).
+2. Supprimer l'ancien dossier "assets" (évite d'accumuler les anciens fichiers).
+3. Téléverser le nouveau ZIP dans booking.powertech.ma > Extraire > accepter de remplacer.
+4. Lire CHANGELOG.txt : si une migration est indiquée, phpMyAdmin > Importer
+   le fichier app/migrations/XXX.sql indiqué (une seule fois, dans l'ordre).
+5. Vérifier si app/.env.example a de nouvelles lignes ; les recopier dans app/.env.
+6. Recharger l'application (fermer/rouvrir).
+
+Ne jamais modifier les fichiers livrés (sauf app/.env) : ils seront remplacés.

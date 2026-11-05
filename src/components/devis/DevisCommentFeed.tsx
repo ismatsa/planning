@@ -1,115 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/store/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Send, Paperclip, X, Download, FileText, Loader2, Pencil, Trash2, Check } from 'lucide-react';
-import { deleteAttachment } from '@/services/attachmentsService';
+import { Send, X, Loader2, Pencil, Trash2, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  uploadAttachment,
-  getAttachmentUrl,
-  formatFileSize,
-  type AttachmentMeta,
-} from '@/services/attachmentsService';
-
-interface AttachmentRow {
-  id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number | null;
-  content_type: string | null;
-}
 
 interface Comment {
   id: string;
   content: string | null;
-  user_id: string;
+  user_id: number;
+  user_name?: string;
   created_at: string;
-  attachment_id: string | null;
 }
 
 interface Props {
   devisId: string;
 }
 
-function isImage(mime: string | null | undefined) {
-  return !!mime && mime.startsWith('image/');
-}
-
-function AttachmentPreview({ att, isMe }: { att: AttachmentRow; isMe: boolean }) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const image = isImage(att.content_type);
-
-  useEffect(() => {
-    let cancelled = false;
-    getAttachmentUrl({
-      id: att.id,
-      devisId: '',
-      fileName: att.file_name,
-      originalName: att.file_name,
-      mimeType: att.content_type,
-      fileSize: att.file_size,
-      storagePath: att.file_path,
-      uploadedBy: null,
-      createdAt: '',
-    }).then(u => {
-      if (!cancelled) {
-        setUrl(u);
-        setLoading(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [att.id]);
-
-  if (image) {
-    return (
-      <div className="mt-1 rounded-md overflow-hidden border bg-background max-w-[280px]">
-        {loading || !url ? (
-          <div className="flex items-center justify-center h-40 w-64">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <a href={url} target="_blank" rel="noreferrer">
-            <img src={url} alt={att.file_name} className="block max-h-64 w-auto object-contain" />
-          </a>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => url && window.open(url, '_blank')}
-      disabled={!url}
-      className={`mt-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs bg-background hover:bg-muted transition-colors ${isMe ? 'text-foreground' : ''}`}
-    >
-      <FileText className="h-4 w-4 shrink-0" />
-      <span className="truncate max-w-[180px] font-medium">{att.file_name}</span>
-      {att.file_size && <span className="text-muted-foreground shrink-0">{formatFileSize(att.file_size)}</span>}
-      <Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-    </button>
-  );
-}
-
 export default function DevisCommentFeed({ devisId }: Props) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, string>>({});
-  const [attachments, setAttachments] = useState<Record<string, AttachmentRow>>({});
   const [newComment, setNewComment] = useState('');
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function startEdit(c: Comment) {
     setEditingId(c.id);
@@ -122,43 +41,30 @@ export default function DevisCommentFeed({ devisId }: Props) {
   async function saveEdit(c: Comment) {
     const next = editingContent.trim();
     if (!next) { cancelEdit(); return; }
-    const { error } = await supabase.from('devis_comments').update({ content: next } as any).eq('id', c.id);
-    if (error) { toast.error('Erreur lors de la modification.'); return; }
-    setComments(prev => prev.map(x => x.id === c.id ? { ...x, content: next } : x));
-    cancelEdit();
+    try {
+      await api.patch(`/comments/${c.id}`, { content: next });
+      setComments(prev => prev.map(x => x.id === c.id ? { ...x, content: next } : x));
+      cancelEdit();
+    } catch {
+      toast.error('Erreur lors de la modification.');
+    }
   }
   async function handleDelete(c: Comment) {
     if (!confirm('Supprimer ce message ?')) return;
-    const att = c.attachment_id ? attachments[c.attachment_id] : null;
-    const { error } = await supabase.from('devis_comments').delete().eq('id', c.id);
-    if (error) { toast.error('Erreur lors de la suppression.'); return; }
-    if (att) {
-      await deleteAttachment({
-        id: att.id, devisId, fileName: att.file_name, originalName: att.file_name,
-        mimeType: att.content_type, fileSize: att.file_size, storagePath: att.file_path,
-        uploadedBy: null, createdAt: '',
-      });
-      setAttachments(prev => { const n = { ...prev }; delete n[att.id]; return n; });
+    try {
+      await api.del(`/comments/${c.id}`);
+      setComments(prev => prev.filter(x => x.id !== c.id));
+    } catch {
+      toast.error('Erreur lors de la suppression.');
     }
-    setComments(prev => prev.filter(x => x.id !== c.id));
   }
 
   async function loadAll() {
-    const [commentsRes, profilesRes, attsRes] = await Promise.all([
-      supabase.from('devis_comments').select('*').eq('devis_id', devisId).order('created_at', { ascending: true }),
-      supabase.from('profiles').select('id, email, company'),
-      supabase.from('devis_attachments').select('id, file_name, file_path, file_size, content_type').eq('devis_id', devisId),
-    ]);
-    if (commentsRes.data) setComments(commentsRes.data as any[]);
-    if (profilesRes.data) {
-      const map: Record<string, string> = {};
-      for (const p of profilesRes.data as any[]) map[p.id] = p.company || p.email;
-      setProfiles(map);
-    }
-    if (attsRes.data) {
-      const map: Record<string, AttachmentRow> = {};
-      for (const a of attsRes.data as any[]) map[a.id] = a;
-      setAttachments(map);
+    try {
+      const data = await api.get<Comment[]>(`/devis/${devisId}/comments`);
+      setComments(data);
+    } catch {
+      // silencieux : le fil reste vide
     }
   }
 
@@ -168,63 +74,15 @@ export default function DevisCommentFeed({ devisId }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
 
-  useEffect(() => {
-    if (!pendingFile) { setPendingPreview(null); return; }
-    if (pendingFile.type.startsWith('image/')) {
-      const url = URL.createObjectURL(pendingFile);
-      setPendingPreview(url);
-      return () => URL.revokeObjectURL(url);
-    }
-    setPendingPreview(null);
-  }, [pendingFile]);
-
-  function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (f) setPendingFile(f);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }
-
-  function clearPending() {
-    setPendingFile(null);
-  }
-
   async function handleSend() {
-    if ((!newComment.trim() && !pendingFile) || !user) return;
+    if (!newComment.trim() || !user) return;
     setSending(true);
     try {
-      let attachmentId: string | null = null;
-      if (pendingFile) {
-        const uploaded: AttachmentMeta | null = await uploadAttachment(devisId, pendingFile, user.id);
-        if (!uploaded) {
-          toast.error('Erreur lors de l\'envoi du fichier.');
-          setSending(false);
-          return;
-        }
-        attachmentId = uploaded.id;
-        setAttachments(prev => ({
-          ...prev,
-          [uploaded.id]: {
-            id: uploaded.id,
-            file_name: uploaded.fileName,
-            file_path: uploaded.storagePath,
-            file_size: uploaded.fileSize,
-            content_type: uploaded.mimeType,
-          },
-        }));
-      }
-      const { data, error } = await supabase.from('devis_comments').insert({
-        devis_id: devisId,
-        user_id: user.id,
-        content: newComment.trim() || null,
-        attachment_id: attachmentId,
-      } as any).select().single();
-      if (data && !error) {
-        setComments(prev => [...prev, data as any]);
-        setNewComment('');
-        setPendingFile(null);
-      } else if (error) {
-        toast.error('Erreur lors de l\'envoi.');
-      }
+      const data = await api.post<Comment>(`/devis/${devisId}/comments`, { content: newComment.trim() });
+      setComments(prev => [...prev, data]);
+      setNewComment('');
+    } catch {
+      toast.error('Erreur lors de l\'envoi.');
     } finally {
       setSending(false);
     }
@@ -249,8 +107,7 @@ export default function DevisCommentFeed({ devisId }: Props) {
             </p>
           )}
           {comments.map(c => {
-            const isMe = c.user_id === user?.id;
-            const att = c.attachment_id ? attachments[c.attachment_id] : null;
+            const isMe = String(c.user_id) === user?.id;
             const isEditing = editingId === c.id;
             return (
               <div key={c.id} className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
@@ -274,28 +131,23 @@ export default function DevisCommentFeed({ devisId }: Props) {
                       </div>
                     </div>
                   ) : (
-                    <>
-                      {c.content && <p className="whitespace-pre-wrap break-words">{c.content}</p>}
-                      {att && <AttachmentPreview att={att} isMe={isMe} />}
-                    </>
+                    <p className="whitespace-pre-wrap break-words">{c.content}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5 px-1">
                   <span className="text-[10px] text-muted-foreground">
-                    {profiles[c.user_id] || 'Utilisateur'} · {format(new Date(c.created_at), 'd MMM HH:mm', { locale: fr })}
+                    {c.user_name || 'Utilisateur'} · {format(new Date(c.created_at), 'd MMM HH:mm', { locale: fr })}
                   </span>
                   {isMe && !isEditing && (
                     <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {c.content && (
-                        <button
-                          type="button"
-                          onClick={() => startEdit(c)}
-                          className="text-muted-foreground hover:text-foreground p-0.5"
-                          title="Modifier"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => startEdit(c)}
+                        className="text-muted-foreground hover:text-foreground p-0.5"
+                        title="Modifier"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(c)}
@@ -314,38 +166,7 @@ export default function DevisCommentFeed({ devisId }: Props) {
         </div>
       </ScrollArea>
 
-      {pendingFile && (
-        <div className="flex items-center gap-2 border rounded-md px-2 py-1.5 mb-2 bg-muted/40">
-          {pendingPreview ? (
-            <img src={pendingPreview} alt="" className="h-10 w-10 object-cover rounded" />
-          ) : (
-            <FileText className="h-5 w-5 text-muted-foreground" />
-          )}
-          <span className="text-xs truncate flex-1">{pendingFile.name}</span>
-          <span className="text-[10px] text-muted-foreground">{formatFileSize(pendingFile.size)}</span>
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={clearPending}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      )}
-
       <div className="flex gap-2 items-end border-t pt-3">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
-          className="hidden"
-          onChange={handlePickFile}
-        />
-        <Button
-          size="icon"
-          variant="outline"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={sending}
-          title="Joindre un fichier ou une photo"
-        >
-          <Paperclip className="h-4 w-4" />
-        </Button>
         <Textarea
           placeholder="Écrire un commentaire…"
           value={newComment}
@@ -354,7 +175,7 @@ export default function DevisCommentFeed({ devisId }: Props) {
           rows={2}
           className="resize-none text-sm"
         />
-        <Button size="icon" onClick={handleSend} disabled={sending || (!newComment.trim() && !pendingFile)}>
+        <Button size="icon" onClick={handleSend} disabled={sending || !newComment.trim()}>
           {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>

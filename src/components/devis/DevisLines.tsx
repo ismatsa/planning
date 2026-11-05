@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
+import { fetchProfiles } from '@/lib/profiles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,18 +60,16 @@ export default function DevisLines({ devisId }: { devisId: string }) {
 
   useEffect(() => {
     async function load() {
-      const [linesRes, profilesRes] = await Promise.all([
-        supabase.from('devis_lines').select('*').eq('devis_id', devisId).order('sort_order'),
-        supabase.from('profiles').select('id, company'),
+      const [linesData, profiles] = await Promise.all([
+        api.get<any[]>(`/devis/${devisId}/lines`),
+        fetchProfiles(),
       ]);
-      if (linesRes.data) setLines(linesRes.data as any[]);
-      if (profilesRes.data) {
-        setProfiles(
-          (profilesRes.data as any[])
-            .filter((p: any) => p.company && p.company.trim() !== '')
-            .map((p: any) => ({ id: p.id, company: p.company }))
-        );
-      }
+      setLines(linesData as any[]);
+      setProfiles(
+        profiles
+          .filter((p: any) => p.company && p.company.trim() !== '')
+          .map((p: any) => ({ id: p.id, company: p.company }))
+      );
     }
     load();
   }, [devisId]);
@@ -152,22 +151,18 @@ export default function DevisLines({ devisId }: { devisId: string }) {
   const saveLines = useCallback(async () => {
     setSaving(true);
     try {
-      await supabase.from('devis_lines').delete().eq('devis_id', devisId);
-      if (lines.length > 0) {
-        const rows = lines.map((l, i) => ({
-          id: l.id, devis_id: devisId, type: l.type, name: l.name,
-          oem_reference: l.oem_reference || null,
-          internal_reference: l.internal_reference || null,
-          quantity: l.quantity,
-          realisation_user_id: l.realisation_user_id || null,
-          commande_user_id: l.type === 'service' ? null : (l.commande_user_id || null),
-          unit_price: l.unit_price, sort_order: i,
-          description: l.description || null,
-          discount_amount: l.discount_amount, discount_percent: l.discount_percent,
-        }));
-        const { error } = await supabase.from('devis_lines').insert(rows as any);
-        if (error) throw error;
-      }
+      const rows = lines.map((l) => ({
+        type: l.type, name: l.name,
+        oem_reference: l.oem_reference || null,
+        internal_reference: l.internal_reference || null,
+        quantity: l.quantity,
+        realisation_user_id: l.realisation_user_id ? Number(l.realisation_user_id) : null,
+        commande_user_id: l.type === 'service' ? null : (l.commande_user_id ? Number(l.commande_user_id) : null),
+        unit_price: l.unit_price,
+        description: l.description || null,
+        discount_amount: l.discount_amount, discount_percent: l.discount_percent,
+      }));
+      await api.put(`/devis/${devisId}/lines`, { lines: rows });
       toast.success('Lignes enregistrées');
     } catch {
       toast.error('Erreur lors de la sauvegarde des lignes');

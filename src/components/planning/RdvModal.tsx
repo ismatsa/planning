@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import DevisAttachments from '@/components/devis/DevisAttachments';
-import RdvAttachments from '@/components/planning/RdvAttachments';
 import {
   Dialog,
   DialogContent,
@@ -29,8 +27,7 @@ import { fetchProfiles, fetchIntervenants } from '@/lib/profiles';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
-import { AlertCircle, Eye, X, History, Copy } from 'lucide-react';
-import RdvHistoryDialog from '@/components/planning/RdvHistoryDialog';
+import { AlertCircle, Eye, X, Copy } from 'lucide-react';
 import { roundToNearest15Minutes, getEventState } from '@/lib/planning';
 import ClientVehiculeSelector, { ClientVehiculeValue } from '@/components/crm/ClientVehiculeSelector';
 import {
@@ -69,7 +66,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
   const { postes, addRdv, updateRdv, deleteRdv, checkConflict, checkIntervenantConflicts, disponibilites, settings, metiers, appointmentResponsibles, appointmentIntervenants } = useStore();
   const { user } = useAuth();
   const isEdit = !!rdv;
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
 
   const [metierId, setMetierId] = useState<MetierType>('');
@@ -508,12 +504,7 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
                 <span className="hidden sm:inline">Dupliquer</span>
               </Button>
             )}
-            {isEdit && rdv && (
-              <Button type="button" variant="outline" size="sm" className={`h-8 gap-1.5 ${duplicating ? 'ml-auto' : ''}`} onClick={() => setHistoryOpen(true)}>
-                <History className="h-4 w-4" />
-                <span className="hidden sm:inline">Historique</span>
-              </Button>
-            )}
+
           </div>
           {readOnly && (
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
@@ -711,15 +702,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
             </Select>
           </div>
 
-          {/* Pièces jointes héritées du devis source (lecture seule) */}
-          {(rdv?.sourceDevisId || prefillFromDevis?.sourceDevisId) && (
-            <DevisAttachments devisId={rdv?.sourceDevisId || prefillFromDevis?.sourceDevisId} readOnly />
-          )}
-
-          {/* Pièces jointes propres au rendez-vous */}
-          {isEdit && rdv && (
-            <RdvAttachments rdvId={rdv.id} readOnly={readOnly} />
-          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0 shrink-0">
@@ -744,7 +726,6 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
           )}
         </DialogFooter>
       </DialogContent>
-      {rdv && <RdvHistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} rdvId={rdv.id} />}
     </Dialog>
   );
 }

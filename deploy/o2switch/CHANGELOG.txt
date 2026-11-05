@@ -1,0 +1,15 @@
+CHANGELOG — Booking Powertech
+=============================
+
+v1.0.0 (2026-11-05)
+-------------------
+- Première version autonome o2switch (PHP 8.3 + MySQL).
+- Inclus : comptes utilisateurs (admin/contributeur), planning des rendez-vous
+  (semaine, liste, intervenants), métiers et postes (couleurs, ordre),
+  créneaux et exceptions, CRM (clients, véhicules, historique propriétaires,
+  carnet d'entretien, transfert de propriété), devis (cycle complet, lignes,
+  discussion, relances), paramètres.
+- Non inclus dans cette version (à venir) : pièces jointes/photos,
+  assistant Powertech, intégrations API externes, points à traiter,
+  historique des modifications de RDV, organisation personnalisée des lignes.
+- Migration SQL : aucune (import initial de app/schema.sql).
