@@ -10,7 +10,7 @@ import DevisForm from './DevisForm';
 import DevisCommentFeed from './DevisCommentFeed';
 import DevisAttachments from './DevisAttachments';
 import DevisLines from './DevisLines';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchProfiles } from '@/lib/profiles';
 import { useStore } from '@/store/StoreContext';
 import { Devis } from '@/types/devis';
 
@@ -32,14 +32,13 @@ export default function DevisDetailDialog({ devis, open, onOpenChange }: Props) 
 
   useEffect(() => {
     if (!open) return;
-    supabase.from('profiles').select('id, email, company').then(({ data }) => {
-      if (!data) return;
+    fetchProfiles().then(profiles => {
       setProfileOptions(
-        (data as any[])
+        profiles
           .filter(p => p.company && p.company.trim() !== '')
-          .map(p => ({ id: p.id, email: p.email, company: p.company }))
+          .map(p => ({ id: p.id, email: p.email, company: p.company! }))
       );
-    });
+    }).catch(() => {});
   }, [open]);
 
   useEffect(() => {

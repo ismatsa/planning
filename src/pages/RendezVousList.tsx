@@ -32,7 +32,7 @@ import type { RendezVous } from '@/types';
 import { toast } from 'sonner';
 import { getEventState, roundToNearest15Minutes, isUnresolved } from '@/lib/planning';
 import { useAuth } from '@/store/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchProfiles, fetchIntervenants } from '@/lib/profiles';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 
 const statusBadgeClass: Record<StatutRdv, string> = {
@@ -61,20 +61,13 @@ export default function RendezVousList() {
 
   useEffect(() => {
     async function loadOptions() {
-      const [profilesRes, intervenantsRes] = await Promise.all([
-        supabase.from('profiles').select('id, company'),
-        supabase.from('intervenants').select('id, name').order('name'),
-      ]);
-      if (profilesRes.data) {
-        setProfileOptions(
-          (profilesRes.data as any[])
-            .filter(p => p.company && p.company.trim() !== '')
-            .map(p => ({ id: p.id, company: p.company }))
-        );
-      }
-      if (intervenantsRes.data) {
-        setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
-      }
+      const [profiles, intervenants] = await Promise.all([fetchProfiles(), fetchIntervenants()]);
+      setProfileOptions(
+        profiles
+          .filter(p => p.company && p.company.trim() !== '')
+          .map(p => ({ id: p.id, company: p.company! }))
+      );
+      setIntervenantOptions(intervenants.map(i => ({ id: i.id, name: i.name })));
     }
     loadOptions();
   }, []);

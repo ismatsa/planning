@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, Send, Bell, AlertTriangle, Clock } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchProfiles } from '@/lib/profiles';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -69,14 +69,12 @@ export default function DevisEnvoyes() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('profiles').select('id, company');
-      if (data) {
-        setProfileOptions(
-          (data as any[])
-            .filter(p => p.company && p.company.trim() !== '')
-            .map(p => ({ id: p.id, company: p.company }))
-        );
-      }
+      const profiles = await fetchProfiles().catch(() => []);
+      setProfileOptions(
+        profiles
+          .filter(p => p.company && p.company.trim() !== '')
+          .map(p => ({ id: p.id, company: p.company! }))
+      );
     }
     load();
   }, []);

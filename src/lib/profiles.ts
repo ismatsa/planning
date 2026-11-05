@@ -14,3 +14,17 @@ export async function fetchProfiles(): Promise<ProfileOption[]> {
     .filter(u => u.is_active)
     .map(u => ({ id: String(u.id), email: u.login, company: u.company, name: u.name }));
 }
+
+export interface IntervenantOption {
+  id: string;
+  name: string;
+  responsableUserId?: string;
+}
+
+/** Liste des intervenants actifs. */
+export async function fetchIntervenants(): Promise<IntervenantOption[]> {
+  const rows = await api.get<any[]>('/intervenants');
+  return rows
+    .filter(i => i.actif)
+    .map(i => ({ id: String(i.id), name: i.nom ?? i.name, responsableUserId: i.responsable_id != null ? String(i.responsable_id) : undefined }));
+}

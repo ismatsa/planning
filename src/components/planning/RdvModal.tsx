@@ -25,7 +25,7 @@ import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
 import { PhoneInput, parsePhone, serializePhone } from '@/components/ui/phone-input';
 import { useStore } from '@/store/StoreContext';
 import { useAuth } from '@/store/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchProfiles, fetchIntervenants } from '@/lib/profiles';
 import { RendezVous, MetierType, STATUT_LABELS, StatutRdv } from '@/types';
 import { format, addMinutes } from 'date-fns';
 import { toast } from 'sonner';
@@ -134,20 +134,13 @@ export default function RdvModal({ open, onClose, rdv, readOnly, canDelete = tru
   useEffect(() => {
     if (!open) return;
     async function loadOptions() {
-      const [profilesRes, intervenantsRes] = await Promise.all([
-        supabase.from('profiles').select('id, email, company'),
-        supabase.from('intervenants').select('id, name').order('name'),
-      ]);
-      if (profilesRes.data) {
-        setProfileOptions(
-          (profilesRes.data as any[])
-            .filter(p => p.company && p.company.trim() !== '')
-            .map(p => ({ id: p.id, email: p.email, company: p.company }))
-        );
-      }
-      if (intervenantsRes.data) {
-        setIntervenantOptions((intervenantsRes.data as any[]).map(i => ({ id: i.id, name: i.name })));
-      }
+      const [profiles, intervenants] = await Promise.all([fetchProfiles(), fetchIntervenants()]);
+      setProfileOptions(
+        profiles
+          .filter(p => p.company && p.company.trim() !== '')
+          .map(p => ({ id: p.id, email: p.email, company: p.company! }))
+      );
+      setIntervenantOptions(intervenants.map(i => ({ id: i.id, name: i.name })));
     }
     loadOptions();
   }, [open]);

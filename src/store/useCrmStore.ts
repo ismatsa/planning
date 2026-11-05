@@ -1,9 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import type {
   Client, Vehicule, VehiculeProprietaire, Entretien, ProprietaireMotif,
 } from '@/types/crm';
-import { normalizeVin } from '@/types/crm';
 
 function mapClient(row: any): Client {
   return {
@@ -20,7 +19,7 @@ function mapClient(row: any): Client {
     ville: row.ville || undefined,
     notesInternes: row.notes_internes || undefined,
     statut: row.statut,
-    createdBy: row.created_by || undefined,
+    createdBy: row.created_by != null ? String(row.created_by) : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -58,7 +57,7 @@ function mapVehicule(row: any): Vehicule {
     statut: row.statut,
     clientId: row.client_id || undefined,
     notes: row.notes || undefined,
-    createdBy: row.created_by || undefined,
+    createdBy: row.created_by != null ? String(row.created_by) : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -66,7 +65,7 @@ function mapVehicule(row: any): Vehicule {
 
 function vehiculeToRow(v: Partial<Vehicule>) {
   const row: Record<string, any> = {};
-  if (v.vin !== undefined) row.vin = v.vin ? normalizeVin(v.vin) : null;
+  if (v.vin !== undefined) row.vin = v.vin ? v.vin.trim().toUpperCase() : null;
   if (v.immatriculation !== undefined) row.immatriculation = v.immatriculation ? v.immatriculation.trim().toUpperCase() : null;
   if (v.marque !== undefined) row.marque = v.marque;
   if (v.modele !== undefined) row.modele = v.modele;
@@ -89,7 +88,7 @@ function mapProprietaire(row: any): VehiculeProprietaire {
     dateDebut: row.date_debut,
     dateFin: row.date_fin || undefined,
     motif: row.motif,
-    createdBy: row.created_by || undefined,
+    createdBy: row.created_by != null ? String(row.created_by) : undefined,
     createdAt: row.created_at,
   };
 }
@@ -107,7 +106,7 @@ function mapEntretien(row: any): Entretien {
     rdvId: row.rdv_id || undefined,
     devisId: row.devis_id || undefined,
     cout: row.cout ?? undefined,
-    createdBy: row.created_by || undefined,
+    createdBy: row.created_by != null ? String(row.created_by) : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -137,42 +136,34 @@ export function useCrmStore() {
 
   useEffect(() => {
     async function load() {
-      const [cRes, vRes, pRes, eRes] = await Promise.all([
-        supabase.from('clients').select('*'),
-        supabase.from('vehicules').select('*'),
-        supabase.from('vehicule_proprietaires').select('*'),
-        supabase.from('entretiens').select('*'),
-      ]);
-      if (cRes.data) setClients(cRes.data.map(mapClient));
-      if (vRes.data) setVehicules(vRes.data.map(mapVehicule));
-      if (pRes.data) setProprietaires(pRes.data.map(mapProprietaire));
-      if (eRes.data) setEntretiens(eRes.data.map(mapEntretien));
+      try {
+        const [cData, vData, pData, eData] = await Promise.all([
+          api.get<any[]>('/clients'),
+          api.get<any[]>('/vehicules'),
+          api.get<any[]>('/proprietaires'),
+          api.get<any[]>('/entretiens'),
+        ]);
+        if (cData) setClients(cData.map(mapClient));
+        if (vData) setVehicules(vData.map(mapVehicule));
+        if (pData) setProprietaires(pData.map(mapProprietaire));
+        if (eData) setEntretiens(eData.map(mapEntretien));
+      } catch {
+        // Non connecté ou API indisponible
+      }
       setCrmLoaded(true);
     }
     load();
   }, []);
 
   const addClient = useCallback(async (input: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const { data, error } = await supabase
-      .from('clients')
-      .insert({ ...clientToRow(input), created_by: session?.user?.id || null } as any)
-      .select()
-      .single();
-    if (error || !data) throw error;
+    const data = await api.post<any>('/clients', clientToRow(input));
     const created = mapClient(data);
     setClients(prev => [...prev, created]);
     return created;
   }, []);
 
   const updateClient = useCallback(async (id: string, patch: Partial<Client>) => {
-    const { data, error } = await supabase
-      .from('clients')
-      .update(clientToRow(patch) as any)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error || !data) throw error;
+    const data = await api.patch<any>(`/clients/${id}`, clientToRow(patch));
     const updated = mapClient(data);
     setClients(prev => prev.map(c => (c.id === id ? updated : c)));
     return updated;
@@ -184,31 +175,14 @@ export function useCrmStore() {
 
   const addVehicule = useCallback(async (
     input: Omit<Vehicule, 'id' | 'createdAt' | 'updatedAt'>,
-    motif: ProprietaireMotif = 'achat',
+    _motif: ProprietaireMotif = 'achat',
   ) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const uid = session?.user?.id || null;
-    const { data, error } = await supabase
-      .from('vehicules')
-      .insert({ ...vehiculeToRow(input), created_by: uid } as any)
-      .select()
-      .single();
-    if (error || !data) throw error;
+    const data = await api.post<any>('/vehicules', vehiculeToRow(input));
     const created = mapVehicule(data);
     setVehicules(prev => [...prev, created]);
-
     if (created.clientId) {
-      const { data: pData } = await supabase
-        .from('vehicule_proprietaires')
-        .insert({
-          vehicule_id: created.id,
-          client_id: created.clientId,
-          motif,
-          created_by: uid,
-        } as any)
-        .select()
-        .single();
-      if (pData) setProprietaires(prev => [...prev, mapProprietaire(pData)]);
+      const pData = await api.get<any[]>('/proprietaires');
+      setProprietaires(pData.map(mapProprietaire));
     }
     return created;
   }, []);
@@ -216,13 +190,7 @@ export function useCrmStore() {
   const updateVehicule = useCallback(async (id: string, patch: Partial<Vehicule>) => {
     // Le changement de propriétaire passe par transferVehicule (historique préservé)
     const { clientId, ...rest } = patch;
-    const { data, error } = await supabase
-      .from('vehicules')
-      .update(vehiculeToRow(rest) as any)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error || !data) throw error;
+    const data = await api.patch<any>(`/vehicules/${id}`, vehiculeToRow(rest));
     const updated = mapVehicule(data);
     setVehicules(prev => prev.map(v => (v.id === id ? updated : v)));
     return updated;
@@ -241,71 +209,23 @@ export function useCrmStore() {
     vehiculeId: string,
     newClientId: string,
     motif: ProprietaireMotif = 'transfert',
-    dateDebut?: string,
   ) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const uid = session?.user?.id || null;
-    const now = dateDebut || new Date().toISOString();
-
-    const { data: closed } = await supabase
-      .from('vehicule_proprietaires')
-      .update({ date_fin: now } as any)
-      .eq('vehicule_id', vehiculeId)
-      .is('date_fin', null)
-      .select();
-
-    const { data: opened, error } = await supabase
-      .from('vehicule_proprietaires')
-      .insert({
-        vehicule_id: vehiculeId,
-        client_id: newClientId,
-        date_debut: now,
-        motif,
-        created_by: uid,
-      } as any)
-      .select()
-      .single();
-    if (error || !opened) throw error;
-
-    const { data: vData } = await supabase
-      .from('vehicules')
-      .update({ client_id: newClientId } as any)
-      .eq('id', vehiculeId)
-      .select()
-      .single();
-
-    setProprietaires(prev => {
-      const closedIds = new Set((closed || []).map((r: any) => r.id));
-      const next = prev.map(p => (closedIds.has(p.id) ? { ...p, dateFin: now } : p));
-      return [...next, mapProprietaire(opened)];
-    });
-    if (vData) {
-      const updated = mapVehicule(vData);
-      setVehicules(prev => prev.map(v => (v.id === vehiculeId ? updated : v)));
-    }
+    const data = await api.post<any>(`/vehicules/${vehiculeId}/transfer`, { client_id: newClientId, motif });
+    const updated = mapVehicule(data);
+    setVehicules(prev => prev.map(v => (v.id === vehiculeId ? updated : v)));
+    const pData = await api.get<any[]>('/proprietaires');
+    setProprietaires(pData.map(mapProprietaire));
   }, []);
 
   const addEntretien = useCallback(async (input: Omit<Entretien, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const { data, error } = await supabase
-      .from('entretiens')
-      .insert({ ...entretienToRow(input), created_by: session?.user?.id || null } as any)
-      .select()
-      .single();
-    if (error || !data) throw error;
+    const data = await api.post<any>('/entretiens', entretienToRow(input));
     const created = mapEntretien(data);
     setEntretiens(prev => [...prev, created]);
     return created;
   }, []);
 
   const updateEntretien = useCallback(async (id: string, patch: Partial<Entretien>) => {
-    const { data, error } = await supabase
-      .from('entretiens')
-      .update(entretienToRow(patch) as any)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error || !data) throw error;
+    const data = await api.patch<any>(`/entretiens/${id}`, entretienToRow(patch));
     const updated = mapEntretien(data);
     setEntretiens(prev => prev.map(e => (e.id === id ? updated : e)));
     return updated;

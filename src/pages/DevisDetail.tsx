@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Link as LinkIcon, UserCheck, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchProfiles } from '@/lib/profiles';
 
 interface ProfileOption { id: string; email: string; company: string; }
 
@@ -31,15 +31,13 @@ export default function DevisDetail() {
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
 
   useEffect(() => {
-    supabase.from('profiles').select('id, email, company').then(({ data }) => {
-      if (data) {
-        setProfileOptions(
-          (data as any[])
-            .filter(p => p.company && p.company.trim() !== '')
-            .map(p => ({ id: p.id, email: p.email, company: p.company }))
-        );
-      }
-    });
+    fetchProfiles().then(profiles => {
+      setProfileOptions(
+        profiles
+          .filter(p => p.company && p.company.trim() !== '')
+          .map(p => ({ id: p.id, email: p.email, company: p.company! }))
+      );
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {

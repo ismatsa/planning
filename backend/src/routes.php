@@ -324,8 +324,10 @@ function handle_request(): void
 
         // ----- Intervenants -----
         if ($path === '/intervenants' && $method === 'GET') {
-            json_out(array_map(fn($i) => ['id' => (int)$i['id'], 'nom' => $i['nom'],
-                'responsable_id' => $i['responsable_id'] !== null ? (int)$i['responsable_id'] : null, 'actif' => (bool)$i['actif']],
+            json_out(array_map(fn($i) => ['id' => (int)$i['id'], 'nom' => $i['nom'], 'name' => $i['nom'],
+                'responsable_id' => $i['responsable_id'] !== null ? (int)$i['responsable_id'] : null,
+                'responsable_user_id' => $i['responsable_id'] !== null ? (int)$i['responsable_id'] : null,
+                'actif' => (bool)$i['actif']],
                 all('SELECT * FROM intervenants ORDER BY nom')));
         }
         if ($path === '/intervenants' && $method === 'POST') {
@@ -487,6 +489,42 @@ function handle_request(): void
             if ($method === 'DELETE') {
                 q('DELETE FROM devis WHERE id = ?', [$id]);
                 audit((int)$u['id'], 'delete', 'devis', $id);
+                json_out(['ok' => true]);
+            }
+        }
+
+        // ----- Lignes de devis -----
+        if (preg_match('#^/devis/([\w-]+)/lines$#', $path, $m)) {
+            if ($method === 'GET') {
+                json_out(array_map(fn($l) => ['id' => $l['id'], 'devis_id' => $l['devis_id'], 'type' => $l['type'],
+                    'name' => $l['name'], 'oem_reference' => $l['oem_reference'], 'internal_reference' => $l['internal_reference'],
+                    'quantity' => (float)$l['quantity'],
+                    'realisation_user_id' => $l['realisation_user_id'] !== null ? (int)$l['realisation_user_id'] : null,
+                    'commande_user_id' => $l['commande_user_id'] !== null ? (int)$l['commande_user_id'] : null,
+                    'unit_price' => (float)$l['unit_price'], 'description' => $l['description'],
+                    'discount_amount' => (float)$l['discount_amount'], 'discount_percent' => (float)$l['discount_percent'],
+                    'sort_order' => (int)$l['sort_order'], 'created_at' => iso($l['created_at'])],
+                    all('SELECT * FROM devis_lines WHERE devis_id = ? ORDER BY sort_order', [$m[1]])));
+            }
+            if ($method === 'PUT') {
+                // Remplacement complet des lignes du devis
+                $b = body();
+                $lines = $b['lines'] ?? [];
+                if (!is_array($lines)) throw new HttpError(422, 'Lignes invalides.');
+                tx(function () use ($m, $lines) {
+                    q('DELETE FROM devis_lines WHERE devis_id = ?', [$m[1]]);
+                    foreach (array_values($lines) as $i => $l) {
+                        $name = str_or_null($l['name'] ?? null, 255);
+                        if (!$name) continue;
+                        q('INSERT INTO devis_lines (id, devis_id, type, name, oem_reference, internal_reference, quantity, realisation_user_id, commande_user_id, unit_price, description, discount_amount, discount_percent, sort_order)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                            [uuid(), $m[1], ($l['type'] ?? '') === 'service' ? 'service' : 'produit', $name,
+                                str_or_null($l['oem_reference'] ?? null, 120), str_or_null($l['internal_reference'] ?? null, 120),
+                                (float)($l['quantity'] ?? 1), $l['realisation_user_id'] ?? null, $l['commande_user_id'] ?? null,
+                                (float)($l['unit_price'] ?? 0), $l['description'] ?? null,
+                                (float)($l['discount_amount'] ?? 0), (float)($l['discount_percent'] ?? 0), $i]);
+                    }
+                });
                 json_out(['ok' => true]);
             }
         }

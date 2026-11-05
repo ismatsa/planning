@@ -14,7 +14,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, CalendarDays, Flame, SlidersHorizontal } from 'lucide-react';
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchProfiles } from '@/lib/profiles';
+import { api } from '@/lib/api';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -75,24 +76,20 @@ export default function DevisList() {
 
   useEffect(() => {
     async function loadOptions() {
-      const [profilesRes, rdvRes] = await Promise.all([
-        supabase.from('profiles').select('id, company'),
-        supabase.from('rendez_vous').select('id, source_devis_id').not('source_devis_id', 'is', null),
+      const [profiles, rdvData] = await Promise.all([
+        fetchProfiles(),
+        api.get<{ rdvs: any[] }>('/rdvs'),
       ]);
-      if (profilesRes.data) {
-        setProfileOptions(
-          (profilesRes.data as any[])
-            .filter(p => p.company && p.company.trim() !== '')
-            .map(p => ({ id: p.id, company: p.company }))
-        );
+      setProfileOptions(
+        profiles
+          .filter(p => p.company && p.company.trim() !== '')
+          .map(p => ({ id: p.id, company: p.company! }))
+      );
+      const map: Record<string, string> = {};
+      for (const r of rdvData?.rdvs || []) {
+        if (r.source_devis_id) map[r.source_devis_id] = r.id;
       }
-      if (rdvRes.data) {
-        const map: Record<string, string> = {};
-        for (const r of rdvRes.data as any[]) {
-          if (r.source_devis_id) map[r.source_devis_id] = r.id;
-        }
-        setLinkedRdvMap(map);
-      }
+      setLinkedRdvMap(map);
     }
     loadOptions();
   }, []);

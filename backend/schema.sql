@@ -243,6 +243,25 @@ CREATE TABLE devis_metiers (
   PRIMARY KEY (devis_id, metier_id)
 ) ENGINE=InnoDB;
 
+CREATE TABLE devis_lines (
+  id CHAR(36) PRIMARY KEY,
+  devis_id CHAR(36) NOT NULL REFERENCES devis(id) ON DELETE CASCADE,
+  type ENUM('produit','service') NOT NULL DEFAULT 'produit',
+  name VARCHAR(255) NOT NULL,
+  oem_reference VARCHAR(120) NULL,
+  internal_reference VARCHAR(120) NULL,
+  quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+  realisation_user_id INT UNSIGNED NULL,
+  commande_user_id INT UNSIGNED NULL,
+  unit_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+  description TEXT NULL,
+  discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (devis_id)
+) ENGINE=InnoDB;
+
 CREATE TABLE devis_comments (
   id CHAR(36) PRIMARY KEY,
   devis_id CHAR(36) NOT NULL REFERENCES devis(id) ON DELETE CASCADE,
