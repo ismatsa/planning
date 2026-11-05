@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import {
   Metier,
   RendezVous,
@@ -57,13 +57,13 @@ function mapRdv(row: any): RendezVous {
     vin: row.vin || undefined,
     notes: row.notes || undefined,
     statut: row.statut,
-    billingResponsibleUserId: row.billing_responsible_user_id || undefined,
+    billingResponsibleUserId: row.billing_responsible_user_id != null ? String(row.billing_responsible_user_id) : undefined,
     sourceDevisId: row.source_devis_id || undefined,
     clientId: row.client_id || undefined,
     vehiculeId: row.vehicule_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    createdBy: row.created_by || undefined,
+    createdBy: row.created_by != null ? String(row.created_by) : undefined,
   };
 }
 
@@ -72,6 +72,26 @@ function mapSettings(row: any): AppSettings {
     joursOuvres: (row.jours_ouvres as number[]) || [1, 2, 3, 4, 5, 6],
     heureMin: row.heure_min,
     heureMax: row.heure_max,
+  };
+}
+
+function rdvToRow(rdv: Partial<RendezVous>) {
+  return {
+    poste_id: rdv.posteId || null,
+    debut: rdv.debut,
+    fin: rdv.fin,
+    client_nom: rdv.clientNom || null,
+    client_tel: rdv.clientTel || null,
+    marque: rdv.marque || null,
+    modele: rdv.modele || null,
+    annee: rdv.annee || null,
+    vin: rdv.vin || null,
+    notes: rdv.notes || null,
+    statut: rdv.statut,
+    billing_responsible_user_id: rdv.billingResponsibleUserId ? Number(rdv.billingResponsibleUserId) : null,
+    source_devis_id: (rdv as any).sourceDevisId || null,
+    client_id: rdv.clientId || null,
+    vehicule_id: rdv.vehiculeId || null,
   };
 }
 
@@ -91,160 +111,63 @@ export function useAppStore() {
   // Load all data on mount
   useEffect(() => {
     async function loadAll() {
-      const [metiersRes, postesRes, disposRes, exceptionsRes, rdvsRes, settingsRes, respRes, intRes] = await Promise.all([
-        supabase.from('metiers').select('*'),
-        supabase.from('postes').select('*'),
-        supabase.from('disponibilite_postes').select('*'),
-        supabase.from('exception_disponibilites').select('*'),
-        supabase.from('rendez_vous').select('*'),
-        supabase.from('app_settings').select('*').eq('id', 1).single(),
-        supabase.from('appointment_responsibles').select('*'),
-        supabase.from('appointment_intervenants').select('*'),
-      ]);
+      try {
+        const [metiersData, postesData, disposData, exceptionsData, rdvsData, settingsData] = await Promise.all([
+          api.get<any[]>('/metiers'),
+          api.get<any[]>('/postes'),
+          api.get<any[]>('/disponibilites'),
+          api.get<any[]>('/exceptions'),
+          api.get<{ rdvs: any[]; responsibles: Record<string, number[]>; intervenants: Record<string, number[]> }>('/rdvs'),
+          api.get<any>('/settings'),
+        ]);
 
-      if (metiersRes.data) setMetiers(metiersRes.data.map(mapMetier));
-      if (postesRes.data) _setPostes(postesRes.data.map(mapPoste).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
-      if (disposRes.data) setDisponibilites(disposRes.data.map(mapDispo));
-      if (exceptionsRes.data) setExceptions(exceptionsRes.data.map(mapException));
-      if (rdvsRes.data) setRdvs(rdvsRes.data.map(mapRdv));
-      if (settingsRes.data) _setSettings(mapSettings(settingsRes.data));
+        if (metiersData?.length) setMetiers(metiersData.map(mapMetier));
+        if (postesData) _setPostes(postesData.map(mapPoste).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
+        if (disposData) setDisponibilites(disposData.map(mapDispo));
+        if (exceptionsData) setExceptions(exceptionsData.map(mapException));
+        if (rdvsData?.rdvs) setRdvs(rdvsData.rdvs.map(mapRdv));
+        if (settingsData) _setSettings(mapSettings(settingsData));
 
-      // Build pivot maps
-      if (respRes.data) {
-        const map: Record<string, string[]> = {};
-        for (const r of respRes.data) {
-          const aid = (r as any).appointment_id;
-          if (!map[aid]) map[aid] = [];
-          map[aid].push((r as any).user_id);
-        }
-        setAppointmentResponsibles(map);
+        const respMap: Record<string, string[]> = {};
+        for (const [aid, ids] of Object.entries(rdvsData?.responsibles || {})) respMap[aid] = ids.map(String);
+        setAppointmentResponsibles(respMap);
+        const intMap: Record<string, string[]> = {};
+        for (const [aid, ids] of Object.entries(rdvsData?.intervenants || {})) intMap[aid] = ids.map(String);
+        setAppointmentIntervenants(intMap);
+      } catch {
+        // Non connecté ou API indisponible : on garde les valeurs par défaut
       }
-      if (intRes.data) {
-        const map: Record<string, string[]> = {};
-        for (const r of intRes.data) {
-          const aid = (r as any).appointment_id;
-          if (!map[aid]) map[aid] = [];
-          map[aid].push((r as any).intervenant_id);
-        }
-        setAppointmentIntervenants(map);
-      }
-
       setLoaded(true);
     }
     loadAll();
   }, []);
 
   const addRdv = useCallback(async (rdv: Omit<RendezVous, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string; updatedAt?: string }, responsibleIds?: string[], intervenantIds?: string[]) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const { data, error } = await supabase.from('rendez_vous').insert({
-      poste_id: rdv.posteId || null,
-      debut: rdv.debut,
-      fin: rdv.fin,
-      client_nom: rdv.clientNom || null,
-      client_tel: rdv.clientTel || null,
-      marque: rdv.marque || null,
-      modele: rdv.modele || null,
-      annee: rdv.annee || null,
-      vin: rdv.vin || null,
-      notes: rdv.notes || null,
-      statut: rdv.statut,
-      billing_responsible_user_id: rdv.billingResponsibleUserId || null,
-      source_devis_id: (rdv as any).sourceDevisId || null,
-      client_id: rdv.clientId || null,
-      vehicule_id: rdv.vehiculeId || null,
-      created_by: session?.user?.id || null,
-    } as any).select().single();
-
-    if (data && !error) {
-      const newRdv = mapRdv(data);
-      setRdvs(prev => [...prev, newRdv]);
-
-      // Save responsibles
-      if (responsibleIds && responsibleIds.length > 0) {
-        await supabase.from('appointment_responsibles').insert(
-          responsibleIds.map(uid => ({ appointment_id: newRdv.id, user_id: uid })) as any
-        );
-        setAppointmentResponsibles(prev => ({ ...prev, [newRdv.id]: responsibleIds }));
-      }
-
-      // Save intervenants
-      if (intervenantIds && intervenantIds.length > 0) {
-        await supabase.from('appointment_intervenants').insert(
-          intervenantIds.map(iid => ({ appointment_id: newRdv.id, intervenant_id: iid })) as any
-        );
-        setAppointmentIntervenants(prev => ({ ...prev, [newRdv.id]: intervenantIds }));
-      }
-    }
+    const data = await api.post<any>('/rdvs', {
+      ...rdvToRow(rdv),
+      responsible_ids: responsibleIds?.map(Number) || [],
+      intervenant_ids: intervenantIds?.map(Number) || [],
+    });
+    const newRdv = mapRdv(data);
+    setRdvs(prev => [...prev, newRdv]);
+    if (responsibleIds?.length) setAppointmentResponsibles(prev => ({ ...prev, [newRdv.id]: responsibleIds }));
+    if (intervenantIds?.length) setAppointmentIntervenants(prev => ({ ...prev, [newRdv.id]: intervenantIds }));
   }, []);
 
   const updateRdv = useCallback(async (rdv: RendezVous, responsibleIds?: string[], intervenantIds?: string[]) => {
-    const payload: Record<string, any> = {
-      poste_id: rdv.posteId || null,
-      debut: rdv.debut,
-      fin: rdv.fin,
-      client_nom: rdv.clientNom || null,
-      client_tel: rdv.clientTel || null,
-      marque: rdv.marque || null,
-      modele: rdv.modele || null,
-      annee: rdv.annee || null,
-      vin: rdv.vin || null,
-      notes: rdv.notes || null,
-      statut: rdv.statut,
-      billing_responsible_user_id: rdv.billingResponsibleUserId || null,
-      client_id: rdv.clientId || null,
-      vehicule_id: rdv.vehiculeId || null,
-    };
-
-    // Compare with stored values, send only real changes
-    const { data: current } = await supabase.from('rendez_vous').select('*').eq('id', rdv.id).single();
-    const norm = (k: string, v: any) => {
-      if (v === undefined || v === null || v === '') return null;
-      if (k === 'debut' || k === 'fin') return new Date(v).getTime();
-      return typeof v === 'string' ? v.trim() : v;
-    };
-    const diff: Record<string, any> = {};
-    for (const [k, v] of Object.entries(payload)) {
-      if (!current || norm(k, (current as any)[k]) !== norm(k, v)) diff[k] = v;
-    }
-
-    let row: any = current;
-    if (Object.keys(diff).length > 0) {
-      const { data, error } = await supabase.from('rendez_vous').update(diff as any).eq('id', rdv.id).select().single();
-      if (error || !data) return;
-      row = data;
-    }
-    if (row) setRdvs(prev => prev.map(r => r.id === rdv.id ? mapRdv(row) : r));
-
-    const syncSet = async (
-      table: 'appointment_responsibles' | 'appointment_intervenants',
-      col: 'user_id' | 'intervenant_id',
-      next: string[],
-    ) => {
-      const { data: existing } = await (supabase as any).from(table).select(col).eq('appointment_id', rdv.id);
-      const before = new Set(((existing as any[]) || []).map(e => e[col] as string));
-      const after = new Set(next.filter(Boolean));
-      const toRemove = [...before].filter(id => !after.has(id));
-      const toAdd = [...after].filter(id => !before.has(id));
-      if (toRemove.length) await (supabase as any).from(table).delete().eq('appointment_id', rdv.id).in(col, toRemove);
-      if (toAdd.length) await (supabase as any).from(table).insert(toAdd.map(id => ({ appointment_id: rdv.id, [col]: id })) as any);
-      return [...after];
-    };
-
-    if (responsibleIds !== undefined) {
-      const ids = await syncSet('appointment_responsibles', 'user_id', responsibleIds);
-      setAppointmentResponsibles(prev => ({ ...prev, [rdv.id]: ids }));
-    }
-    if (intervenantIds !== undefined) {
-      const ids = await syncSet('appointment_intervenants', 'intervenant_id', intervenantIds);
-      setAppointmentIntervenants(prev => ({ ...prev, [rdv.id]: ids }));
-    }
+    const data = await api.patch<any>(`/rdvs/${rdv.id}`, {
+      ...rdvToRow(rdv),
+      ...(responsibleIds !== undefined ? { responsible_ids: responsibleIds.map(Number) } : {}),
+      ...(intervenantIds !== undefined ? { intervenant_ids: intervenantIds.map(Number) } : {}),
+    });
+    setRdvs(prev => prev.map(r => r.id === rdv.id ? mapRdv(data) : r));
+    if (responsibleIds !== undefined) setAppointmentResponsibles(prev => ({ ...prev, [rdv.id]: responsibleIds }));
+    if (intervenantIds !== undefined) setAppointmentIntervenants(prev => ({ ...prev, [rdv.id]: intervenantIds }));
   }, []);
 
   const deleteRdv = useCallback(async (id: string) => {
-    const { error } = await supabase.from('rendez_vous').delete().eq('id', id);
-    if (!error) {
-      setRdvs(prev => prev.filter(r => r.id !== id));
-    }
+    await api.del(`/rdvs/${id}`);
+    setRdvs(prev => prev.filter(r => r.id !== id));
   }, []);
 
   const checkConflict = useCallback((posteId: string, debut: string, fin: string, excludeId?: string): RendezVous | null => {
@@ -289,11 +212,10 @@ export function useAppStore() {
 
   const updatePostes = useCallback(async (updater: (prev: Poste[]) => Poste[]) => {
     const newPostes = updater(postes);
-    // Update changed postes in DB
     for (const p of newPostes) {
       const old = postes.find(op => op.id === p.id);
       if (old && old.actif !== p.actif) {
-        await supabase.from('postes').update({ actif: p.actif }).eq('id', p.id);
+        await api.patch(`/postes/${p.id}`, { actif: p.actif });
       }
     }
     _setPostes(newPostes);
@@ -301,16 +223,17 @@ export function useAppStore() {
 
   const updateDisponibilites = useCallback(async (updater: (prev: DisponibilitePoste[]) => DisponibilitePoste[]) => {
     const newDispos = updater(disponibilites);
-    // Upsert changed dispos
     for (const d of newDispos) {
       const old = disponibilites.find(od => od.posteId === d.posteId && od.jourSemaine === d.jourSemaine);
       if (old && JSON.stringify(old) !== JSON.stringify(d)) {
-        await supabase.from('disponibilite_postes').update({
-          plages: d.plages as any,
+        await api.put('/disponibilites', {
+          poste_id: d.posteId,
+          jour_semaine: d.jourSemaine,
+          plages: d.plages,
           duree_defaut: d.dureeDefaut,
-          durees_autorisees: d.dureesAutorisees as any,
+          durees_autorisees: d.dureesAutorisees,
           tampon: d.tampon,
-        }).eq('poste_id', d.posteId).eq('jour_semaine', d.jourSemaine);
+        });
       }
     }
     setDisponibilites(newDispos);
@@ -318,44 +241,54 @@ export function useAppStore() {
 
   const updateSettings = useCallback(async (updater: (prev: AppSettings) => AppSettings) => {
     const newSettings = updater(settings);
-    await supabase.from('app_settings').update({
-      jours_ouvres: newSettings.joursOuvres as any,
+    await api.put('/settings', {
+      jours_ouvres: newSettings.joursOuvres,
       heure_min: newSettings.heureMin,
       heure_max: newSettings.heureMax,
-    }).eq('id', 1);
+    });
     _setSettings(newSettings);
   }, [settings]);
 
   // Metier CRUD
   const addMetier = useCallback(async (metier: Metier) => {
-    const { error } = await supabase.from('metiers').insert({ id: metier.id, nom: metier.nom, couleur: metier.couleur } as any);
-    if (!error) setMetiers(prev => [...prev, metier]);
-    return !error;
+    try {
+      await api.post('/metiers', { id: metier.id, nom: metier.nom, couleur: metier.couleur });
+      setMetiers(prev => [...prev, metier]);
+      return true;
+    } catch { return false; }
   }, []);
 
   const renameMetier = useCallback(async (id: string, nom: string) => {
-    const { error } = await supabase.from('metiers').update({ nom }).eq('id', id);
-    if (!error) setMetiers(prev => prev.map(m => m.id === id ? { ...m, nom } : m));
-    return !error;
+    try {
+      await api.patch(`/metiers/${id}`, { nom });
+      setMetiers(prev => prev.map(m => m.id === id ? { ...m, nom } : m));
+      return true;
+    } catch { return false; }
   }, []);
 
   const deleteMetier = useCallback(async (id: string) => {
-    const { error } = await supabase.from('metiers').delete().eq('id', id);
-    if (!error) setMetiers(prev => prev.filter(m => m.id !== id));
-    return !error;
+    try {
+      await api.del(`/metiers/${id}`);
+      setMetiers(prev => prev.filter(m => m.id !== id));
+      return true;
+    } catch { return false; }
   }, []);
 
   // Poste CRUD
   const addPoste = useCallback(async (poste: Poste) => {
-    const { error } = await supabase.from('postes').insert({ id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif, color_hex: poste.colorHex ?? null } as any);
-    if (!error) _setPostes(prev => [...prev, poste]);
-    return !error;
+    try {
+      await api.post('/postes', { id: poste.id, metier_id: poste.metierId, nom: poste.nom, actif: poste.actif, color_hex: poste.colorHex ?? null });
+      _setPostes(prev => [...prev, poste]);
+      return true;
+    } catch { return false; }
   }, []);
 
   const renamePoste = useCallback(async (id: string, nom: string) => {
-    const { error } = await supabase.from('postes').update({ nom }).eq('id', id);
-    if (!error) _setPostes(prev => prev.map(p => p.id === id ? { ...p, nom } : p));
-    return !error;
+    try {
+      await api.patch(`/postes/${id}`, { nom });
+      _setPostes(prev => prev.map(p => p.id === id ? { ...p, nom } : p));
+      return true;
+    } catch { return false; }
   }, []);
 
   /** Met à jour uniquement le poste ciblé (nom et/ou couleur). */
@@ -364,9 +297,11 @@ export function useAppStore() {
     if (patch.nom !== undefined) payload.nom = patch.nom;
     if (patch.colorHex !== undefined) payload.color_hex = patch.colorHex;
     if (Object.keys(payload).length === 0) return true;
-    const { error } = await supabase.from('postes').update(payload).eq('id', id);
-    if (!error) _setPostes(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
-    return !error;
+    try {
+      await api.patch(`/postes/${id}`, payload);
+      _setPostes(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+      return true;
+    } catch { return false; }
   }, []);
 
   /** Déplace un poste vers le haut/bas dans sa catégorie (ordre d'affichage). */
@@ -391,45 +326,41 @@ export function useAppStore() {
         .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0));
     });
 
-    // Laisse React appliquer le state avant l'appel réseau
     await Promise.resolve();
     if (!a || !b) return false;
     if ((a.sortOrder ?? 0) === (b.sortOrder ?? 0)) {
-      // Ordres identiques : réindexe la catégorie
       a = { ...a, sortOrder: (b.sortOrder ?? 0) + direction };
     }
-    const [r1, r2] = await Promise.all([
-      supabase.from('postes').update({ sort_order: a.sortOrder } as any).eq('id', a.id),
-      supabase.from('postes').update({ sort_order: b.sortOrder } as any).eq('id', b.id),
-    ]);
-    return !r1.error && !r2.error;
+    try {
+      await Promise.all([
+        api.patch(`/postes/${a.id}`, { sort_order: a.sortOrder }),
+        api.patch(`/postes/${b.id}`, { sort_order: b.sortOrder }),
+      ]);
+      return true;
+    } catch { return false; }
   }, []);
 
   /** Enregistre en une seule fois les paramètres généraux et les postes modifiés. */
   const saveParametres = useCallback(async (newSettings: AppSettings, newPostes: Poste[]) => {
-    const { error: settingsError } = await supabase.from('app_settings').update({
-      jours_ouvres: newSettings.joursOuvres as any,
-      heure_min: newSettings.heureMin,
-      heure_max: newSettings.heureMax,
-    }).eq('id', 1);
-    if (settingsError) return false;
-
-    for (const p of newPostes) {
-      const old = postes.find(op => op.id === p.id);
-      if (!old) continue;
-      const payload: any = {};
-      if (old.actif !== p.actif) payload.actif = p.actif;
-      if (old.colorHex !== p.colorHex) payload.color_hex = p.colorHex;
-      if ((old.sortOrder ?? 0) !== (p.sortOrder ?? 0)) payload.sort_order = p.sortOrder;
-      if (Object.keys(payload).length > 0) {
-        const { error } = await supabase.from('postes').update(payload).eq('id', p.id);
-        if (error) return false;
+    try {
+      await api.put('/settings', {
+        jours_ouvres: newSettings.joursOuvres,
+        heure_min: newSettings.heureMin,
+        heure_max: newSettings.heureMax,
+      });
+      for (const p of newPostes) {
+        const old = postes.find(op => op.id === p.id);
+        if (!old) continue;
+        const payload: any = {};
+        if (old.actif !== p.actif) payload.actif = p.actif;
+        if (old.colorHex !== p.colorHex) payload.color_hex = p.colorHex;
+        if ((old.sortOrder ?? 0) !== (p.sortOrder ?? 0)) payload.sort_order = p.sortOrder;
+        if (Object.keys(payload).length > 0) await api.patch(`/postes/${p.id}`, payload);
       }
-    }
-
-    _setSettings(newSettings);
-    _setPostes(newPostes);
-    return true;
+      _setSettings(newSettings);
+      _setPostes(newPostes);
+      return true;
+    } catch { return false; }
   }, [postes]);
 
 

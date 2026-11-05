@@ -1,12 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { api, setCsrfToken, type ApiUser } from '@/lib/api';
 
 export type AppRole = 'administrateur' | 'contributeur';
 
+/** Forme compatible avec l'ancien objet User de Supabase (id string, email). */
+export interface AppUser {
+  id: string;
+  email: string;
+  name: string;
+  company: string | null;
+  apiRole: 'admin' | 'contributor';
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   role: AppRole | null;
   isAdmin: boolean;
@@ -21,82 +29,67 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function toAppUser(u: ApiUser): AppUser {
+  return { id: String(u.id), email: u.login, name: u.name, company: u.company, apiRole: u.role };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<AppRole | null>(null);
-  const [permissions, setPermissions] = useState<string[]>([]);
 
-  const fetchRoleAndPermissions = useCallback(async (userId: string) => {
-    const [rolesRes, permsRes, profileRes] = await Promise.all([
-      supabase.from('user_roles').select('role').eq('user_id', userId),
-      supabase.from('user_permissions').select('poste_id').eq('user_id', userId),
-      supabase.from('profiles').select('active').eq('id', userId).single(),
-    ]);
-
-    // If user is deactivated, sign them out
-    if (profileRes.data && !profileRes.data.active) {
-      await supabase.auth.signOut();
-      return;
+  const loadSession = useCallback(async () => {
+    try {
+      const { user: u, csrf } = await api.get<{ user: ApiUser | null; csrf: string | null }>('/auth/me');
+      setCsrfToken(csrf);
+      setUser(u ? toAppUser(u) : null);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-
-    const userRole = (rolesRes.data?.[0]?.role as AppRole) || null;
-    setRole(userRole);
-    setPermissions(permsRes.data?.map((p: any) => p.poste_id) || []);
   }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) {
-        setTimeout(() => fetchRoleAndPermissions(u.id), 0);
-      } else {
-        setRole(null);
-        setPermissions([]);
-      }
-      setLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) {
-        fetchRoleAndPermissions(u.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchRoleAndPermissions]);
+    loadSession();
+  }, [loadSession]);
 
   const refreshAuth = useCallback(async () => {
-    if (user) await fetchRoleAndPermissions(user.id);
-  }, [user, fetchRoleAndPermissions]);
+    await loadSession();
+  }, [loadSession]);
 
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return error ? error.message : null;
+    try {
+      const { user: u, csrf } = await api.post<{ user: ApiUser; csrf: string }>('/auth/login', { login: email, password });
+      setCsrfToken(csrf);
+      setUser(toAppUser(u));
+      return null;
+    } catch (e: any) {
+      return e?.message || 'Erreur de connexion.';
+    }
   }, []);
 
-  const signup = useCallback(async (email: string, password: string): Promise<string | null> => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return error ? error.message : null;
+  const signup = useCallback(async (): Promise<string | null> => {
+    return 'La création de compte est réservée à l\'administrateur.';
   }, []);
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
+    try {
+      await api.post('/auth/logout');
+    } finally {
+      setCsrfToken(null);
+      setUser(null);
+    }
   }, []);
 
-  const updateEmail = useCallback(async (email: string): Promise<string | null> => {
-    const { error } = await supabase.auth.updateUser({ email });
-    return error ? error.message : null;
+  const updateEmail = useCallback(async (): Promise<string | null> => {
+    return 'Contactez l\'administrateur pour changer votre identifiant.';
   }, []);
 
-  const updatePassword = useCallback(async (password: string): Promise<string | null> => {
-    const { error } = await supabase.auth.updateUser({ password });
-    return error ? error.message : null;
+  const updatePassword = useCallback(async (): Promise<string | null> => {
+    return 'Contactez l\'administrateur pour changer votre mot de passe.';
   }, []);
+
+  const role: AppRole | null = user ? (user.apiRole === 'admin' ? 'administrateur' : 'contributeur') : null;
 
   return (
     <AuthContext.Provider value={{
@@ -105,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       role,
       isAdmin: role === 'administrateur',
-      permissions,
+      permissions: [],
       login,
       signup,
       logout,
