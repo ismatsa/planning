@@ -47,6 +47,7 @@ function mapVehicule(row: any): Vehicule {
     id: row.id,
     vin: row.vin ?? '',
     immatriculation: row.immatriculation || undefined,
+    immatriculationPays: row.immatriculation_pays || 'MA',
     marque: row.marque,
     modele: row.modele,
     annee: row.annee ?? undefined,
@@ -67,6 +68,7 @@ function vehiculeToRow(v: Partial<Vehicule>) {
   const row: Record<string, any> = {};
   if (v.vin !== undefined) row.vin = v.vin ? v.vin.trim().toUpperCase() : null;
   if (v.immatriculation !== undefined) row.immatriculation = v.immatriculation ? v.immatriculation.trim().toUpperCase() : null;
+  if (v.immatriculationPays !== undefined) row.immatriculation_pays = v.immatriculationPays || 'MA';
   if (v.marque !== undefined) row.marque = v.marque;
   if (v.modele !== undefined) row.modele = v.modele;
   if (v.annee !== undefined) row.annee = v.annee ?? null;

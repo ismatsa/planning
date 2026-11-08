@@ -6,6 +6,7 @@ import { CheckSquare } from 'lucide-react';
 import { isUnresolved } from '@/lib/planning';
 import { useAuth } from '@/store/AuthContext';
 import { normalizeHex, contrastTextColor } from '@/lib/colors';
+import ImmatriculationBadge from '@/components/crm/ImmatriculationBadge';
 
 
 interface Props {
@@ -264,8 +265,11 @@ export default function RdvBlock({ rdv, onClick, onResizeStart, style, hasConfli
 
           <div className="text-muted-foreground">
             <span className="font-semibold text-foreground">Véhicule : </span>
-            {[vehiculeLabel, vehicule?.annee ?? rdv.annee, vehicule?.immatriculation].filter(Boolean).join(' · ')}
+            {[vehiculeLabel, vehicule?.annee ?? rdv.annee].filter(Boolean).join(' · ')}
           </div>
+          {vehicule?.immatriculation && (
+            <ImmatriculationBadge value={vehicule.immatriculation} country={vehicule.immatriculationPays} compact />
+          )}
 
           <div className="pt-1 border-t border-border text-muted-foreground italic">
             <span className="font-semibold not-italic text-foreground">Prestation : </span>{rdv.notes || 'Prestation non renseignée'}

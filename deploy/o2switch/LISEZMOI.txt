@@ -1,7 +1,7 @@
 BOOKING POWERTECH — booking.powertech.ma
 =========================================
 
-Contenu du ZIP (à décompresser DANS le dossier booking.powertech.ma) :
+Contenu du ZIP (à décompresser DANS le dossier du sous-domaine, actuellement pp.booking.powertech.ma) :
   index.html, assets/, icônes   -> l'application (écrans)
   .htaccess                     -> sécurité + HTTPS + redirections
   api/                          -> point d'entrée de l'API PHP
@@ -32,9 +32,10 @@ MISE À JOUR (chaque nouvelle livraison)
 ---------------------------------------
 1. Sauvegarde : phpMyAdmin > Exporter (ou JetBackup).
 2. Supprimer l'ancien dossier "assets" (évite d'accumuler les anciens fichiers).
-3. Téléverser le nouveau ZIP dans booking.powertech.ma > Extraire > accepter de remplacer.
+3. Téléverser le nouveau ZIP dans le dossier du sous-domaine > Extraire > accepter de remplacer.
 4. Lire CHANGELOG.txt : si une migration est indiquée, phpMyAdmin > Importer
    le fichier app/migrations/XXX.sql indiqué (une seule fois, dans l'ordre).
+   Pour la v1.1.0 depuis v1.0.0 : importer 001_immatriculation_pays.sql.
 5. Vérifier si app/.env.example a de nouvelles lignes ; les recopier dans app/.env.
 6. Recharger l'application (fermer/rouvrir).
 

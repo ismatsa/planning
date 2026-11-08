@@ -1,6 +1,15 @@
 CHANGELOG — Booking Powertech
 =============================
 
+v1.1.0 (2026-11-08)
+-------------------
+- Immatriculation structurée : choix du pays, saisie marocaine en trois parties
+  (numéro, lettre arabe en liste déroulante, région) et caractères contrôlés.
+- Affichage des plaques sous forme de badge dans les fiches, recherches et le planning.
+- MISE À JOUR OBLIGATOIRE depuis v1.0.0 : après extraction du ZIP, importer une
+  seule fois app/migrations/001_immatriculation_pays.sql dans phpMyAdmin.
+- Nouvelle installation : importer seulement app/schema.sql (déjà à jour).
+
 v1.0.0 (2026-11-05)
 -------------------
 - Première version autonome o2switch (PHP 8.3 + MySQL).

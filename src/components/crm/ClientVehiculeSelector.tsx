@@ -17,6 +17,8 @@ import {
 } from '@/types/crm';
 import ClientFormDialog from './ClientFormDialog';
 import VehiculeFormDialog from './VehiculeFormDialog';
+import ImmatriculationBadge from './ImmatriculationBadge';
+import { plateSearchText } from '@/lib/immatriculation';
 
 export interface ClientVehiculeValue {
   clientId?: string;
@@ -135,7 +137,7 @@ export default function ClientVehiculeSelector({ value, onChange, readOnly, hide
   // ---- Recherche véhicules ----
   const vinNorm = normalizeVin(vinInput);
   const vehiculeMatches: Match<Vehicule>[] = useMemo(() => {
-    const imm = immatQ.trim().toUpperCase();
+    const imm = plateSearchText(immatQ);
     const mq = marqueQ.trim().toLowerCase();
     const md = modeleQ.trim().toLowerCase();
     if (vinNorm.length < 3 && !imm && !mq && !md) return [];
@@ -143,7 +145,7 @@ export default function ClientVehiculeSelector({ value, onChange, readOnly, hide
     for (const v of crm.vehicules) {
       let reason = '';
       if (vinNorm.length >= 3 && normalizeVin(v.vin).includes(vinNorm)) reason = 'VIN correspondant';
-      else if (imm && (v.immatriculation || '').toUpperCase().includes(imm)) reason = 'Immatriculation correspondante';
+      else if (imm && plateSearchText(v.immatriculation).includes(imm)) reason = 'Immatriculation correspondante';
       else if (mq && v.marque.toLowerCase().includes(mq)) reason = 'Marque correspondante';
       else if (md && v.modele.toLowerCase().includes(md)) reason = 'Modèle correspondant';
       if (reason) out.push({ item: v, reason });
@@ -335,10 +337,10 @@ export default function ClientVehiculeSelector({ value, onChange, readOnly, hide
                   </span>
                   <Badge variant="outline" className="text-[10px]">{reason}</Badge>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {item.immatriculation ? `${item.immatriculation} · ` : ''}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  <ImmatriculationBadge value={item.immatriculation} country={item.immatriculationPays} compact />
                   <span className="font-mono">{maskVin(normalizeVin(item.vin))}</span>
-                  {` · ${clientDisplayName(owner)}`}
+                  <span>· {clientDisplayName(owner)}</span>
                 </div>
               </button>
             );
@@ -416,11 +418,11 @@ export default function ClientVehiculeSelector({ value, onChange, readOnly, hide
               </Button>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {selectedVehicule.immatriculation ? `${selectedVehicule.immatriculation} · ` : ''}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            <ImmatriculationBadge value={selectedVehicule.immatriculation} country={selectedVehicule.immatriculationPays} compact />
             <span className="font-mono">{normalizeVin(selectedVehicule.vin)}</span>
-            {selectedVehicule.motorisation ? ` · ${selectedVehicule.motorisation}` : ''}
-            {selectedVehicule.kilometrageActuel != null ? ` · ${selectedVehicule.kilometrageActuel} km` : ''}
+            {selectedVehicule.motorisation ? <span>· {selectedVehicule.motorisation}</span> : null}
+            {selectedVehicule.kilometrageActuel != null ? <span>· {selectedVehicule.kilometrageActuel} km</span> : null}
           </div>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1">
             <Info className="h-3 w-3" />
@@ -456,8 +458,12 @@ export default function ClientVehiculeSelector({ value, onChange, readOnly, hide
                 <SelectTrigger><SelectValue placeholder="Sélectionner un véhicule" /></SelectTrigger>
                 <SelectContent>
                   {clientVehicules.map(v => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.marque} {v.modele}{v.immatriculation ? ` — ${v.immatriculation}` : ''} — {maskVin(normalizeVin(v.vin))}
+                    <SelectItem key={v.id} value={v.id} textValue={`${v.marque} ${v.modele} ${v.immatriculation || ''}`}>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span>{v.marque} {v.modele}</span>
+                        <ImmatriculationBadge value={v.immatriculation} country={v.immatriculationPays} compact />
+                        <span className="font-mono text-xs text-muted-foreground">{maskVin(normalizeVin(v.vin))}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

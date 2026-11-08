@@ -109,6 +109,7 @@ CREATE TABLE vehicules (
   id CHAR(36) PRIMARY KEY,
   vin VARCHAR(17) NULL UNIQUE,
   immatriculation VARCHAR(40) NULL,
+  immatriculation_pays CHAR(2) NULL DEFAULT 'MA',
   marque VARCHAR(80) NOT NULL,
   modele VARCHAR(120) NOT NULL,
   annee SMALLINT NULL,

@@ -76,6 +76,7 @@ export interface Vehicule {
   id: string;
   vin: string;
   immatriculation?: string;
+  immatriculationPays?: string;
   marque: string;
   modele: string;
   annee?: number;

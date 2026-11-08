@@ -12,6 +12,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useStore } from '@/store/StoreContext';
+import ImmatriculationInput from './ImmatriculationInput';
+import { isCompletePlate } from '@/lib/immatriculation';
 import {
   Vehicule, VehiculeStatut, CarburantType, BoiteVitessesType,
   CARBURANT_LABELS, BOITE_LABELS, VEHICULE_STATUT_LABELS,
@@ -44,6 +46,7 @@ export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defau
 
   const [vin, setVin] = useState('');
   const [immatriculation, setImmatriculation] = useState('');
+  const [immatriculationPays, setImmatriculationPays] = useState('MA');
   const [marque, setMarque] = useState('');
   const [modele, setModele] = useState('');
   const [annee, setAnnee] = useState('');
@@ -60,6 +63,7 @@ export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defau
     if (!open) return;
     setVin(vehicule?.vin || defaultVin || '');
     setImmatriculation(vehicule?.immatriculation || '');
+    setImmatriculationPays(vehicule?.immatriculationPays || 'MA');
     setMarque(vehicule?.marque || '');
     setModele(vehicule?.modele || '');
     setAnnee(vehicule?.annee ? String(vehicule.annee) : '');
@@ -100,11 +104,18 @@ export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defau
       toast.error('Ce VIN est déjà enregistré sur un autre véhicule');
       return;
     }
+    if (!isCompletePlate(immatriculation, immatriculationPays)) {
+      toast.error(immatriculationPays === 'MA'
+        ? 'Complétez la plaque : numéro, lettre arabe et région.'
+        : 'La plaque contient des caractères invalides.');
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         vin: normalizeVin(vin),
         immatriculation: immatriculation.trim() || undefined,
+        immatriculationPays,
         marque: marque.trim(),
         modele: modele.trim(),
         annee: annee ? Number(annee) : undefined,
@@ -152,11 +163,21 @@ export default function VehiculeFormDialog({ open, onOpenChange, vehicule, defau
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Immatriculation</Label>
-              <Input className="mt-1 uppercase" value={immatriculation} onChange={e => setImmatriculation(e.target.value.toUpperCase())} />
+          <div>
+            <Label>Immatriculation</Label>
+            <div className="mt-1">
+              <ImmatriculationInput
+                value={immatriculation}
+                country={immatriculationPays}
+                onChange={(nextValue, nextCountry) => {
+                  setImmatriculation(nextValue);
+                  setImmatriculationPays(nextCountry);
+                }}
+              />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Année</Label>
               <Input className="mt-1" type="number" value={annee} onChange={e => setAnnee(e.target.value)} />

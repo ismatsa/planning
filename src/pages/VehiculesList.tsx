@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/select';
 import { Search, Plus, Car } from 'lucide-react';
 import VehiculeFormDialog from '@/components/crm/VehiculeFormDialog';
+import ImmatriculationBadge from '@/components/crm/ImmatriculationBadge';
+import { plateSearchText } from '@/lib/immatriculation';
 import { clientDisplayName, VEHICULE_STATUT_LABELS, VehiculeStatut } from '@/types/crm';
 
 export default function VehiculesList() {
@@ -47,6 +49,7 @@ export default function VehiculesList() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const plateQuery = plateSearchText(search);
     return crm.vehicules
       .filter(v => showArchived || v.statut !== 'archive')
       .filter(v => filterStatut === 'all' || v.statut === filterStatut)
@@ -56,7 +59,7 @@ export default function VehiculesList() {
         return [v.vin || '', v.immatriculation || '', v.marque, v.modele, v.clientId ? clientById[v.clientId] || '' : '']
           .join(' ')
           .toLowerCase()
-          .includes(q);
+          .includes(q) || (!!plateQuery && plateSearchText(v.immatriculation).includes(plateQuery));
       })
       .sort((a, b) => `${a.marque} ${a.modele}`.localeCompare(`${b.marque} ${b.modele}`));
   }, [crm.vehicules, search, filterStatut, filterMarque, showArchived, clientById]);
@@ -124,8 +127,9 @@ export default function VehiculesList() {
                   {VEHICULE_STATUT_LABELS[v.statut]}
                 </Badge>
               </div>
-              <div className="text-xs text-muted-foreground truncate font-mono">
-                VIN {v.vin || '—'}{v.immatriculation ? ` • ${v.immatriculation}` : ''}
+              <div className="mt-1 flex items-center gap-2 overflow-hidden text-xs text-muted-foreground">
+                <span className="truncate font-mono">VIN {v.vin || '—'}</span>
+                <ImmatriculationBadge value={v.immatriculation} country={v.immatriculationPays} compact />
               </div>
             </div>
             <div className="text-xs text-muted-foreground shrink-0 truncate max-w-[160px]">

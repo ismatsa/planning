@@ -43,6 +43,7 @@ function client_out(array $c): array
 function vehicule_out(array $v): array
 {
     return ['id' => $v['id'], 'vin' => $v['vin'], 'immatriculation' => $v['immatriculation'],
+        'immatriculation_pays' => $v['immatriculation_pays'] ?? 'MA',
         'marque' => $v['marque'], 'modele' => $v['modele'],
         'annee' => $v['annee'] !== null ? (int)$v['annee'] : null,
         'motorisation' => $v['motorisation'], 'carburant' => $v['carburant'], 'boite_vitesses' => $v['boite_vitesses'],
@@ -97,8 +98,29 @@ function comment_out(array $c): array
 const RDV_FIELDS = ['poste_id', 'debut', 'fin', 'client_nom', 'client_tel', 'marque', 'modele', 'annee', 'vin', 'notes', 'statut', 'billing_responsible_user_id', 'source_devis_id', 'client_id', 'vehicule_id'];
 const DEVIS_FIELDS = ['client_nom', 'client_tel', 'marque', 'modele', 'annee', 'vin', 'notes', 'statut', 'billing_responsible_user_id', 'assigned_user_id', 'client_id', 'vehicule_id'];
 const CLIENT_FIELDS = ['type_client', 'nom', 'prenom', 'raison_sociale', 'ice', 'telephone', 'telephone_secondaire', 'email', 'adresse', 'ville', 'notes_internes', 'statut'];
-const VEHICULE_FIELDS = ['vin', 'immatriculation', 'marque', 'modele', 'annee', 'motorisation', 'carburant', 'boite_vitesses', 'kilometrage_actuel', 'statut', 'client_id', 'notes'];
+const VEHICULE_FIELDS = ['vin', 'immatriculation', 'immatriculation_pays', 'marque', 'modele', 'annee', 'motorisation', 'carburant', 'boite_vitesses', 'kilometrage_actuel', 'statut', 'client_id', 'notes'];
 const ENTRETIEN_FIELDS = ['vehicule_id', 'date_entretien', 'type_entretien', 'kilometrage', 'description', 'pieces_utilisees', 'realise_par', 'rdv_id', 'devis_id', 'cout'];
+
+/** Valide et normalise la plaque avec son pays (format structuré pour le Maroc). */
+function normalize_immatriculation(mixed $value, mixed $country): array
+{
+    $code = strtoupper(trim((string)($country ?: 'MA')));
+    if (!preg_match('/^[A-Z]{2}$/', $code)) throw new HttpError(422, 'Pays d’immatriculation invalide.');
+    $plate = str_or_null($value, 40);
+    if (!$plate) return [null, $code];
+    if ($code === 'MA') {
+        $compact = preg_replace('/\s+/', '', $plate);
+        if (!preg_match('/^(\d{1,5})\|([أبدهوزحطيكلمن])\|(\d{1,2})$/u', $compact, $m)) {
+            throw new HttpError(422, 'Plaque marocaine incomplète : numéro, lettre arabe et région obligatoires.');
+        }
+        return [$m[1] . ' | ' . $m[2] . ' | ' . $m[3], $code];
+    }
+    $plate = strtoupper($plate);
+    if (!preg_match('/^[A-Z0-9][A-Z0-9 -]{0,19}$/', $plate)) {
+        throw new HttpError(422, 'Immatriculation invalide : utilisez uniquement lettres, chiffres, espaces et tirets.');
+    }
+    return [$plate, $code];
+}
 
 /** Construit un UPDATE ne contenant que les champs présents dans le body. */
 function build_update(array $b, array $allowed, array $datetimeFields = []): array
@@ -397,10 +419,11 @@ function handle_request(): void
             $id = uuid();
             $vin = str_or_null($b['vin'] ?? null, 17);
             if ($vin) $vin = strtoupper(preg_replace('/[\s-]/', '', $vin));
-            tx(function () use ($b, $id, $vin, $u) {
-                q('INSERT INTO vehicules (id, vin, immatriculation, marque, modele, annee, motorisation, carburant, boite_vitesses, kilometrage_actuel, statut, client_id, notes, created_by)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                    [$id, $vin, str_or_null($b['immatriculation'] ?? null, 40), $b['marque'], $b['modele'],
+            [$plate, $plateCountry] = normalize_immatriculation($b['immatriculation'] ?? null, $b['immatriculation_pays'] ?? 'MA');
+            tx(function () use ($b, $id, $vin, $plate, $plateCountry, $u) {
+                q('INSERT INTO vehicules (id, vin, immatriculation, immatriculation_pays, marque, modele, annee, motorisation, carburant, boite_vitesses, kilometrage_actuel, statut, client_id, notes, created_by)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                    [$id, $vin, $plate, $plateCountry, $b['marque'], $b['modele'],
                         $b['annee'] ?? null, str_or_null($b['motorisation'] ?? null, 120), str_or_null($b['carburant'] ?? null, 40),
                         str_or_null($b['boite_vitesses'] ?? null, 40), $b['kilometrage_actuel'] ?? null,
                         ($b['statut'] ?? '') === 'archive' ? 'archive' : 'actif', $b['client_id'] ?? null, $b['notes'] ?? null, (int)$u['id']]);
@@ -415,6 +438,14 @@ function handle_request(): void
         if (preg_match('#^/vehicules/([\w-]+)$#', $path, $m) && $method === 'PATCH') {
             $b = body();
             unset($b['client_id']); // le changement de propriétaire passe par /transfer
+            if (array_key_exists('immatriculation', $b) || array_key_exists('immatriculation_pays', $b)) {
+                $current = one('SELECT immatriculation, immatriculation_pays FROM vehicules WHERE id = ?', [$m[1]]);
+                if (!$current) throw new HttpError(404, 'Véhicule introuvable.');
+                [$b['immatriculation'], $b['immatriculation_pays']] = normalize_immatriculation(
+                    array_key_exists('immatriculation', $b) ? $b['immatriculation'] : $current['immatriculation'],
+                    $b['immatriculation_pays'] ?? $current['immatriculation_pays'] ?? 'MA'
+                );
+            }
             [$sets, $params] = build_update($b, VEHICULE_FIELDS);
             if ($sets) { $params[] = $m[1]; q('UPDATE vehicules SET ' . implode(', ', $sets) . ' WHERE id = ?', $params); }
             $v = one('SELECT * FROM vehicules WHERE id = ?', [$m[1]]);

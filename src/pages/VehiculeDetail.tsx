@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import VehiculeFormDialog from '@/components/crm/VehiculeFormDialog';
+import ImmatriculationBadge from '@/components/crm/ImmatriculationBadge';
 import EntretienFormDialog from '@/components/crm/EntretienFormDialog';
 import ChangeOwnerDialog from '@/components/crm/ChangeOwnerDialog';
 import {
@@ -120,7 +121,12 @@ export default function VehiculeDetail() {
               </div>
               <div className="mt-1 text-sm text-muted-foreground space-y-0.5">
                 <div className="font-mono">VIN {vehicule.vin || "—"}</div>
-                {vehicule.immatriculation && <div>Immatriculation : {vehicule.immatriculation}</div>}
+                {vehicule.immatriculation && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <span>Immatriculation :</span>
+                    <ImmatriculationBadge value={vehicule.immatriculation} country={vehicule.immatriculationPays} />
+                  </div>
+                )}
                 <div>
                   {[
                     vehicule.motorisation,
