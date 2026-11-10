@@ -1,0 +1,1 @@
+- The SYNC machine API lives in backend/src/sync.php and is dispatched before session/CSRF checks; it must stay guarded by local IP + SYNC_API_KEY.

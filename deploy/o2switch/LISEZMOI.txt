@@ -40,3 +40,18 @@ MISE À JOUR (chaque nouvelle livraison)
 6. Recharger l'application (fermer/rouvrir).
 
 Ne jamais modifier les fichiers livrés (sauf app/.env) : ils seront remplacés.
+
+API SYNC (v1.2.0)
+-----------------
+1. Générer une clé (Terminal cPanel) : php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+2. Ajouter dans app/.env :   SYNC_API_KEY=<la clé générée>
+   (la même clé est à renseigner dans la configuration de SYNC)
+3. SYNC appelle, depuis le même serveur :
+   https://pp.booking.powertech.ma/api/sync/clients   avec l'en-tête  X-API-Key: <clé>
+   (ou Authorization: Bearer <clé>)
+   Si l'appel via le nom de domaine est refusé (IP publique du serveur), ajouter
+   cette IP dans app/.env :  SYNC_ALLOWED_IPS=<ip_du_serveur>
+Routes : GET/POST /sync/clients, PATCH /sync/clients/{id},
+         GET/POST /sync/vehicules, PATCH /sync/vehicules/{id},
+         POST /sync/vehicules/{id}/transfer
+Sans clé (ou clé < 32 caractères), l'API SYNC reste fermée (403).

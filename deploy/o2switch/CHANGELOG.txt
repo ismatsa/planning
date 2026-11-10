@@ -1,6 +1,12 @@
 CHANGELOG — Booking Powertech
 =============================
 
+v1.2.0 (2026-11-10)
+-------------------
+- API SYNC machine-à-machine sous /api/sync/* (clients, véhicules, transfert).
+  Accès limité au serveur local (127.0.0.1 / ::1) + clé SYNC_API_KEY.
+- Aucune migration SQL. Ajouter SYNC_API_KEY dans app/.env (voir LISEZMOI).
+
 v1.1.0 (2026-11-08)
 -------------------
 - Immatriculation structurée : choix du pays, saisie marocaine en trois parties

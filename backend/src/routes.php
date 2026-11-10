@@ -4,6 +4,7 @@ namespace PT;
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/sync.php';
 
 // ---------- Serializers ----------
 
@@ -150,6 +151,8 @@ function handle_request(): void
     $method = $_SERVER['REQUEST_METHOD'];
     $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
     $path = preg_replace('#^/api#', '', $path) ?: '/';
+
+    if (str_starts_with($path, '/sync/') || $path === '/sync') handle_sync($method, $path);
 
     try {
         check_csrf();
